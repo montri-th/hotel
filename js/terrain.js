@@ -159,11 +159,25 @@ export async function terrainFacts(map, row) {
   return facts;
 }
 
+const reliefCache = new Map();
+/** Relief (m) round a point — the point and 24 points on rings of 250 m and 500 m (DEM z13), as in the terrain facts. */
+export async function reliefAround(lon, lat) {
+  const key = `${lon.toFixed(4)},${lat.toFixed(4)}`;
+  if (reliefCache.has(key)) return reliefCache.get(key);
+  const [at, ring500, ring250] = await Promise.all([elevationAt(lon, lat), Promise.all(ring(lon, lat, RELIEF_RADIUS_M, 16).map(([x, y]) => elevationAt(x, y))), Promise.all(ring(lon, lat, 250, 8).map(([x, y]) => elevationAt(x, y)))]);
+  const relief = factsFrom({at, ring500, ring250})?.relief ?? null;
+  if (relief !== null) reliefCache.set(key, relief);
+  return relief;
+}
+
 /**
- * Mount terrain mode on a map (after style.load). options.colors: {shadow, highlight, accent}; options.onChange(active).
+ * Mount terrain mode on a map (after style.load). options.colors: {shadow, highlight, accent}; options.onChange(active);
+ * options.onLoaded() once the DEM under the view has loaded; options.site() → [lon, lat] of a building or stay being
+ * looked at, or null: at building scale the view is too small to read the land, so the relief round that point
+ * (reliefAround, 500 m) also counts (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”).
  * Returns {setEnabled(on3d), evaluate(), active(), retheme(colors), dispose()}.
  */
-export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, onLoaded = null, exaggeration = TERRAIN.exaggeration} = {}) {
+export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, onLoaded = null, site = null, exaggeration = TERRAIN.exaggeration} = {}) {
   let enabled = true, mode = false, token = 0, timer = 0, palette = colors;
   const hasLayer = id => Boolean(map.getLayer(id));
   function ensure() {
@@ -201,9 +215,11 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
     const my = ++token, zoom = map.getZoom();
     if (!enabled || zoom < TERRAIN.offZoom) { setMode(false); return; }
     if (zoom < TERRAIN.minZoom && !mode) return;
-    const b = map.getBounds();
-    const relief = await reliefOf([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
-    if (my !== token || relief === null) return;
+    const b = map.getBounds(), at = typeof site === 'function' ? site() : null;
+    const [visible, near] = await Promise.all([reliefOf([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]),
+      Array.isArray(at) && at.every(Number.isFinite) ? reliefAround(at[0], at[1]).catch(() => null) : null]);
+    const relief = Math.max(visible ?? -Infinity, near ?? -Infinity);
+    if (my !== token || !Number.isFinite(relief)) return;
     setMode(relief >= TERRAIN.reliefOn || (mode && relief >= TERRAIN.reliefOff));
   }
   const schedule = () => { clearTimeout(timer); timer = setTimeout(evaluate, 120); };

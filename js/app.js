@@ -1358,7 +1358,7 @@ function installSpatialLayers() {
       renderLegend();
       state.labels?.layout();
       onGroundChange();
-    }, onLoaded: onGroundChange});
+    }, onLoaded: onGroundChange, site: () => (twoPoint() ? focusTarget()?.anchor || null : null)});
     state.terrain.setEnabled(state.view3d);
   } catch (e) { state.terrain = null; console.warn('Terrain unavailable', e); }
   state.hotelLabels = installHotelLabels(map, $('map'), {
