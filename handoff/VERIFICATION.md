@@ -40,7 +40,7 @@ points at their ground) against the free box of the map, at 1710 px CSS and in s
 | Mercure Bangkok Siam (flat) | pin inside | desktop fills the box height (74–583 in 58–599); phone inside the strip |
 | Bam Boo Lake (Khao Kho, 1,070 m up) | nearest drawn | desktop and phone in the box |
 | `?view3d=0`, click on the pin | pin inside | switched to 3D, pitch 75, popup open |
-| อำเภอเขาค้อ, 120 stays with a point chosen one after another | — | every one opened a building in the two-point view (119 within 9 s; Bam Boo Lake when loaded on its own) |
+| อำเภอเขาค้อ, 120 of its 357 stays with a point chosen one after another | — | every one opened a building in the two-point view (119 within 9 s; Bam Boo Lake when loaded on its own) |
 
 Basis of the 300 m / 800 m reach (measured on the preview with the buildings loaded for each area): Bangkok เขตวัฒนา 124
 of 179 pins inside an outline, the rest within 25 m; Kathu 363 of 805 inside, 439 of the 442 outside within 300 m;
@@ -88,5 +88,6 @@ Found and fixed on the preview:
 ## 6. Not verified
 
 A physical phone or tablet, Safari and Firefox, a full screen-reader pass, colour-vision simulation, performance on
-low-end devices, every stay in the country (the walk covered the cases above and one district in full), the accuracy of
-the sources themselves, of CityMETER building heights, and of SRTM elevation or OSM water and land cover round each stay.
+low-end devices, every stay in the country (the walk covered the cases above and 120 of the 357 stays with a point in
+อำเภอเขาค้อ), the accuracy of the sources themselves, of CityMETER building heights, and of SRTM elevation or OSM water
+and land cover round each stay.
