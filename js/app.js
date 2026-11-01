@@ -1036,6 +1036,7 @@ function refreshLabelView() {
   refreshLabelView.key = key;
   state.labelView = new Map([...best].map(([id, b]) => [id, b.center]));
   state.labels?.update(state.showAreas ? areaLabelItems() : [], {visible: state.showAreas});
+  state.provinceLabels?.layout();
 }
 /** Screen box of the building being looked at (null when none is known or no building view is open). */
 function buildingScreenBox() {
@@ -1100,13 +1101,14 @@ function updateSpatialLayers() {
   const code = $('province').value, u = unit();
   const pm = state.provinceLayers?.update({rows: provinceScopeRows(), selectedCode: code, visible: true, metric: state.metric}) || null;
   state.provinceModel = pm;
-  state.provinceLabels?.update(pm ? pm.provinces.filter(p => p.value > 0 || p.code === code).sort((a, b) => (b.code === code) - (a.code === code) || b.value - a.value)
-    .map(p => ({id: p.code, name: p.name, value: num(p.value), state: p.state, quiet: Boolean(code) && p.code !== code, selected: p.code === code, center: p.label, swatch: p.fill || '',
-      title: `${p.name} · ${num(p.value)} ${u.one} · ${u.id === 'count' ? `${num(p.rooms)} ห้อง` : `${num(p.count)} แห่ง`}`})) : [], {visible: true});
   const focusIds = mapFocusIds();
   syncMapFocus.key = focusIds.join(',');
   state.areaLayers?.update({model: state.areaModel, selectedId: state.selectedArea, focusIds, outlineFocus: true, visible: state.showAreas, provinceCode: code});
   state.labels?.update(state.showAreas ? areaLabelItems() : [], {visible: state.showAreas});
+  // Province chips after the district chips: they keep clear of them (installAreaLabels `avoid`), so they lay out second.
+  state.provinceLabels?.update(pm ? pm.provinces.filter(p => p.value > 0 || p.code === code).sort((a, b) => (b.code === code) - (a.code === code) || b.value - a.value)
+    .map(p => ({id: p.code, name: p.name, value: num(p.value), state: p.state, quiet: Boolean(code) && p.code !== code, selected: p.code === code, center: p.label, swatch: p.fill || '',
+      title: `${p.name} · ${num(p.value)} ${u.one} · ${u.id === 'count' ? `${num(p.rooms)} ห้อง` : `${num(p.count)} แห่ง`}`})) : [], {visible: true});
   renderLegend();
   const st = state.panel.mode === 'station' ? stationById(state.panel.id) : null;
   state.stations?.select(st ? st.id : '', STATION_RADIUS_M);
@@ -1281,7 +1283,7 @@ function initMap() {
     state.attribObserver = trackAttribution(state.map);
     state.legendObserver ||= trackLegend();
     state.labels = installAreaLabels(state.map, $('map'), {className: 'neighborhood-label', hostId: 'area-labels', hostLabel: 'เขต/อำเภอบนแผนที่', minZoom: PROVINCE_VIEW_MIN_ZOOM, verb: 'กดเพื่อสำรวจพื้นที่', onSelect: id => selectArea(id, {fromMap: true}), reservedBottom: labelBottomSpace, maxLabels: 40});
-    state.provinceLabels = installAreaLabels(state.map, $('map'), {className: 'province-label', hostId: 'province-labels', hostLabel: 'จังหวัดบนแผนที่', minZoom: 0, maxZoom: PROVINCE_LABEL_MAX_ZOOM, verb: 'กดเพื่อดูจังหวัด', detailZoomClass: false, onSelect: code => selectProvince(code), reservedBottom: labelBottomSpace, maxLabels: 77});
+    state.provinceLabels = installAreaLabels(state.map, $('map'), {className: 'province-label', hostId: 'province-labels', hostLabel: 'จังหวัดบนแผนที่', minZoom: 0, maxZoom: PROVINCE_LABEL_MAX_ZOOM, verb: 'กดเพื่อดูจังหวัด', detailZoomClass: false, onSelect: code => selectProvince(code), reservedBottom: labelBottomSpace, maxLabels: 77, avoid: '.neighborhood-label:not([hidden])'});
     state.map.on('zoomend', () => { if (state.loaded) renderLegend(); });
     // Coalesced: a camera fit jumps the map many times in one task; labels and frame loading follow the last position.
     state.map.on('moveend', scheduleLabelView);

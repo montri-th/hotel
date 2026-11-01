@@ -54,18 +54,22 @@ function matrix(element, model, select, selectedId, unit) {
     const pressed = a.id === selectedId;
     const cells = m.groups.map(g => {
       const cell = m.cells.find(c => c.areaId === a.id && c.group === g.index);
-      const cls = classify(cell.value, ramp);
-      // measured_zero: sample 0 + the theme's dataState.zero outline (EVID-05 treatment), never a blank cell.
-      const style = cls.state === 'measured_zero' ? `background:${cls.fill};color:${cls.ink};box-shadow:inset 0 0 0 2px var(--data-zero-outline)` : `background:${cls.fill};color:${cls.ink}`;
+      const cls = cell.unknown ? classify(null, ramp, 'no_data') : classify(cell.value, ramp);
+      // measured_zero: sample 0 + the theme's dataState.zero outline (EVID-05 treatment), never a blank cell;
+      // no_data (rooms unknown for every record of the cell): the no-data ground and a dash, never 0.
+      const style = cls.state === 'no_data' ? 'background:var(--data-no-data);color:var(--text-secondary)'
+        : cls.state === 'measured_zero' ? `background:${cls.fill};color:${cls.ink};box-shadow:inset 0 0 0 2px var(--data-zero-outline)` : `background:${cls.fill};color:${cls.ink}`;
+      const shown = cell.unknown ? '—' : num(cell.value);
+      const said = cell.unknown ? `${num(cell.count)} แห่ง ไม่ทราบจำนวนห้อง` : `${num(cell.value)} ${unit.one}`;
       return `<td><button type="button" class="matrix-cell is-${cls.state}" data-area="${esc(a.id)}" style="${style}"
-        aria-label="${esc(place(a))} × ${esc(g.th)}: ${num(cell.value)} ${esc(unit.one)} กดเพื่อดูพื้นที่นี้" title="${esc(place(a))} × ${esc(g.th)} — ${num(cell.value)} จาก ${num(cell.total)} ${esc(unit.one)}"><span class="data-number${cls.plate ? ' on-plate' : ''}">${num(cell.value)}</span></button></td>`;
+        aria-label="${esc(place(a))} × ${esc(g.th)}: ${esc(said)} กดเพื่อดูพื้นที่นี้" title="${esc(place(a))} × ${esc(g.th)} — ${cell.unknown ? esc(said) : `${num(cell.value)} จาก ${num(cell.total)} ${esc(unit.one)}`}"><span class="data-number${cls.plate ? ' on-plate' : ''}">${shown}</span></button></td>`;
     }).join('');
     return `<tr${pressed ? ' class="is-selected"' : ''}><th scope="row"><button type="button" class="matrix-row" data-area="${esc(a.id)}" aria-pressed="${pressed}">${esc(a.name)}<small class="data-number">${num(a.value)}</small></button></th>${cells}</tr>`;
   }).join('');
   const columns = `<colgroup><col class="matrix-head-col">${m.groups.map(() => '<col class="matrix-cell-col">').join('')}</colgroup>`;
   element.innerHTML = `<p class="chart-caption">${num(m.areas.length)} เขต/อำเภอที่มี${esc(unit.subject)}มากที่สุด × ${num(m.groups.length)} ประเภท · ตัวเลข = ${esc(unit.one)} · ทุกช่องขนาดเท่ากัน</p>
     <div class="matrix-scroll"><table class="matrix" style="--matrix-columns:${m.groups.length}">${columns}<thead><tr><th scope="col" class="matrix-corner">พื้นที่ · ${esc(unit.one)}</th>${head}</tr></thead><tbody>${body}</tbody></table></div>
-    <p class="chart-legend"><span class="legend-title">${esc(unit.one)}ในช่อง · ${ramp.steps} ระดับสีตามลำดับค่า</span>${rampLegendHTML(ramp)}<span class="legend-step"><i class="legend-zero" aria-hidden="true"></i>0 = ไม่พบในตัวกรองนี้</span></p>`;
+    <p class="chart-legend"><span class="legend-title">${esc(unit.one)}ในช่อง · ${ramp.steps} ระดับสีตามลำดับค่า</span>${rampLegendHTML(ramp)}<span class="legend-step"><i class="legend-zero" aria-hidden="true"></i>0 = ไม่พบในตัวกรองนี้</span>${m.cells.some(c => c.unknown) ? '<span class="legend-step">— = มีที่พักแต่ไม่ทราบจำนวนห้อง</span>' : ''}</p>`;
   element.querySelectorAll('[data-area]').forEach(b => b.addEventListener('click', () => select({type: 'area', id: b.dataset.area})));
 }
 

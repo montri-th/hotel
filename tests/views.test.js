@@ -126,6 +126,11 @@ test('charts: districts by the measure, district × group matrix with equal cell
   for (const a of mx.areas) assert.equal(mx.cells.filter(c => c.areaId === a.id).reduce((s, c) => s + c.value, 0), a.value, 'cells add up to the district');
   const counts = buildChartModel(data.rows, index, data.groups, {metric: 'count'});
   assert.equal(counts.areas[0].name, 'เมืองภูเก็ต');
+  // A cell whose records all have unknown rooms is unknown (no data, a dash), never a measured 0.
+  const one = {id: 'u', area: '1001', province: 'BKK', rooms: null, group: 5, groupId: 'homestay'};
+  const um = areaMatrix({areas: [{id: '1001', name: 'พระนคร', province: 'BKK', value: 0, rows: [one]}], groups: data.groups, metric: 'rooms'});
+  assert.deepEqual(um.cells.filter(c => c.unknown).map(c => [c.groupId, c.count, c.value]), [['homestay', 1, 0]]);
+  assert.equal(areaMatrix({areas: [{id: '1001', name: 'พระนคร', province: 'BKK', value: 1, rows: [one]}], groups: data.groups, metric: 'count'}).cells.filter(c => c.unknown).length, 0);
   const ch = chainRanking(data.rows);
   assert.equal(ch.total, 18);
   assert.deepEqual(ch.chains.slice(0, 3).map(c => [c.chain.name, c.rooms]), [['Accor', 10093], ['Marriott International', 8454], ['IHG Hotels & Resorts', 5989]]);

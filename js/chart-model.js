@@ -19,9 +19,11 @@ export function areaMatrix(model, {areaLimit = 12} = {}) {
   const areas = model.areas.slice(0, areaLimit);
   const groups = model.groups;
   const cells = areas.flatMap(a => {
-    const values = new Array(groups.length).fill(0);
-    for (const r of a.rows) values[r.group] += rowValue(r, model.metric);
-    return groups.map(g => ({areaId: a.id, areaName: a.name, groupId: g.id, group: g.index, groupName: g.th, value: values[g.index], total: a.value}));
+    const values = new Array(groups.length).fill(0), counts = new Array(groups.length).fill(0);
+    for (const r of a.rows) { values[r.group] += rowValue(r, model.metric); counts[r.group]++; }
+    // Rooms: a cell whose records all have unknown rooms is unknown, never a measured 0.
+    return groups.map(g => ({areaId: a.id, areaName: a.name, groupId: g.id, group: g.index, groupName: g.th, value: values[g.index], count: counts[g.index],
+      unknown: model.metric === 'rooms' && counts[g.index] > 0 && !values[g.index], total: a.value}));
   });
   return {areas, groups, cells, max: Math.max(0, ...cells.map(c => c.value))};
 }

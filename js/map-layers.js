@@ -194,7 +194,7 @@ export function installAreaLayers(map, {areas}) {
  * other and the map chrome. Used for เขต/อำเภอ (a bounded set: the focus, the
  * selection and the frames with the most branches in view) and for the province frames.
  */
-export function installAreaLabels(map, container, {onSelect, reservedBottom = () => 0, className = 'area-label', hostId = 'area-labels', hostLabel = 'พื้นที่บนแผนที่', minZoom = 0, maxZoom = Infinity, verb = 'กดเพื่อสำรวจ', detailZoomClass = true, maxLabels = 40} = {}) {
+export function installAreaLabels(map, container, {onSelect, reservedBottom = () => 0, className = 'area-label', hostId = 'area-labels', hostLabel = 'พื้นที่บนแผนที่', minZoom = 0, maxZoom = Infinity, verb = 'กดเพื่อสำรวจ', detailZoomClass = true, maxLabels = 40, avoid = ''} = {}) {
   const host = document.createElement('div');
   host.id = hostId;
   host.className = 'area-labels';
@@ -206,7 +206,8 @@ export function installAreaLabels(map, container, {onSelect, reservedBottom = ()
   function layout() {
     const width = container.clientWidth, height = container.clientHeight - reservedBottom();
     const panel = container.closest('.map-panel'), rect = container.getBoundingClientRect();
-    const chrome = [...panel.querySelectorAll('.map-toolbar, .map-legend, .map-status, .map-aha, .maplibregl-ctrl-top-right')]
+    // `avoid`: chips of another label host this one must not cover (province chips keep clear of district chips).
+    const chrome = [...panel.querySelectorAll(`.map-toolbar, .map-legend, .map-status, .map-aha, .maplibregl-ctrl-top-right${avoid ? `, ${avoid}` : ''}`)]
       .filter(e => e.offsetWidth && e.offsetHeight)
       .map(e => { const b = e.getBoundingClientRect(); return {left: b.left - rect.left - 4, right: b.right - rect.left + 4, top: b.top - rect.top - 4, bottom: b.bottom - rect.top + 4}; });
     const placed = [];

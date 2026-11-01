@@ -98,12 +98,15 @@ export function provenance(ctx = {}, boundary = '', {rail = false, retail = fals
 function groupBars(byGroup, unit) {
   const val = g => (unit.id === 'count' ? g.count : g.rooms);
   const list = byGroup.filter(g => val(g) > 0).sort((a, b) => val(b) - val(a) || a.index - b.index);
-  if (!list.length) return `<p class="hint">ไม่มี${esc(unit.subject)}</p>`;
+  // Rooms: a group whose records all have unknown rooms has no bar, and is named apart (never a 0 bar).
+  const unknown = unit.id === 'count' ? [] : byGroup.filter(g => g.count > 0 && !g.rooms);
+  const unknownNote = unknown.length ? `<p class="hint">ไม่ทราบจำนวนห้อง: ${unknown.map(g => `${esc(g.th)} ${nw(`${num(g.count)} แห่ง`)}`).join(' · ')}</p>` : '';
+  if (!list.length) return unknownNote || `<p class="hint">ไม่มี${esc(unit.subject)}</p>`;
   const max = Math.max(1, ...list.map(val));
   return `<ul class="mix-list" aria-label="ประเภทที่พัก (${esc(unit.one)})">${list.map(g => `
     <li><button type="button" class="mix-row" data-action="filter-group" data-value="${esc(g.id)}" title="ดูเฉพาะ${esc(g.th)}"><span class="mix-label">${cueMarkup(g.series)}${esc(g.th)}</span>
       <span class="mix-track" aria-hidden="true"><span class="mix-fill category-${g.series}" style="width:${Math.max(3, Math.round((val(g) / max) * 100))}%"></span></span>
-      <span class="mix-value data-number">${num(val(g))}</span></button></li>`).join('')}</ul>`;
+      <span class="mix-value data-number">${num(val(g))}</span></button></li>`).join('')}</ul>${unknownNote}`;
 }
 
 /** Records and rooms per room-size band; unknown rooms named apart. */
