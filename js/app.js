@@ -1464,6 +1464,8 @@ function installSpatialLayers() {
   state.hotelLabels = installHotelLabels(map, $('map'), {
     onSelect: r => selectHotel(r.id, {fly: false, showPopup: true, fromPin: true}),
     bounds: () => state.pins?.bounds?.() || {left: 0, top: 0, right: map.getContainer().clientWidth, bottom: map.getContainer().clientHeight, exclusions: []},
+    // 0.3.2: in the building view a name never sits on the building being looked at (as the district chips).
+    avoid: () => { const b = buildingScreenBox(); return b ? [{left: b.minX - 4, right: b.maxX + 4, top: b.minY - 4, bottom: b.maxY + 4}] : []; },
     radius: (r, zoom) => (zoom >= DETAIL_MIN_ZOOM ? Math.max(4, Math.min(20, pinRadius(r.rooms, zoom))) : pinRadius(r.rooms, zoom)),
     isPhone: mobilePortrait,
     finePointer: () => matchMedia('(hover: hover) and (pointer: fine)').matches,

@@ -129,7 +129,7 @@ export function placeLabels(cands, size, radius, box, {max = LABEL_MAX.desktop, 
  *  isPhone() · finePointer() · num(n) · priceText(price) · groupName(row) · onCard(open).
  * Returns {update(rows, {selectedId}), layout, hover(row|null, anchor?), dispose}.
  */
-export function installHotelLabels(map, container, {onSelect, bounds, radius = () => 6, isPhone = () => false, finePointer = () => true, num = n => String(n), priceText = () => '', groupName = () => '', placesOf = () => []} = {}) {
+export function installHotelLabels(map, container, {onSelect, bounds, avoid = () => [], radius = () => 6, isPhone = () => false, finePointer = () => true, num = n => String(n), priceText = () => '', groupName = () => '', placesOf = () => []} = {}) {
   const host = document.createElement('div');
   host.className = 'hotel-labels';
   host.setAttribute('aria-label', 'ชื่อที่พักกลางแผนที่');
@@ -177,7 +177,7 @@ export function installHotelLabels(map, container, {onSelect, bounds, radius = (
     if (zoom >= LABEL_MIN_ZOOM && rows.length) {
       const cands = rankLabelCandidates(centreCandidates(rows, p => map.project(p), b, {skip: selectedId}));
       const popup = [...container.querySelectorAll('.maplibregl-popup')].map(el => { const r = el.getBoundingClientRect(), c = container.getBoundingClientRect(); return {left: r.left - c.left - 4, right: r.right - c.left + 4, top: r.top - c.top - 4, bottom: r.bottom - c.top + 4}; });
-      next = placeLabels(cands.slice(0, 40), measure, row => radius(row, zoom), b, {max: isPhone() ? LABEL_MAX.phone : LABEL_MAX.desktop, blockers: [...(b.exclusions || []), ...popup]});
+      next = placeLabels(cands.slice(0, 40), measure, row => radius(row, zoom), b, {max: isPhone() ? LABEL_MAX.phone : LABEL_MAX.desktop, blockers: [...(b.exclusions || []), ...popup, ...avoid()]});
     }
     const keep = new Set(next.map(p => p.row.id));
     for (const [id, e] of pool) if (!keep.has(id)) { e.el.hidden = true; e.el.classList.remove('is-on'); }
