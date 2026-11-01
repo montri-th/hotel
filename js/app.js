@@ -646,16 +646,16 @@ function highlightIds() {
 function focusShape(target = focusTarget()) {
   const features = target?.refs.length ? state.massing?.featuresOf(target.refs) || [] : [];
   const rings = features.flatMap(f => outerRings(f).map(ring => ({ring, height: Number(f.properties.height) || 3})));
-  // On terrain each piece stands on the ground at its centroid (as drawn and as the x-ray lifts it): its fit points
-  // carry that ground (4th value, js/camera.js#fitBuilding). A piece whose DEM sample is not there yet takes the pin's.
+  // On terrain each piece stands on the ground as drawn (pieceGrounds: its roof on the ground at its centroid, its
+  // walls down to the lowest ground under it, as the x-ray draws it): its fit points carry that ground (4th value,
+  // js/camera.js#fitBuilding) — the base at the low ground, the roof at the centroid's.
   const map = state.map, terrain = Boolean(map?.terrain) && state.view3d;
   const pinGround = terrain && target ? groundAt(map, target.anchor) : 0;
-  const groundOf = f => { const g = groundAt(map, centroidOf(f)); return g || pinGround; };
   let points = features.flatMap(f => {
     const pts = state.massing?.fitPointsOf([f.id], 18) || [];
     if (!terrain) return pts;
-    const g = groundOf(f);
-    return pts.map(q => [q[0], q[1], q[2], g]);
+    const {g, low} = pieceGrounds(f, pinGround);
+    return pts.map(q => [q[0], q[1], q[2], q[2] ? g : low]);
   });
   if (!points.length) points = rings.flatMap(({ring, height}) => ring.flatMap(([lng, lat]) => [[lng, lat, 0], [lng, lat, height]]));
   // The building nearest the pin is framed with the pin, so the stay's symbol stays in view beside it.
@@ -682,19 +682,36 @@ function syncFocusBuilding() {
   const shape = focusShape();
   const eye = state.view3d && twoPoint() && shape.features.length > 0;
   state.massing?.setScene(eye ? 'eye' : 'default', eye ? shape.rings : []);
-  // On terrain every piece stands on the ground at its centroid, as MapLibre lifts fill-extrusions (walls 10 m into
-  // the slope when the piece starts at the ground), so the x-ray solid covers the building where it is drawn.
-  const grounds = shape.features.map(f => (state.view3d ? Math.round(groundAt(state.map, centroidOf(f)) * 10) / 10 : 0));
-  const key = `${state.view3d}|${shape.key}|${state.massing?.version ?? 0}|${theme()}|${grounds.join(',')}`;
+  // On terrain every piece stands on the ground at its centroid, as MapLibre lifts fill-extrusions; the x-ray is drawn
+  // over the ground, so its walls go down to the lowest ground under the piece (0.3.2: a fixed 10 m into the slope
+  // showed below the ground on a hillside), never deeper.
+  const grounds = shape.features.map(f => (state.view3d ? pieceGrounds(f) : {g: 0, low: 0}));
+  const key = `${state.view3d}|${shape.key}|${state.massing?.version ?? 0}|${theme()}|${grounds.map(x => `${x.g.toFixed(1)}/${x.low.toFixed(1)}`).join(',')}`;
   if (key !== syncFocusBuilding.key) {
     syncFocusBuilding.key = key;
     state.xray?.update(state.view3d ? shape.features.map((f, i) => {
-      const base = Number(f.properties.base) || 0, top = Number(f.properties.height) || 3, g = grounds[i];
-      return {type: 'Feature', geometry: f.geometry, properties: {display_height_m: top + g, display_base_m: base + g - (g && base <= 0 ? 10 : 0)}};
+      const base = Number(f.properties.base) || 0, top = Number(f.properties.height) || 3, {g, low} = grounds[i];
+      return {type: 'Feature', geometry: f.geometry, properties: {display_height_m: top + g, display_base_m: base > 0 ? base + g : low}};
     }) : [], {colors: xrayColors()});
   }
   state.xray?.setEnabled(state.view3d);
 }
+/**
+ * Ground of a drawn piece on terrain (0 without): `g` at its centroid — where MapLibre lifts a fill-extrusion, so its
+ * roof is at height + g — and `low`, the lowest ground under its outline's vertices, where its walls meet the slope.
+ * A sample whose DEM tile has not arrived (0 while the other samples are not) is left out; `fallback` stands in for a
+ * missing centroid sample.
+ */
+function pieceGrounds(f, fallback = 0) {
+  const map = state.map;
+  if (!map?.terrain) return {g: 0, low: 0};
+  const g = groundAt(map, centroidOf(f)) || fallback;
+  const ring = outerRings(f)[0] || [];
+  let low = g;
+  for (let i = 0; i < ring.length - 1; i++) { const e = groundAt(map, ring[i]); if (e && e < low) low = e; }
+  return {g, low};
+}
+
 /** Vertex mean of a feature's first outer ring ([lon, lat]): where MapLibre samples the ground of a fill-extrusion. */
 function centroidOf(f) {
   const ring = outerRings(f)[0] || [];
