@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSolid, screenBoxOf, solidHit, mat4Multiply, mat4Translation, transformPoint, installVenueXray, XRAY_LAYER, XRAY_MIN_ZOOM} from '../js/venue-xray.js';
-import {installMassing, CITY_LAYER, FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER} from '../js/massing.js';
+import {installMassing, CITY_LAYER, CONTEXT_LAYER, CM_CREDIT_LAYER, FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER} from '../js/massing.js';
 import {buildMapStyle, MASSING_BEFORE, VENUE_XRAY_BEFORE} from '../js/map-style.js';
 
 // Mercator stand-in: x = lon/360 + 0.5, y = 0.5 - lat/360 (flat), z = altitude × 1e-7 (like MercatorCoordinate near the equator).
@@ -158,8 +158,10 @@ test('draw order contract: the massing tiers (venue tier last) sit beneath every
   map.addSource('openmaptiles', {});
   map.getSource = id => (id === 'openmaptiles' ? {} : null);
   map.addLayer({id: 'water-name', type: 'symbol'});
-  installMassing(map, {beforeId: 'water-name', colors: {}, tileUrl: () => ''});
-  assert.deepEqual(map.layers, [CITY_LAYER, FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER, 'water-name']);
+  installMassing(map, {beforeId: 'water-name', colors: {}, tileUrl: () => '', cmAttribution: 'อาคาร: CityMETER Building V4'});
+  // 0.3.0: the context tier (replaced city-tier features outside the focus) right above the city tier; the credit
+  // carrier of CityMETER Building V4 (an invisible circle layer) before the focus tiers.
+  assert.deepEqual(map.layers, [CITY_LAYER, CONTEXT_LAYER, CM_CREDIT_LAYER, FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER, 'water-name']);
 });
 
 test('the solid of the building being looked at masks road text while place labels, the massing order and road labels elsewhere stay', () => {

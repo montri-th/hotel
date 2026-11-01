@@ -2,8 +2,9 @@
  * Branch points × building footprints — a display-time spatial join (same contract as CityMETER ·
  * Restaurants 0.2 and Pharmacy 0.1, owner decision 2026-10-23).
  *
- * Buildings are the ones the map draws: the focus-tier OpenStreetMap footprints (js/massing.js keeps each
- * original footprint, before rounding/offset). A row joins a building when its point (the source's own point or
+ * Buildings are the ones the map draws: the focus-tier footprints (js/massing.js keeps each original footprint,
+ * before rounding/offset) — OpenStreetMap, or CityMETER Building V4 inside a CityMETER unit (owner 2026-11-01,
+ * point 3; `source: 'cm'`, whole buildings, keyed `cm:`). A row joins a building when its point (the source's own point or
  * its CityMETER venue's registry reference point) lies inside the footprint; inside several (an OSM part inside an outline) → the smallest. Only rows that carry
  * a point take part (most rows have none).
  *
@@ -169,9 +170,10 @@ export function joinRows(footprints, rows) {
 
 /**
  * The page's display-time join: rows and CityMETER venue reference points × the drawn focus-tier footprints, with
- * the pieces of one building grouped (groupPieces). A building is keyed `osm:<group id>` and lists its pieces
- * (`refs` = focus-tier feature ids, for the highlight, the x-ray and the camera).
- * pieces: massing footprints [{id, osmId, outer, holes, bbox?, height, tile}]; rows: [{id, longitude, latitude}];
+ * the pieces of one building grouped (groupPieces). A building is keyed `osm:<group id>` (or `cm:<group id>` when
+ * the group's first piece is a CityMETER building; `kind` says which) and lists its pieces (`refs` = focus-tier
+ * feature ids, for the highlight, the x-ray and the camera).
+ * pieces: massing footprints [{id, osmId, source?, outer, holes, bbox?, height, tile}]; rows: [{id, longitude, latitude}];
  * venues: [{id, longitude, latitude}].
  * Returns {buildings: Map(key → {key, kind, ref, refs, pieces, bbox, height}), byBuilding: Map(key → rows[]),
  *          byRow: Map(rowId → key), byVenue: Map(venueId → key), venuesByBuilding: Map(key → venue[]),
@@ -190,7 +192,8 @@ export function joinBuildings(pieces, rows, venues = []) {
     }
   }
   const groups = groupPieces(pieces, {unions});
-  const keyOfPiece = new Map(pieces.map(p => [p.id, `osm:${groups.get(p.id)}`]));
+  const sourceOf = new Map(pieces.map(p => [p.id, p.source === 'cm' ? 'cm' : 'osm']));
+  const keyOfPiece = new Map(pieces.map(p => { const g = groups.get(p.id); return [p.id, `${sourceOf.get(g) || 'osm'}:${g}`]; }));
   const fps = pieces.map(p => ({key: `piece:${p.id}`, ref: p.id, outer: p.outer, holes: p.holes || [], bbox: p.bbox, height: p.height}));
   const groupOf = new Map(fps.map(f => [f.key, keyOfPiece.get(f.ref)]));
   const rowJoin = joinRows(fps, rows);
@@ -202,7 +205,7 @@ export function joinBuildings(pieces, rows, venues = []) {
       b.refs.push(p.ref); b.pieces.push(p);
       b.height = Math.max(b.height ?? 0, p.height ?? 0);
       b.bbox = [Math.min(b.bbox[0], p.bbox[0]), Math.min(b.bbox[1], p.bbox[1]), Math.max(b.bbox[2], p.bbox[2]), Math.max(b.bbox[3], p.bbox[3])];
-    } else buildings.set(key, {key, kind: 'osm', ref: groups.get(p.ref), refs: [p.ref], pieces: [p], bbox: [...p.bbox], height: p.height});
+    } else buildings.set(key, {key, kind: key.startsWith('cm:') ? 'cm' : 'osm', ref: groups.get(p.ref), refs: [p.ref], pieces: [p], bbox: [...p.bbox], height: p.height});
   }
   const byRow = new Map(), byBuilding = new Map();
   for (const [rowId, pieceKey] of rowJoin.byRow) byRow.set(rowId, groupOf.get(pieceKey));

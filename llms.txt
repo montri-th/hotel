@@ -28,6 +28,6 @@ Data and method:
 - [Dataset](https://montri-th.github.io/hotel/data/hotels.json): columnar rows + dictionaries + provenance (meta)
 - [Developer handoff](https://montri-th.github.io/hotel/handoff/START_HERE.md)
 
-Map reading (0.2.0): symbol area grows with recorded rooms (hollow = unknown); names near the middle of the view rank by recorded rooms and recorded price; chain logos identify brands; terrain facts (ground elevation, relief, sea within a ring, OSM tree cover) describe the ground, never a view.
+Map reading (0.3.0): symbol area grows with recorded rooms (hollow = unknown); names near the middle of the view rank by recorded rooms and recorded price; chain logos identify brands; terrain facts (ground elevation, relief, sea within a ring, OSM tree cover) describe the ground, never a view; buildings stand on the terrain at hilly sites. Buildings per area: CityMETER Building V4 in each local administration (Bangkok: each khet) where it holds at least 1.15 × the OpenStreetMap buildings, else OpenStreetMap; OSM buildings mapped in parts are kept; CityMETER heights are model estimates (data/building-units/).
 
 Do not claim from this data: occupancy, ADR, RevPAR, revenue, demand, market share, current prices, that a hotel is open today, star ratings, walking time, or that a district without records has no hotels.

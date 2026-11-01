@@ -16,9 +16,12 @@ function rect(w, d, az, [cx, cy] = [0, 0]) {
   return pts.map(([s, t]) => [LON + (cx + s * ux[0] + t * vx[0]) / KX, LAT + (cy + s * ux[1] + t * vx[1]) / KY]);
 }
 
-/** Pinhole map: what fitBuilding reads and writes, nothing else. */
-function fakeMap({width = 390, height = 640} = {}) {
-  const cam = {center: {lng: LON + 0.01, lat: LAT - 0.01}, zoom: 13, pitch: 56, bearing: 28, fov: 36.87, padding: {top: 0, bottom: 0, left: 0, right: 0}};
+/**
+ * Pinhole map: what fitBuilding reads and writes, nothing else. `terrain(lng, lat)` (metres, as drawn) lifts every
+ * point by the ground under it and the camera orbits its centre at `elevation`, as MapLibre does on terrain.
+ */
+function fakeMap({width = 390, height = 640, terrain = null} = {}) {
+  const cam = {center: {lng: LON + 0.01, lat: LAT - 0.01}, zoom: 13, pitch: 56, bearing: 28, fov: 36.87, padding: {top: 0, bottom: 0, left: 0, right: 0}, elevation: 0};
   const moves = [];
   const geometry = () => {
     const f = (height / 2) / Math.tan((cam.fov / 2) * RAD);
@@ -29,7 +32,8 @@ function fakeMap({width = 390, height = 640} = {}) {
     const {f, D, p, b, kx} = geometry();
     const e = (lng - cam.center.lng) * kx, n = (lat - cam.center.lat) * KY;
     const x = e * Math.cos(b) - n * Math.sin(b), y = e * Math.sin(b) + n * Math.cos(b);
-    const z = y * Math.sin(p) - alt * Math.cos(p) + D, v = y * Math.cos(p) + alt * Math.sin(p);
+    const h = alt + (terrain ? terrain(lng, lat) : 0) - cam.elevation; // above the centre the camera orbits
+    const z = y * Math.sin(p) - h * Math.cos(p) + D, v = y * Math.cos(p) + h * Math.sin(p);
     if (!(z > 1)) return {x: NaN, y: NaN};
     return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
   };
@@ -39,7 +43,7 @@ function fakeMap({width = 390, height = 640} = {}) {
     getVerticalFieldOfView: () => cam.fov, setVerticalFieldOfView: v => { cam.fov = v; },
     jumpTo(o) {
       if (o.center) cam.center = Array.isArray(o.center) ? {lng: o.center[0], lat: o.center[1]} : {lng: o.center.lng, lat: o.center.lat};
-      for (const k of ['zoom', 'pitch', 'bearing']) if (o[k] != null) cam[k] = o[k];
+      for (const k of ['zoom', 'pitch', 'bearing', 'elevation']) if (o[k] != null) cam[k] = o[k];
       if (o.padding) cam.padding = {...o.padding};
     },
     easeTo(o) { moves.push(['ease', o]); map.jumpTo(o); },
@@ -54,6 +58,13 @@ function fakeMap({width = 390, height = 640} = {}) {
       return {lng: cam.center.lng + e / kx, lat: cam.center.lat + n / KY};
     },
   };
+  if (terrain) {
+    map.terrain = {};
+    map.queryTerrainElevation = ([lng, lat]) => terrain(lng, lat);
+    map.transform = {get elevation() { return cam.elevation; }};
+    // MapLibre clamps the centre to the ground once the camera lands (centerClampedToGround).
+    map.land = () => { cam.elevation = terrain(cam.center.lng, cam.center.lat); };
+  }
   return {map, project: (_, q) => project3(q)};
 }
 
@@ -108,6 +119,34 @@ test('fit: a tiny building stops at the zoom limit and stays centred; the start 
   assert.notEqual(before, target.zoom);
   const b = screenBounds(map, points, project);
   assert.ok(Math.abs((b.minX + b.maxX) / 2 - (box.left + box.right) / 2) < 1.5);
+});
+
+test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed camera — centre clamped to the ground — frames the building on a hillside', () => {
+  // A resort on a 20 % slope 40–70 m up (as drawn, exaggerated): the ground rises to the north.
+  const terrain = (lng, lat) => 55 + 0.2 * (lat - LAT) * KY;
+  const {map, project} = fakeMap({terrain});
+  const podium = rect(70, 40, 20), tower = rect(24, 20, 20, [10, 5]);
+  const points = [...podium.flatMap(([a, b]) => [[a, b, 0], [a, b, 12]]), ...tower.flatMap(([a, b]) => [[a, b, 0], [a, b, 30]])];
+  const box = {left: 12, top: 70, right: 330, bottom: 470};
+  const startElevation = map.transform.elevation;
+  const target = fitBuilding(map, points, {box, bearing: 45, project, animate: false});
+  assert.equal(map.transform.elevation, startElevation, 'the start camera (with its elevation) is restored before the move');
+  map.land();
+  assert.ok(Math.abs(map.transform.elevation - terrain(target.center.lng, target.center.lat)) < 1e-9);
+  const b = screenBounds(map, points, project);
+  const tw = (box.right - box.left) * 0.94, th = (box.bottom - box.top) * 0.94;
+  assert.ok(Math.abs((b.minX + b.maxX) / 2 - (box.left + box.right) / 2) < 2, `centred across (${((b.minX + b.maxX) / 2).toFixed(1)})`);
+  assert.ok(Math.abs((b.minY + b.maxY) / 2 - (box.top + box.bottom) / 2) < 2, `centred down (${((b.minY + b.maxY) / 2).toFixed(1)})`);
+  const fillW = (b.maxX - b.minX) / tw, fillH = (b.maxY - b.minY) / th;
+  assert.ok(Math.abs(Math.max(fillW, fillH) - 1) < 0.02, `fills one side (${fillW.toFixed(3)} × ${fillH.toFixed(3)})`);
+  // The same building fitted as if the ground were at sea level lands off the frame once the scene stands on the hill.
+  const flat = fakeMap();
+  const t2 = fitBuilding(flat.map, points, {box, bearing: 45, project: flat.project, animate: false});
+  const {map: hill, project: hp} = fakeMap({terrain});
+  hill.jumpTo({...t2}); hill.land();
+  const off = screenBounds(hill, points, hp);
+  assert.ok(Math.abs((off.minY + off.maxY) / 2 - (box.top + box.bottom) / 2) > 2 || Math.abs((off.minX + off.maxX) / 2 - (box.left + box.right) / 2) > 2 || Math.abs(Math.max((off.maxX - off.minX) / tw, (off.maxY - off.minY) / th) - 1) > 0.02,
+    'ignoring the ground would frame it differently');
 });
 
 test('two-point bearing avoids a drawn building standing between the camera and the venue', () => {

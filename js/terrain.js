@@ -163,7 +163,7 @@ export async function terrainFacts(map, row) {
  * Mount terrain mode on a map (after style.load). options.colors: {shadow, highlight, accent}; options.onChange(active).
  * Returns {setEnabled(on3d), evaluate(), active(), retheme(colors), dispose()}.
  */
-export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, exaggeration = TERRAIN.exaggeration} = {}) {
+export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, onLoaded = null, exaggeration = TERRAIN.exaggeration} = {}) {
   let enabled = true, mode = false, token = 0, timer = 0, palette = colors;
   const hasLayer = id => Boolean(map.getLayer(id));
   function ensure() {
@@ -187,6 +187,8 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
         if (e.sourceId !== TERRAIN_SOURCES.terrain || !e.isSourceLoaded) return;
         map.off('sourcedata', refresh);
         if (mode) { map.setTerrain(null); map.setTerrain({source: TERRAIN_SOURCES.terrain, exaggeration}); }
+        // The ground under the view is known now: whatever stands on it (the building camera, the x-ray) can follow.
+        if (mode) onLoaded?.();
       };
       map.on('sourcedata', refresh);
     } else {
@@ -207,7 +209,7 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
   const schedule = () => { clearTimeout(timer); timer = setTimeout(evaluate, 120); };
   map.on('moveend', schedule);
   return {
-    /** Off at once (before a camera move: the building camera frames flat ground); on is decided at the next move end. */
+    /** Off at once (2D, or the view leaves site scale); on is decided at the next move end. */
     setEnabled(on) { enabled = Boolean(on); if (!enabled) { clearTimeout(timer); token++; setMode(false); } else schedule(); },
     evaluate,
     active: () => mode,

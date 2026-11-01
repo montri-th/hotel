@@ -380,11 +380,16 @@ export function renderStation(p, ctx = {}) {
 
 /* ---------- Building (display-time spatial join) ---------- */
 
+/** Where a drawn building's outline and height come from (owner 2026-11-01, point 3: per อปท./เขต). */
+export const BUILDING_SOURCE_TH = Object.freeze({osm: 'OpenStreetMap', cm: 'CityMETER Building V4'});
+
 export function renderBuilding(b, ctx = {}) {
   if (!b) return '';
   const w = b.words;
   const area = b.area ? `${w.area}${b.area.name}` : '';
-  const height = b.height != null ? `สูงราว ${num(Math.round(b.height))} ม. (OpenStreetMap)` : '';
+  const source = BUILDING_SOURCE_TH[b.kind] || BUILDING_SOURCE_TH.osm;
+  // CityMETER heights are the dataset's model estimates; OSM heights are tags or the schema's default.
+  const height = b.height != null ? `สูงราว ${num(Math.round(b.height))} ม. (${b.kind === 'cm' ? 'ค่าประมาณ CityMETER' : 'OpenStreetMap'})` : '';
   const withPoint = b.rows.find(hasPoint);
   return `<section class="detail-head building">
       <button type="button" class="btn quiet back" data-action="back">กลับ</button>
@@ -396,7 +401,7 @@ export function renderBuilding(b, ctx = {}) {
     </section>
     <section class="panel-section"><div class="section-heading">${heading('hotel', 'ที่พัก')}<span class="hint">${num(b.count)}</span></div>${hotelList(b.rows.slice(0, 40), {showArea: b.areaCount > 1, index: ctx.index})}
       ${b.count > 40 ? `<p class="hint">แสดง ${num(40)} จาก ${num(b.count)} · ดูทั้งหมดในตาราง</p>` : ''}</section>
-    ${provenance(ctx, `จุดของที่พักที่ตกในขอบอาคาร OpenStreetMap หนึ่งหลัง${area ? ` · ${area} (ขอบเขต CityMETER)` : ''}`, {roomsUnknown: ctx.unit?.id === 'rooms' ? b.roomsUnknown : 0})}`;
+    ${provenance(ctx, `จุดของที่พักที่ตกในขอบอาคาร ${source} หนึ่งหลัง${area ? ` · ${area} (ขอบเขต CityMETER)` : ''}`, {roomsUnknown: ctx.unit?.id === 'rooms' ? b.roomsUnknown : 0})}`;
 }
 
 /* ---------- Hotel ---------- */

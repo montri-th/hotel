@@ -30,8 +30,9 @@
  * clickable → the station panel: hotels within 500 m) and the nearest CityMETER Shopping centers venue per hotel
  * (in the hotel panel). Distances are straight lines between reference points.
  *
- * Buildings: the points of the scope are joined to the focus-tier OSM footprints the map draws
- * (js/building-join.js, “จุดตกในอาคาร”; pieces of one building cut by a tile edge are one building). A building is a
+ * Buildings: the points of the scope are joined to the focus-tier footprints the map draws — OpenStreetMap, or
+ * CityMETER Building V4 inside a CityMETER unit (owner 2026-11-01, point 3; js/building-units.js) — (js/building-join.js,
+ * “จุดตกในอาคาร”; pieces of one building cut by a tile edge are one building). A building is a
  * click target: its one hotel, else the building panel. The building being looked at — the open building, the open
  * hotel's building (focusTarget) — is drawn over every other building (x-ray, js/venue-xray.js), the focus
  * buildings in front of it turn see-through, and the camera looks at it in two-point perspective, zoomed to fit the
@@ -58,7 +59,8 @@ import {installStationLayer} from './stations.js';
 import {joinBuildings} from './building-join.js';
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
 import {installMassing, outerRings} from './massing.js';
-import {presetFor, applyPreset, fitPitched, fitBuilding, twoPointBearing, screenBounds, BUILDING_MAX_ZOOM} from './camera.js';
+import {createBuildingUnitStore, cmTileUrl, CM_ATTRIBUTION} from './building-units.js';
+import {presetFor, applyPreset, fitPitched, fitBuilding, twoPointBearing, screenBounds, groundAt, BUILDING_MAX_ZOOM} from './camera.js';
 import {installVenueXray} from './venue-xray.js';
 import {guardRetainedTiles} from './maplibre-guard.js';
 import {buildBreadcrumb, renderBreadcrumb, breadcrumbText} from './breadcrumb.js';
@@ -540,18 +542,21 @@ function selectBuilding(key) {
 
 /* ---------- spatial join (points × drawn buildings) ---------- */
 
-/** Join the scope's points to the focus-tier OSM footprints on the map. Recomputed only when either side changes. */
+/**
+ * Join the scope's points to the focus-tier footprints on the map — OpenStreetMap, or CityMETER Building V4 inside a
+ * CityMETER unit (keys `osm:` / `cm:`). Recomputed only when either side changes.
+ */
 function refreshJoin() {
   if (!state.loaded) return false;
-  const osm = state.massing?.buildings() || [];
+  const pieces = state.massing?.buildings() || [];
   const key = `${state.massing?.version ?? 0}|${state.scopeKey}`;
   if (key === refreshJoin.key && state.join) return false;
   refreshJoin.key = key;
   let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
-  for (const b of osm) { const [bw, bs, be, bn] = b.bbox; if (bw < w) w = bw; if (be > e) e = be; if (bs < s) s = bs; if (bn > n) n = bn; }
+  for (const b of pieces) { const [bw, bs, be, bn] = b.bbox; if (bw < w) w = bw; if (be > e) e = be; if (bs < s) s = bs; if (bn > n) n = bn; }
   const within = x => x.longitude >= w && x.longitude <= e && x.latitude >= s && x.latitude <= n;
-  const rows = osm.length ? state.scopeRows.filter(r => hasPoint(r) && within(r)) : [];
-  state.join = joinBuildings(osm, rows, []);
+  const rows = pieces.length ? state.scopeRows.filter(r => hasPoint(r) && within(r)) : [];
+  state.join = joinBuildings(pieces, rows, []);
   return true;
 }
 
@@ -596,7 +601,7 @@ function focusTarget() {
   return null;
 }
 
-/** OSM buildings drawn in the data colour: the building being looked at (every piece of it). */
+/** Focus buildings drawn in the data colour: the building being looked at (every piece of it). */
 function highlightIds() {
   return focusTarget()?.refs || [];
 }
@@ -632,13 +637,26 @@ function syncFocusBuilding() {
   const shape = focusShape();
   const eye = state.view3d && twoPoint() && shape.features.length > 0;
   state.massing?.setScene(eye ? 'eye' : 'default', eye ? shape.rings : []);
-  const key = `${state.view3d}|${shape.key}|${state.massing?.version ?? 0}|${theme()}`;
+  // On terrain every piece stands on the ground at its centroid, as MapLibre lifts fill-extrusions (walls 10 m into
+  // the slope when the piece starts at the ground), so the x-ray solid covers the building where it is drawn.
+  const grounds = shape.features.map(f => (state.view3d ? Math.round(groundAt(state.map, centroidOf(f)) * 10) / 10 : 0));
+  const key = `${state.view3d}|${shape.key}|${state.massing?.version ?? 0}|${theme()}|${grounds.join(',')}`;
   if (key !== syncFocusBuilding.key) {
     syncFocusBuilding.key = key;
-    state.xray?.update(state.view3d ? shape.features.map(f => ({type: 'Feature', geometry: f.geometry,
-      properties: {display_height_m: Number(f.properties.height) || 3, display_base_m: Number(f.properties.base) || 0}})) : [], {colors: xrayColors()});
+    state.xray?.update(state.view3d ? shape.features.map((f, i) => {
+      const base = Number(f.properties.base) || 0, top = Number(f.properties.height) || 3, g = grounds[i];
+      return {type: 'Feature', geometry: f.geometry, properties: {display_height_m: top + g, display_base_m: base + g - (g && base <= 0 ? 10 : 0)}};
+    }) : [], {colors: xrayColors()});
   }
   state.xray?.setEnabled(state.view3d);
+}
+/** Vertex mean of a feature's first outer ring ([lon, lat]): where MapLibre samples the ground of a fill-extrusion. */
+function centroidOf(f) {
+  const ring = outerRings(f)[0] || [];
+  const n = Math.max(1, ring.length - 1);
+  let x = 0, y = 0;
+  for (let i = 0; i < n; i++) { x += ring[i]?.[0] || 0; y += ring[i]?.[1] || 0; }
+  return [x / n, y / n];
 }
 
 /**
@@ -677,7 +695,8 @@ function frameFocus({instant = false} = {}) {
   if (!target || !shape.points.length) return false;
   const box = visibleBox();
   state.userCamera = false;
-  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0};
+  // The ground the frame was computed on (0 off terrain or before its DEM tile arrives): onGroundChange refits when it moves.
+  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor)};
   if (!state.view3d) {
     const [q0] = shape.points;
     const b = shape.points.reduce((acc, q) => acc.extend([q[0], q[1]]), new maplibregl.LngLatBounds([q0[0], q0[1]], [q0[0], q0[1]]));
@@ -690,6 +709,21 @@ function frameFocus({instant = false} = {}) {
   const bearing = known ? twoPointBearing(shape.rings.map(t => t.ring), map.getBearing(), obstacles) : map.getBearing();
   fitBuilding(map, shape.points, {box, bearing, maxZoom: known ? BUILDING_MAX_ZOOM : 18, animate: animate() && !instant});
   return true;
+}
+
+/**
+ * The ground changed under the building being looked at (terrain on or off, its DEM tiles arrived): the x-ray moves
+ * with it, and the building camera frames it again on the ground as drawn — unless the user moved the map (the
+ * refits of refitOnNewBuilding count here too).
+ */
+function onGroundChange() {
+  if (!state.loaded) return;
+  syncFocusBuilding();
+  const target = twoPoint() ? focusTarget() : null;
+  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= 2) return;
+  if (Math.abs(groundAt(state.map, target.anchor) - (state.framed.ground || 0)) < 3) return; // the frame still holds
+  state.framed.refits++;
+  frameFocus();
 }
 
 /** The building arrived (or changed) after the target was framed: turn to it, unless the user moved the map. */
@@ -858,6 +892,9 @@ function renderLegend() {
   $('legend-pin-label').innerHTML = sizeKeyHTML();
   const terrainItem = $('legend-terrain');
   if (terrainItem) terrainItem.hidden = !state.terrainActive;
+  // Which outlines the focus buildings come from (owner 2026-11-01, point 3): CityMETER Building V4 inside CityMETER units.
+  const buildingItem = document.querySelector('.legend-building-item'), src = state.buildingSources || {};
+  if (buildingItem) buildingItem.title = `อาคารที่เปิดดูอยู่ หรืออาคารที่จุดของที่พักที่เลือกตกอยู่ (ขอบอาคาร ${src.cm && src.osm ? 'CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่' : src.cm ? 'CityMETER Building V4 · ความสูงเป็นค่าประมาณ' : 'OpenStreetMap'})`;
   const panel = document.querySelector('.map-panel');
   panel.dataset.metric = state.metric;
   panel.classList.toggle('is-3d', state.view3d);
@@ -1112,6 +1149,22 @@ function syncMapFocus() {
   if (key !== syncMapFocus.key) updateSpatialLayers();
 }
 
+/** Provinces whose building units the massing regions need: the selection's, plus the province under each region. */
+function massingProvinces(regions) {
+  const codes = new Set(wantedProvinces());
+  if (state.panel.mode === 'building') for (const r of state.buildingSel?.rows || []) if (r.province) codes.add(r.province);
+  if (state.provincesGeo?.features?.length) {
+    state.locateProvince ||= provinceLocator(state.provincesGeo);
+    for (const ring of regions) {
+      let x = 0, y = 0;
+      for (const [lon, lat] of ring) { x += lon; y += lat; }
+      const code = ring.length ? state.locateProvince([x / ring.length, y / ring.length]) : '';
+      if (code) codes.add(code);
+    }
+  }
+  return [...codes].filter(Boolean);
+}
+
 /** A small square (lon/lat ring) around a point: the massing region of a hotel or a station. */
 function squareAround(lon, lat, metres = 250) {
   const dy = metres / 110574, dx = metres / (111320 * Math.cos((lat * Math.PI) / 180));
@@ -1144,8 +1197,9 @@ function massingRegions() {
 
 function updateSpatialLayers() {
   if (!state.loaded) return;
-  // Terrain mode reads the land at hilly sites; a building or stay being looked at is framed on flat ground.
-  state.terrain?.setEnabled(state.view3d && !twoPoint());
+  // Terrain mode reads the land at hilly sites — also round a building or stay being looked at (owner 2026-11-01:
+  // “อยากให้เห็นอาคารบนภูมิประเทศ”): the building camera and the x-ray stand on the drawn ground (js/camera.js).
+  state.terrain?.setEnabled(state.view3d);
   const code = $('province').value, u = unit();
   const pm = state.provinceLayers?.update({rows: provinceScopeRows(), selectedCode: code, visible: true, metric: state.metric}) || null;
   state.provinceModel = pm;
@@ -1164,7 +1218,15 @@ function updateSpatialLayers() {
   const anchorPoints = target ? [target.anchor] : st ? [[st.lon, st.lat]]
     : (state.selectedArea ? [areaById(state.selectedArea)] : state.focusIds.map(areaById)).filter(Boolean).map(r => r.label).filter(Array.isArray);
   const anchors = anchorPoints.length ? anchorPoints : [state.map.getCenter().toArray()];
-  state.massing?.update({regions: massingRegions(), hosts: [], anchors, enabled: true, city: state.view3d, zoom: state.map.getZoom(), latitude: state.map.getCenter().lat})?.catch(e => console.warn('Massing', e));
+  const regions = massingRegions();
+  // The buildings of a CityMETER unit replace OSM there; wait for the provinces' unit files (small) so the focus is
+  // shaped once, from the right source. A file that fails leaves the area on OSM.
+  const codes = massingProvinces(regions);
+  state.buildingUnits?.ensureMany(codes);
+  if (!state.buildingUnits || codes.every(c => state.buildingUnits.settled(c))) {
+    const zones = state.buildingUnits?.zonesFor(regions) || [];
+    state.massing?.update({regions, hosts: [], anchors, zones, enabled: true, city: state.view3d, zoom: state.map.getZoom(), latitude: state.map.getCenter().lat})?.catch(e => console.warn('Massing', e));
+  }
   applyJoin();
   state.pins?.layout();
 }
@@ -1264,7 +1326,16 @@ function installSpatialLayers() {
     // The open building is drawn in the data colour (LDS map.activeLayer), read from the theme.
     colors: {quiet: palette.massingQuiet, focus: palette.massingFocus, ground: palette.ground, venue: cssVar('--map-active-layer') || undefined},
     tileUrl: t => (state.tileTemplate ? state.tileTemplate.replace('{z}', t.z).replace('{x}', t.x).replace('{y}', t.y) : ''),
-    onResult: result => { $('map-status').dataset.massing = `${result.features || 0}`; applyJoin(); },
+    // CityMETER Building V4 inside CityMETER units (js/building-units.js); credited in the attribution while drawn.
+    cmTileUrl, cmAttribution: CM_ATTRIBUTION,
+    onResult: result => {
+      const status = $('map-status');
+      status.dataset.massing = `${result.features || 0}`;
+      status.dataset.cmBuildings = `${result.cm?.kept || 0}`;
+      state.buildingSources = {osm: result.osm || 0, cm: result.cm?.kept || 0};
+      applyJoin();
+      renderLegend();
+    },
   });
   // The building being looked at, drawn over every other building and over road names (below place labels and pins).
   try { state.xray = installVenueXray(map, {beforeId: VENUE_XRAY_BEFORE, colors: xrayColors()}); }
@@ -1286,8 +1357,9 @@ function installSpatialLayers() {
       state.terrainActive = active;
       renderLegend();
       state.labels?.layout();
-    }});
-    state.terrain.setEnabled(state.view3d && !twoPoint());
+      onGroundChange();
+    }, onLoaded: onGroundChange});
+    state.terrain.setEnabled(state.view3d);
   } catch (e) { state.terrain = null; console.warn('Terrain unavailable', e); }
   state.hotelLabels = installHotelLabels(map, $('map'), {
     onSelect: r => selectHotel(r.id, {fly: false, showPopup: true, fromPin: true}),
@@ -1584,6 +1656,10 @@ async function init() {
     loadLogos().then(n => { if (!n) return; if (state.panel.mode === 'hotel') renderPanel(); state.hotelLabels?.refresh(); });
     state.frames = createFrameStore({index: state.index, fetchJSON, version: RELEASE, onLoad: onFramesLoaded,
       onError: (code, e) => { console.warn('Province outlines unavailable', code, e); $('map-status').dataset.framesError = code; }});
+    // Buildings per area (owner 2026-11-01, point 3): which อปท./เขต draw CityMETER Building V4 (js/building-units.js).
+    state.buildingUnits = createBuildingUnitStore({fetchJSON, version: RELEASE, onLoad: () => { if (state.loaded) updateSpatialLayers(); },
+      onError: (code, e) => { console.warn('Building units unavailable', code, e); if (state.loaded) updateSpatialLayers(); }});
+    state.buildingUnits.loadIndex();
 
     refreshOptionCounts();
     restoreFromURL();

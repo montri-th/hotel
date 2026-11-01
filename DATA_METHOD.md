@@ -154,6 +154,40 @@ walking route, a travel time or a catchment.
   land cover, shown only when above 0 (absent land cover is not 0 % trees). Facts of the ground only — never a view,
   a price or a risk; unknown is left out.
 
+## 7b. Buildings per area (0.3.0)
+
+Owner decision 2026-11-01 (point 3): “ใช้เกณฑ์ 15% … ได้”, “กรุงเทพฯ ใช้เขตเป็นหน่วย … ได้”, with the question first
+answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
+
+- **Unit**: every อปท. (CityMETER production `municipalityInfos`) that holds at least one stay with a point, by its
+  production outline; in Bangkok the เขต (production `districtInfos`, outlines = the page's district frames). The
+  production building tiles clip Bangkok by แขวง, so a เขต is read through its แขวง.
+- **Rule**: CityMETER Building V4 where its building count in the unit (production `building/info/lv1/{province}?version=V4`)
+  is at least 1.15 × the OpenStreetMap count of the same unit; otherwise OpenStreetMap. OSM count = ways tagged
+  `building=*` in the unit polygon (Overpass API `out count`, outer rings minus holes, polygons simplified to ≤ 200
+  vertices with a closed-ring Douglas–Peucker). The count in the unit's bounding box is an upper bound: where
+  1.15 × it is still ≤ the CityMETER count, or it is 0, it decides without a polygon count. A unit whose OSM count
+  could not be read stays on OSM. Units where both sources hold fewer than 10 buildings are flagged `gap`.
+- **Result**: see `data/building-units/index.json` (`meta.totals`, one summary row per province) — UNIT_RESULT
+- **On the map** (`js/building-units.js`, `js/massing.js`): inside a CityMETER unit the focus tier draws the unit's
+  CityMETER Building V4 buildings — production tiles `building/detailMvt/14/{x}/{y}` read per อปท. (Bangkok: per แขวง),
+  every building drawn once from the tile that holds its interior point — with the same rounded, slightly enlarged
+  shape as OSM buildings; height = `height_m`, the dataset's model estimate (3 m when missing). OSM buildings whose
+  interior point falls inside the unit are left out of the focus and hidden from the quiet city tier (a hidden
+  OpenFreeMap feature's buildings outside the focus are redrawn as quiet context). Context outside the focus stays
+  OSM. A CityMETER tile that fails or exceeds the request bound (40 per focus) leaves its part of the unit on OSM.
+- **Parts override (LOD2)**: inside a CityMETER unit, buildings OSM maps in parts (`building:part`; OpenMapTiles hides
+  their outline in 3D, `hide_3d`) stay OSM, and the CityMETER buildings whose interior point stands in such an outline
+  are left out. Basis (Observed fact, OSM at 2026-11-01 13:47 UTC and taginfo Geofabrik to 2026-10-31): OSM 1.77
+  million buildings in Thailand vs CityMETER V4 29.86 million; 2,175 `building:part` pieces; 2,236 buildings with a
+  roof shape, 92 % of them with a CityMETER footprint (median height difference 0.5 m); 71 % of the parts lie inside a
+  CityMETER footprint and 23 % more within 20 m; 231 multi-level buildings (141 with ≥ 5 m between levels, mostly
+  central Bangkok) would lose their levels as CityMETER prisms. MapLibre fill-extrusion draws no roof shapes, so the
+  levels are what the override keeps.
+- **Wording**: the attribution names “อาคาร: CityMETER Building V4” while any of its buildings is drawn; the building
+  panel names the outline source and calls a CityMETER height “ค่าประมาณ CityMETER”; the join of stays to buildings
+  (“จุดตกในอาคาร”) is the same for both sources (keys `osm:` / `cm:`).
+
 ## 8. Not published
 
 Addresses, sub-districts, phone numbers, raw coordinates, operator names, source record ids, researcher notes, quality
@@ -173,7 +207,9 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
 - 267 rows with `star6_semantics_unresolved`; 79 rows with unknown rooms after the 47_ROOM_RESOLUTION re-check (80 tasks held, `selection_status = hold_*`).
 - `46_PRICE_OBSERVATIONS` (dated price quotes) is not used in this release; it is the path to seasonality.
 - 642 research building masses (Drive bundle `hotel-building-mass.geojson`) are not drawn in this release; the map draws
-  OpenStreetMap massing as context.
+  OpenStreetMap or CityMETER Building V4 massing per area (§7b). The research team checks the site boundaries of the 300
+  most important resorts and pool villas in `49_SITE_BOUNDARY_CHECK` (owner 2026-11-01); a stay spread over several
+  buildings is joined to one building until those boundaries are in.
 
 ## 10. Rebuild
 
@@ -186,6 +222,7 @@ python3 -I scripts/build-data.py --sheet <research master .xlsx> [--csv <tab csv
     --logos <Hotel_Chain_Logos_Web> --out .
 python3 -I scripts/build-logos.py --package <Hotel_Chain_Logos_Web> --tab <48_LOGO_LIBRARY.csv> --data data/hotels.json --out .
 python3 scripts/build-pictogram-font.py <MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf>
+python3 -I scripts/build-building-units.py --api $BUILD/api --geom <LAO geometry cache> --counts <building counts .json> --out .
 npm test
 ```
 

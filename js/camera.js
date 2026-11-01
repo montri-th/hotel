@@ -82,10 +82,21 @@ export function boundsCorners(b) {
 }
 
 /**
- * Screen position of [lng, lat, altitudeMetres]. MapLibre's map.project() is
- * ground-only, so elevated points (roof vertices) go through the transform's
- * view-projection matrix (world pixels, z in metres → clip space), exactly as
- * fill-extrusion vertices do. Falls back to map.project for ground points.
+ * Ground under [lng, lat] as the map draws it: the terrain elevation in metres, exaggerated (MapLibre
+ * queryTerrainElevation); 0 without terrain or before its DEM tile has loaded. Fill-extrusions stand on the
+ * elevation at their centroid (MapLibre's TERRAIN3D shader), so a building and its roof are lifted by it.
+ */
+export function groundAt(map, [lng, lat]) {
+  if (!map?.terrain || typeof map.queryTerrainElevation !== 'function') return 0;
+  const e = map.queryTerrainElevation([lng, lat]);
+  return Number.isFinite(e) ? e : 0;
+}
+
+/**
+ * Screen position of [lng, lat, altitudeMetres] — the altitude above the ground under the point (with terrain the
+ * drawn ground is added, as for fill-extrusions). MapLibre's map.project() is ground-only (terrain-aware), so
+ * elevated points (roof vertices) go through the transform's view-projection matrix (world pixels, z in metres →
+ * clip space), exactly as fill-extrusion vertices do. Falls back to map.project for ground points.
  */
 export function projectPoint(map, point) {
   const [lng, lat, alt = 0] = point;
@@ -93,7 +104,7 @@ export function projectPoint(map, point) {
   const M = t?.modelViewProjectionMatrix;
   if (!alt || !M || !Number.isFinite(t.worldSize) || !globalThis.maplibregl?.MercatorCoordinate) return map.project([lng, lat]);
   const mc = globalThis.maplibregl.MercatorCoordinate.fromLngLat([lng, lat]);
-  const x = mc.x * t.worldSize, y = mc.y * t.worldSize, z = alt;
+  const x = mc.x * t.worldSize, y = mc.y * t.worldSize, z = alt + groundAt(map, [lng, lat]);
   const w = M[3] * x + M[7] * y + M[11] * z + M[15];
   if (!(w > 0)) return {x: NaN, y: NaN};
   const cx = (M[0] * x + M[4] * y + M[8] * z + M[12]) / w, cy = (M[1] * x + M[5] * y + M[9] * z + M[13]) / w;
@@ -247,12 +258,21 @@ const metresPerPixel = (lat, z) => (40075016.686 * Math.cos(lat * RAD)) / (512 *
  * for ground points) and zoomed (log2 of the size ratio) until the projected box of every point
  * fills `fill` of the box. Computes with instant jumps, restores the start camera, then animates
  * (flyTo when the target is far). `project` is injectable for tests. Returns the target camera.
+ *
+ * On terrain (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building stands on the drawn ground:
+ * points keep their altitude above the ground (projectPoint adds it), every jump carries the centre's ground
+ * elevation — what MapLibre clamps the centre to when the camera lands, so the computed frame is the landed
+ * one — and the pan solves on the local ground plane of the anchor (the projection's Jacobian) instead of
+ * map.unproject, whose terrain ray reads the last rendered frame and is stale between instant jumps.
  */
 export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZoom = 14, maxZoom = 19.5, fill = 0.94, animate = true, duration = 900, apply = true, project = projectPoint} = {}) {
   if (!points?.length || !box) return null;
   const p = CAMERA[preset] || CAMERA.eye;
-  const start = {center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), padding: map.getPadding()};
+  const onTerrain = Boolean(map.terrain) && typeof map.queryTerrainElevation === 'function';
+  const start = {center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), padding: map.getPadding(),
+    ...(onTerrain && Number.isFinite(map.transform?.elevation) ? {elevation: map.transform.elevation} : {})};
   setFov(map, p.fov);
+  const lift = center => (onTerrain ? {elevation: groundAt(map, Array.isArray(center) ? center : [center.lng, center.lat])} : {});
   const zero = {top: 0, bottom: 0, left: 0, right: 0};
   const ground = points.filter(q => !q[2]);
   const base = ground.length ? ground : points;
@@ -264,11 +284,24 @@ export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZ
   const span = Math.max(20, ...base.map(q => Math.hypot((q[0] - anchor[0]) * 111320 * kx, (q[1] - anchor[1]) * 110574) * 2));
   const clampZ = z => Math.min(maxZoom, Math.max(minZoom, z));
   let zoom = clampZ(Math.log2((40075016.686 * kx * Math.min(tw, th)) / (512 * span)) - 0.4);
-  map.jumpTo({center: anchor, zoom, pitch: p.pitch, bearing, padding: zero});
+  map.jumpTo({center: anchor, zoom, pitch: p.pitch, bearing, padding: zero, ...lift(anchor)});
+  const ky = 110574;
   const pan = b => {
     const dx = tx - (b.minX + b.maxX) / 2, dy = ty - (b.minY + b.maxY) / 2;
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return 0;
-    const pa = map.project(anchor), g = map.unproject([pa.x + dx, pa.y + dy]), c = map.getCenter();
+    const c = map.getCenter();
+    if (onTerrain) {
+      // Moving the centre by Δ metres moves the anchor on screen by −J·Δ (J: screen per metre at the anchor).
+      const step = 5, mx = 111320 * kx;
+      const p0 = project(map, [anchor[0], anchor[1], 0]), pe = project(map, [anchor[0] + step / mx, anchor[1], 0]), pn = project(map, [anchor[0], anchor[1] + step / ky, 0]);
+      const a = (pe.x - p0.x) / step, cc = (pe.y - p0.y) / step, bb = (pn.x - p0.x) / step, d = (pn.y - p0.y) / step, det = a * d - bb * cc;
+      if (!Number.isFinite(det) || Math.abs(det) < 1e-9) return 0;
+      const de = -(d * dx - bb * dy) / det, dn = -(-cc * dx + a * dy) / det;
+      const next = [c.lng + de / mx, c.lat + dn / ky];
+      map.jumpTo({center: next, ...lift(next)});
+      return Math.hypot(dx, dy);
+    }
+    const pa = map.project(anchor), g = map.unproject([pa.x + dx, pa.y + dy]);
     map.jumpTo({center: [c.lng + anchor[0] - g.lng, c.lat + anchor[1] - g.lat]});
     return Math.hypot(dx, dy);
   };

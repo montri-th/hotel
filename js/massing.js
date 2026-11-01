@@ -27,14 +27,30 @@
  *
  * Heights are OpenMapTiles render_height / render_min_height (OSM tags where
  * present, otherwise the schema's default). They are context, never a claim.
+ *
+ * Buildings per area (owner 2026-11-01, point 3; js/building-units.js): inside a CityMETER unit — an อปท. (in
+ * Bangkok a เขต) where CityMETER Building V4 holds at least 1.15 × the OpenStreetMap buildings — the focus tier draws
+ * that unit's CityMETER buildings (shapeCmTile, same z14 grid, same rounded shape; `height_m` is the dataset's model
+ * estimate) in place of the OSM buildings whose interior point falls inside it, keeping the OSM buildings mapped in
+ * parts (LOD2) and leaving out the CityMETER buildings standing in their outlines (shapeTile). The city tier hides a
+ * replaced tile feature as a whole; its polygons outside the focus come back in a context layer drawn like the city
+ * tier. Where a CityMETER tile is missing the area stays on OSM. A credit source names CityMETER Building V4 in the
+ * map attribution while any of its buildings is drawn.
  */
 import {parseVectorTile, tileToLonLat, lonLatToTileUnits, tilesForBBox, metresPerTileUnit} from './mvt.js';
-import {clipRingToBox, offsetRing, roundRing, isClockwise, ringsIntersect, cleanRing, signedArea} from './geometry.js';
+import {clipRingToBox, offsetRing, roundRing, isClockwise, ringsIntersect, cleanRing, signedArea, pointInRing} from './geometry.js';
 import {GEOJSON_MAXZOOM} from './map-layers.js';
+import {interiorOf} from './building-join.js';
 
 export const CITY_LAYER = 'city-massing';
 export const FOCUS_SOURCE = 'focus-massing';
 export const FOCUS_LAYER = 'focus-massing-3d';
+/** Polygons of replaced city-tier features outside the focus, drawn like the city tier. */
+export const CONTEXT_SOURCE = 'focus-context';
+export const CONTEXT_LAYER = 'focus-context-3d';
+/** Attribution carrier for CityMETER Building V4 (a hidden layer: the map credits a source while a layer uses it). */
+export const CM_CREDIT_SOURCE = 'cm-buildings-credit';
+export const CM_CREDIT_LAYER = 'cm-buildings-credit';
 /** Focus-tier buildings of the venue being looked at (data colour, map.activeLayer). */
 export const VENUE_LAYER = 'focus-massing-venue';
 /** Focus-tier buildings that stand between the camera and the venue (see-through). */
@@ -90,6 +106,84 @@ export function focusFeatureId(tile, ordinal) {
   return (tile.x * 16384 + tile.y) * 16777216 + (ordinal % 16777216);
 }
 
+/**
+ * CityMETER Building V4 in the focus tier (owner 2026-11-01, point 3). Its tiles carry no feature ids, so a building's
+ * id is its z14 tile, the slot of the tile unit it was read with (the unit's position among the tile units of that
+ * tile, by id) and its ordinal in that response: from 2^52 up, apart from every OSM id (focusFeatureId < 2^52 at z14),
+ * and below 2^53 (exact).
+ */
+export const CM_ID_BASE = 2 ** 52;
+export const CM_SLOTS = 32;
+const CM_ORDINALS = 524288; // 2^19 per tile unit and tile
+export function cmFeatureId(tile, slot, ordinal) {
+  return CM_ID_BASE + (((tile.x % 4096) * 4096 + (tile.y % 4096)) * CM_SLOTS + (slot % CM_SLOTS)) * CM_ORDINALS + (ordinal % CM_ORDINALS);
+}
+/** Bound on CityMETER tile requests of one focus (tile × tile unit), nearest the camera first. */
+export const MAX_CM_REQUESTS = 40;
+/** Height of a CityMETER building: `height_m` (a model estimate, sent as text); else this. */
+export const DEFAULT_CM_HEIGHT_M = 3;
+export function cmHeight(properties = {}) {
+  const h = Number(properties.height_m);
+  return Number.isFinite(h) && h > 0 ? h : DEFAULT_CM_HEIGHT_M;
+}
+
+/** [west, south, east, north] of a tile. */
+export function tileBox(tile) {
+  const [w, n] = tileToLonLat(0, 0, tile, 4096), [e, s] = tileToLonLat(4096, 4096, tile, 4096);
+  return [w, s, e, n];
+}
+const boxesMeet = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+
+/** Zones (js/building-units.js) meeting a tile, as tile-unit polygons with their box. */
+function zonesInTile(zones, tile, extent) {
+  if (!zones?.length) return [];
+  const tb = tileBox(tile);
+  return zones.filter(z => boxesMeet(z.bbox, tb)).map(z => {
+    const polys = z.polygons.map(p => p.map(ring => ring.map(([lon, lat]) => lonLatToTileUnits(lon, lat, tile, extent))));
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of polys) for (const [x, y] of p[0]) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+    return {zone: z, polys, box: {minX, minY, maxX, maxY}};
+  });
+}
+const inZones = (pt, zoneRings) => zoneRings.some(z => pt[0] >= z.box.minX && pt[0] <= z.box.maxX && pt[1] >= z.box.minY && pt[1] <= z.box.maxY &&
+  z.polys.some(p => pointInRing(pt, p[0]) && !p.slice(1).some(h => pointInRing(pt, h))));
+
+/**
+ * CityMETER tiles of a focus: one request per tile of the focus tier and tile unit (อปท., or a แขวง of a Bangkok
+ * เขต) of a zone whose box meets it — tiles nearest `center` first, at most `max`. A zone is drawn from CityMETER in
+ * a tile only when every request of the zone for that tile is planned (and, later, loaded); otherwise OSM stays there.
+ * Returns {requests: [{tile, zone, tileUnit, tileType, slot, key}], zonesByTile: Map(tile key → Set(zone id)), truncated}.
+ */
+export function planCmRequests(tiles, zones, {max = MAX_CM_REQUESTS, center = null} = {}) {
+  const requests = [], zonesByTile = new Map();
+  if (!zones?.length || !tiles?.length) return {requests, zonesByTile, truncated: false};
+  let order = tiles;
+  if (Array.isArray(center) && center.every(Number.isFinite)) {
+    const [cx, cy] = tileXY(center, tiles[0].z);
+    const dist = t => (t.x + 0.5 - cx) ** 2 + (t.y + 0.5 - cy) ** 2;
+    order = [...tiles].sort((a, b) => dist(a) - dist(b) || a.x - b.x || a.y - b.y);
+  }
+  let truncated = false;
+  for (const t of order) {
+    const tb = tileBox(t), units = [];
+    for (const z of zones) {
+      if (!boxesMeet(z.bbox, tb)) continue;
+      const tus = (z.tileUnits || []).filter(u => boxesMeet(u.bbox, tb));
+      if (tus.length) units.push({zone: z, tus});
+    }
+    if (!units.length) continue;
+    const slots = units.flatMap(u => u.tus.map(tu => tu.id)).sort();
+    const tileKey = `${t.z}/${t.x}/${t.y}`;
+    for (const {zone, tus} of units) {
+      if (requests.length + tus.length > max || tus.some(tu => slots.indexOf(tu.id) >= CM_SLOTS)) { truncated = true; continue; }
+      for (const tu of tus) requests.push({tile: t, zone, tileUnit: tu, tileType: zone.tileType, slot: slots.indexOf(tu.id), key: `${tileKey}|${tu.id}`});
+      if (!zonesByTile.has(tileKey)) zonesByTile.set(tileKey, new Set());
+      zonesByTile.get(tileKey).add(zone.id);
+    }
+  }
+  return {requests, zonesByTile, truncated};
+}
+
 /** Display radius (m) for corner rounding at a map zoom: ~4 px, kept within 3–12 m. */
 export function roundingRadiusM(zoom, latitude = 13.75) {
   const metresPerPixel = (156543.03392 * Math.cos((latitude * Math.PI) / 180)) / 2 ** zoom;
@@ -141,12 +235,21 @@ export function outerRings(feature) {
 
 /**
  * Pure: turn one decoded tile into focus features for the given regions.
- * regions/hosts are arrays of lon/lat rings. Returns {features, footprints, hiddenIds, kept, dropped}.
+ * regions/hosts are arrays of lon/lat rings. Returns {features, footprints, hiddenIds, context, partOutlines, kept,
+ * dropped, replaced}.
  * Outlines that OpenMapTiles hides in 3D because the building is mapped in building:parts (`hide_3d`) are never
  * drawn, but their footprints are kept with `outline: true` (ids from OUTLINE_ORDINAL up): they tell the building
  * join which parts make one building (js/building-join.js#groupPieces).
+ *
+ * `zones` (owner 2026-11-01, point 3): the CityMETER units drawn from CityMETER Building V4 in this tile
+ * (js/building-units.js, only those whose CityMETER tiles for this tile loaded). A focus building whose interior
+ * point falls in a zone is replaced (not drawn) — except a part of a building OSM maps in parts whose outline falls
+ * in the zone: parts stay (LOD2), and the outline comes back in `partOutlines` (lon/lat) so the CityMETER buildings
+ * standing in it are left out (shapeCmTile `skipRings`). The city tier hides a replaced (or host-covered) tile
+ * feature as a whole — one OpenFreeMap feature can carry many buildings — so its polygons outside the focus come back
+ * as `context` features, unshaped, to be drawn like the city tier.
  */
-export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offsetM, segments = 3} = {}) {
+export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offsetM, segments = 3, zones = []} = {}) {
   const extent = layer.extent || 4096;
   const mpu = metresPerTileUnit(tile, extent);
   const r = radiusM / mpu, d = offsetM / mpu;
@@ -154,8 +257,21 @@ export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offse
   const toTile = ring => ring.map(([lon, lat]) => lonLatToTileUnits(lon, lat, tile, extent));
   const toLonLat = ring => ring.map(([px, py]) => tileToLonLat(px, py, tile, extent));
   const regionRings = regions.map(toTile), hostRings = hosts.map(toTile);
-  const features = [], footprints = [], hiddenIds = new Set();
-  let kept = 0, dropped = 0, ordinal = 0, outlineOrdinal = OUTLINE_ORDINAL;
+  const zoneRings = zonesInTile(zones, tile, extent);
+  const features = [], footprints = [], hiddenIds = new Set(), context = [], partOutlines = [];
+  let kept = 0, dropped = 0, replaced = 0, ordinal = 0, outlineOrdinal = OUTLINE_ORDINAL;
+  // Outlines of buildings OSM maps in parts that fall in a zone: their parts stay (LOD2).
+  const zoneOutlines = [];
+  if (zoneRings.length) {
+    for (const f of layer.features) {
+      if (f.type !== 3 || f.properties.hide_3d !== true) continue;
+      for (const raw of f.rings()) {
+        const ring = cleanRing(raw);
+        if (ring && isClockwise(ring) && inZones(interiorOf(ring), zoneRings)) zoneOutlines.push(ring);
+      }
+    }
+  }
+  const inPartOutline = pt => zoneOutlines.some(o => pointInRing(pt, o));
   for (let fi = 0; fi < layer.features.length; fi++) {
     const f = layer.features[fi];
     if (f.type !== 3) continue;
@@ -168,6 +284,7 @@ export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offse
         const outer = clipRingToBox(ring, box);
         if (!outer || !regionRings.some(region => ringsIntersect(outer, region))) continue;
         footprints.push({id, osmId: f.id ?? null, outer: toLonLat(outer), holes: [], height: Number(f.properties.render_height) || 0, base: 0, tile: {x: tile.x, y: tile.y, z: tile.z}, outline: true});
+        if (zoneOutlines.length && inZones(interiorOf(ring), zoneRings)) partOutlines.push(toLonLat(outer));
       }
       continue;
     }
@@ -182,16 +299,33 @@ export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offse
       if (isClockwise(ring)) polygons.push({outer: ring, holes: []});
       else if (polygons.length) polygons[polygons.length - 1].holes.push(ring);
     }
-    polygons.forEach(poly => {
-      const id = focusFeatureId(tile, ordinal++); // counted before the focus/host filters: stable per building
+    // Every polygon is placed first: the city tier hides a tile feature as a whole.
+    const items = [];
+    for (const poly of polygons) {
+      const id = focusFeatureId(tile, ordinal++); // counted before the focus/host/zone filters: stable per building
       const outer = clipRingToBox(poly.outer, box);
-      if (!outer) return;
-      const inFocus = regionRings.some(region => ringsIntersect(outer, region));
-      if (!inFocus) return;
-      if (hostRings.some(host => ringsIntersect(outer, host))) { if (f.id != null) hiddenIds.add(f.id); dropped++; return; }
+      if (!outer) continue;
+      let place = regionRings.some(region => ringsIntersect(outer, region)) ? 'focus' : 'outside';
+      if (place === 'focus' && hostRings.some(host => ringsIntersect(outer, host))) place = 'host';
+      else if (place === 'focus' && zoneRings.length) {
+        const at = interiorOf(poly.outer);
+        if (inZones(at, zoneRings) && !inPartOutline(at)) place = 'replaced';
+      }
+      items.push({id, poly, outer, place});
+    }
+    const hidden = items.some(it => it.place === 'replaced' || it.place === 'host');
+    if (hidden && f.id != null) hiddenIds.add(f.id);
+    for (const {id, poly, outer, place} of items) {
+      if (place === 'host') { dropped++; continue; }
+      if (place === 'replaced') { replaced++; continue; }
+      const holes = poly.holes.map(h => clipRingToBox(h, box)).filter(Boolean);
+      if (place === 'outside') {
+        // The city tier no longer draws this feature: its buildings outside the focus are drawn as context.
+        if (hidden && f.id != null) context.push({type: 'Feature', id, geometry: {type: 'Polygon', coordinates: [outer, ...holes].map(toLonLat)}, properties: {height, base}});
+        continue;
+      }
       // Outer rings are clockwise and holes counter-clockwise (MVT, y-down), so the
       // same normal sign pushes outers outward and holes inward: the model encloses.
-      const holes = poly.holes.map(h => clipRingToBox(h, box)).filter(Boolean);
       const shapedOuter = roundRing(offsetRing(outer, d, 1), r, segments, {encloseOffset: d});
       const shapedHoles = holes.map(h => roundRing(offsetRing(h, d, 1), r, segments, {encloseOffset: d}))
         .filter(h => Math.abs(signedArea(h)) > 0);
@@ -201,9 +335,67 @@ export function shapeTile(tile, layer, {regions = [], hosts = [], radiusM, offse
       // `tile` lets building-join.js#groupPieces join the pieces of one building cut by a tile edge.
       footprints.push({id, osmId: f.id ?? null, outer: toLonLat(outer), holes: holes.map(toLonLat), height, base, tile: {x: tile.x, y: tile.y, z: tile.z}});
       kept++;
-    });
+    }
   }
-  return {features, footprints, hiddenIds, kept, dropped};
+  return {features, footprints, hiddenIds, context, partOutlines, kept, dropped, replaced};
+}
+
+/**
+ * Pure: one CityMETER Building V4 tile, read for one tile unit, into focus features (owner 2026-11-01, point 3). The
+ * production API sends every building that touches the tile whole, so a building is drawn once — from the tile that
+ * holds its interior point — and a building two requests share (`seen`, by geometry) once. Only buildings meeting the
+ * focus regions are drawn, minus those whose interior point stands in an outline OSM maps in parts (`skipRings`,
+ * lon/lat; their parts are drawn instead). The shape is the focus tier's (offset, rounded corners); the height is
+ * `height_m`, the dataset's model estimate (cmHeight). Footprints carry `source: 'cm'` and are whole (never cut by
+ * a tile edge). Returns {features, footprints, kept, away, shared, inParts}.
+ */
+export function shapeCmTile(tile, layer, {regions = [], radiusM, offsetM, segments = 3, slot = 0, skipRings = [], seen = new Set()} = {}) {
+  const features = [], footprints = [];
+  let kept = 0, away = 0, shared = 0, inParts = 0, ordinal = 0;
+  if (!layer?.features?.length) return {features, footprints, kept, away, shared, inParts};
+  const extent = layer.extent || 4096;
+  const mpu = metresPerTileUnit(tile, extent);
+  const r = radiusM / mpu, d = offsetM / mpu;
+  const toTile = ring => ring.map(([lon, lat]) => lonLatToTileUnits(lon, lat, tile, extent));
+  const toLonLat = ring => ring.map(([px, py]) => tileToLonLat(px, py, tile, extent));
+  const regionRings = regions.map(toTile);
+  const tb = tileBox(tile), skip = skipRings.filter(ring => boxesMeet(ringBox(ring), tb)).map(toTile);
+  for (const f of layer.features) {
+    if (f.type !== 3) continue;
+    const height = cmHeight(f.properties);
+    const polygons = [];
+    for (const raw of f.rings()) {
+      const ring = cleanRing(raw);
+      if (!ring) continue;
+      if (isClockwise(ring)) polygons.push({outer: ring, holes: []});
+      else if (polygons.length) polygons[polygons.length - 1].holes.push(ring);
+    }
+    for (const poly of polygons) {
+      const id = cmFeatureId(tile, slot, ordinal++);
+      const at = interiorOf(poly.outer);
+      if (!(at[0] >= 0 && at[0] < extent && at[1] >= 0 && at[1] < extent)) { away++; continue; }
+      const outer = toLonLat(poly.outer);
+      const key = `${height}|${outer.length}|${outer[0][0].toFixed(7)},${outer[0][1].toFixed(7)}|${outer[1][0].toFixed(7)},${outer[1][1].toFixed(7)}`;
+      if (seen.has(key)) { shared++; continue; }
+      seen.add(key);
+      if (!regionRings.some(region => ringsIntersect(poly.outer, region))) continue;
+      if (skip.some(o => pointInRing(at, o))) { inParts++; continue; }
+      const shapedOuter = roundRing(offsetRing(poly.outer, d, 1), r, segments, {encloseOffset: d});
+      const shapedHoles = poly.holes.map(h => roundRing(offsetRing(h, d, 1), r, segments, {encloseOffset: d}))
+        .filter(h => Math.abs(signedArea(h)) > 0);
+      features.push({type: 'Feature', id, geometry: {type: 'Polygon', coordinates: [shapedOuter, ...shapedHoles].map(toLonLat)},
+        properties: {source: 'cm', height: height + HEIGHT_LIFT_M, base: 0, render_height: height}});
+      footprints.push({id, osmId: null, source: 'cm', outer, holes: poly.holes.map(toLonLat), height, base: 0, tile: {x: tile.x, y: tile.y, z: tile.z}});
+      kept++;
+    }
+  }
+  return {features, footprints, kept, away, shared, inParts};
+}
+
+function ringBox(ring) {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [x, y] of ring) { if (x < w) w = x; if (x > e) e = x; if (y < s) s = y; if (y > n) n = y; }
+  return [w, s, e, n];
 }
 
 /** Fractional tile coordinates of a lon/lat at zoom z (Web Mercator). */
@@ -234,12 +426,14 @@ export function tilesForRegions(regions, z = TILE_ZOOM, max = MAX_TILES, center 
  * (OpenMapTiles schema). `tileUrl(tile)` returns the URL of one tile; the app
  * reads it from the same TileJSON MapLibre uses.
  */
-export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors, tileUrl, fetchImpl = (...a) => fetch(...a), onResult = null} = {}) {
+export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors, tileUrl, cmTileUrl = null, cmAttribution = '', fetchImpl = (...a) => fetch(...a), onResult = null} = {}) {
   const palette = {quiet: '#ECEBE5', focus: '#E6E3DA', ground: '#EEF1EE', venue: '#347DA8', ...colors};
   const cityColor = () => ['interpolate', ['linear'], ['coalesce', ['feature-state', 'fade'], 1], 0, palette.quiet, 1, palette.ground];
+  // Context features carry their fade as a property (written at shaping time and when the anchors change).
+  const contextColor = () => ['interpolate', ['linear'], ['coalesce', ['get', 'fade'], 1], 0, palette.quiet, 1, palette.ground];
   let enabled = true, hiddenIds = [], disposed = false, token = 0, lastKey = '', lastBucket = -1, lastTruncated = false;
-  let lastInput = {regions: [], hosts: [], latitude: 13.75, city: true};
-  const cache = new Map();
+  let lastInput = {regions: [], hosts: [], latitude: 13.75, city: true, zones: []};
+  const cache = new Map(), cmCache = new Map();
 
   const before = beforeId && map.getLayer(beforeId) ? beforeId : undefined;
   if (map.getSource(sourceId) && !map.getLayer(CITY_LAYER)) {
@@ -254,6 +448,29 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
         'fill-extrusion-vertical-gradient': true,
       },
     }, before);
+  }
+  // Replaced city-tier features: their buildings outside the focus, drawn the city tier's way (quiet, faded).
+  map.addSource(CONTEXT_SOURCE, {type: 'geojson', data: {type: 'FeatureCollection', features: []}, maxzoom: GEOJSON_MAXZOOM});
+  map.addLayer({
+    id: CONTEXT_LAYER, type: 'fill-extrusion', source: CONTEXT_SOURCE, minzoom: CITY_MIN_ZOOM,
+    paint: {
+      'fill-extrusion-color': contextColor(),
+      'fill-extrusion-height': ['get', 'height'],
+      'fill-extrusion-base': ['get', 'base'],
+      'fill-extrusion-opacity': SCENE.default.city,
+      'fill-extrusion-vertical-gradient': true,
+    },
+  }, before);
+  // CityMETER Building V4 is credited in the attribution while one of its buildings is drawn (visibility toggles).
+  if (cmAttribution) {
+    map.addSource(CM_CREDIT_SOURCE, {type: 'geojson', data: {type: 'FeatureCollection', features: []}, maxzoom: GEOJSON_MAXZOOM, attribution: cmAttribution});
+    map.addLayer({id: CM_CREDIT_LAYER, type: 'circle', source: CM_CREDIT_SOURCE, minzoom: CITY_MIN_ZOOM, layout: {visibility: 'none'}, paint: {'circle-radius': 0, 'circle-opacity': 0}}, before);
+  }
+  let credited = false;
+  function setCredit(on) {
+    if (on === credited || !map.getLayer(CM_CREDIT_LAYER)) return;
+    credited = on;
+    map.setLayoutProperty(CM_CREDIT_LAYER, 'visibility', on ? 'visible' : 'none');
   }
   map.addSource(FOCUS_SOURCE, {type: 'geojson', data: {type: 'FeatureCollection', features: []}, maxzoom: GEOJSON_MAXZOOM});
   let occluderIds = [], highlightIds = [], scene = 'default', targets = [];
@@ -295,12 +512,41 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
     },
   }, before);
 
+  // `match` looks a label up by hash: thousands of hidden ids cost no more per building than a few.
   function cityFilter() {
-    return ['all', ['!=', ['get', 'hide_3d'], true], ['!', ['in', ['id'], ['literal', hiddenIds]]]];
+    return hiddenIds.length ? ['all', ['!=', ['get', 'hide_3d'], true], ['match', ['id'], hiddenIds, false, true]] : ['all', ['!=', ['get', 'hide_3d'], true]];
   }
   function setHidden(ids) {
-    hiddenIds = [...ids];
+    const next = [...new Set(ids)].filter(id => Number.isInteger(id)).sort((a, b) => a - b);
+    if (next.length === hiddenIds.length && next.every((v, i) => v === hiddenIds[i])) return;
+    hiddenIds = next;
     if (map.getLayer(CITY_LAYER)) map.setFilter(CITY_LAYER, cityFilter());
+  }
+  /* ---------- context features (replaced city-tier features outside the focus) ---------- */
+  let contextFeatures = [];
+  function setContext(list) {
+    contextFeatures = list;
+    writeContext();
+  }
+  function writeContext() {
+    for (const f of contextFeatures) { const p = f.geometry.coordinates[0]?.[0]; f.properties.fade = p ? Math.round(fadeFor(p) * 20) / 20 : 1; }
+    map.getSource(CONTEXT_SOURCE)?.setData({type: 'FeatureCollection', features: contextFeatures});
+  }
+  /** One CityMETER Building V4 tile of one tile unit (null layer when the tile is empty). */
+  async function loadCmTile(request) {
+    if (cmCache.has(request.key)) return cmCache.get(request.key);
+    const task = (async () => {
+      const url = cmTileUrl(request.tile, request.tileUnit, request.tileType);
+      if (!url) throw new Error('no CityMETER tile url');
+      const r = await fetchImpl(url);
+      if (!r.ok) throw new Error(`CityMETER tile ${request.key} ${r.status}`);
+      const buf = await r.arrayBuffer();
+      return buf.byteLength ? parseVectorTile(buf).layers['building-detail'] || {extent: 4096, features: []} : {extent: 4096, features: []};
+    })();
+    cmCache.set(request.key, task);
+    task.catch(() => cmCache.delete(request.key));
+    if (cmCache.size > 64) cmCache.delete(cmCache.keys().next().value);
+    return task;
   }
   async function loadTile(tile) {
     const key = `${tile.z}/${tile.x}/${tile.y}`;
@@ -322,31 +568,33 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
   function setFocusMinZoom(z) {
     if (z === focusMinZoom || typeof map.setLayerZoomRange !== 'function') return;
     focusMinZoom = z;
-    for (const id of [FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER]) if (map.getLayer(id)) map.setLayerZoomRange(id, z, 24);
+    for (const id of [FOCUS_LAYER, OCCLUDER_LAYER, VENUE_LAYER, CM_CREDIT_LAYER]) if (map.getLayer(id)) map.setLayerZoomRange(id, z, 24);
   }
 
   /**
    * regions: lon/lat outer rings of the focused neighborhoods; hosts: rings of
    * host buildings currently drawn by buildings.js; zoom: current map zoom;
-   * city: the city tier is shown (3D) — kept for zoom- and move-triggered rebuilds.
+   * city: the city tier is shown (3D) — kept for zoom- and move-triggered rebuilds;
+   * zones: CityMETER units (js/building-units.js) meeting the regions, drawn from CityMETER Building V4.
    */
-  async function update({regions = lastInput.regions, hosts = lastInput.hosts, zoom = map.getZoom(), enabled: on = enabled, city = lastInput.city ?? enabled, latitude = lastInput.latitude, anchors: nextAnchors = null, center = null} = {}) {
+  async function update({regions = lastInput.regions, hosts = lastInput.hosts, zoom = map.getZoom(), enabled: on = enabled, city = lastInput.city ?? enabled, latitude = lastInput.latitude, anchors: nextAnchors = null, center = null, zones = lastInput.zones} = {}) {
     enabled = on;
-    lastInput = {regions, hosts, latitude, city};
+    lastInput = {regions, hosts, latitude, city, zones};
     if (nextAnchors) setAnchors(nextAnchors);
     // In plan view (pitch 0) the focus tier still draws as flat rounded footprints; the city tier is hidden.
-    if (map.getLayer(CITY_LAYER)) map.setLayoutProperty(CITY_LAYER, 'visibility', enabled && city ? 'visible' : 'none');
+    for (const id of [CITY_LAYER, CONTEXT_LAYER]) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', enabled && city ? 'visible' : 'none');
     for (const id of [FOCUS_LAYER, OCCLUDER_LAYER]) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', enabled ? 'visible' : 'none');
     const bucket = Math.floor(zoom);
     const camera = center || (typeof map.getCenter === 'function' ? map.getCenter().toArray() : null);
     const {tiles, truncated} = tilesForRegions(regions, TILE_ZOOM, MAX_TILES, camera);
     const ready = typeof tileUrl === 'function' && tiles.length > 0 && tiles.every(t => Boolean(tileUrl(t)));
+    const plan = typeof cmTileUrl === 'function' ? planCmRequests(tiles, zones, {center: camera}) : {requests: [], zonesByTile: new Map(), truncated: false};
     const ringKey = rings => `${rings.length}:${rings.map(r => r.length + ':' + r[0]?.join(',')).join('|')}`;
-    const key = `${enabled}|${ready}|${bucket}|${city}|${ringKey(regions)}|${ringKey(hosts)}|${tiles.map(t => `${t.x}/${t.y}`).join(',')}`;
+    const key = `${enabled}|${ready}|${bucket}|${city}|${ringKey(regions)}|${ringKey(hosts)}|${tiles.map(t => `${t.x}/${t.y}`).join(',')}|${plan.requests.map(q => q.key).join(',')}`;
     if (key === lastKey) return {features: 0, tiles: 0, cached: true};
     lastKey = key; lastBucket = bucket; lastTruncated = truncated;
     if (!enabled || !regions.length || !ready) {
-      map.getSource(FOCUS_SOURCE)?.setData({type: 'FeatureCollection', features: []}); setHidden([]);
+      map.getSource(FOCUS_SOURCE)?.setData({type: 'FeatureCollection', features: []}); setHidden([]); setContext([]); setCredit(false);
       currentFeatures = []; setFootprints([]); setOccluders([]); setFocusMinZoom(CITY_MIN_ZOOM);
       const empty = {features: 0, tiles: 0, ready};
       if (typeof onResult === 'function') { try { onResult(empty); } catch (e) { console.warn('Massing onResult', e); } }
@@ -354,7 +602,10 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
     }
     const my = ++token;
     const radiusM = roundingRadiusM(Math.max(zoom, 14.5), latitude), offsetM = encloseOffsetM(radiusM);
-    const layers = await Promise.all(tiles.map(t => loadTile(t).catch(e => { console.warn('Massing tile unavailable', e.message || e); return null; })));
+    const [layers, cmLayers] = await Promise.all([
+      Promise.all(tiles.map(t => loadTile(t).catch(e => { console.warn('Massing tile unavailable', e.message || e); return null; }))),
+      Promise.all(plan.requests.map(q => loadCmTile(q).catch(e => { console.warn('CityMETER building tile unavailable', e.message || e); return null; }))),
+    ]);
     if (my !== token || disposed) return {features: 0, tiles: 0, stale: true};
     // Shaping thousands of footprints is main-thread work: never during a camera move (it would stall
     // the animation of an area-to-area move); the previous tier stays on screen until the move ends.
@@ -362,22 +613,45 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
       await new Promise(resolve => map.once('moveend', resolve));
       if (my !== token || disposed) return {features: 0, tiles: 0, stale: true};
     }
-    const features = [], footprints = [], hidden = new Set();
-    let kept = 0, dropped = 0;
+    // A zone is drawn from CityMETER in a tile only when every one of its requests for that tile arrived.
+    const failed = new Map();
+    plan.requests.forEach((q, i) => {
+      if (cmLayers[i]) return;
+      const k = `${q.tile.z}/${q.tile.x}/${q.tile.y}`;
+      if (!failed.has(k)) failed.set(k, new Set());
+      failed.get(k).add(q.zone.id);
+    });
+    const zonesOfTile = t => {
+      const k = `${t.z}/${t.x}/${t.y}`, ids = plan.zonesByTile.get(k), bad = failed.get(k);
+      return ids ? zones.filter(z => ids.has(z.id) && !bad?.has(z.id)) : [];
+    };
+    const features = [], footprints = [], hidden = new Set(), context = [], partOutlines = [];
+    let kept = 0, dropped = 0, replaced = 0;
     layers.forEach((layer, i) => {
       if (!layer) return;
-      const shaped = shapeTile(tiles[i], layer, {regions, hosts, radiusM, offsetM});
-      features.push(...shaped.features); footprints.push(...shaped.footprints);
-      shaped.hiddenIds.forEach(id => hidden.add(id)); kept += shaped.kept; dropped += shaped.dropped;
+      const shaped = shapeTile(tiles[i], layer, {regions, hosts, radiusM, offsetM, zones: zonesOfTile(tiles[i])});
+      features.push(...shaped.features); footprints.push(...shaped.footprints); context.push(...shaped.context); partOutlines.push(...shaped.partOutlines);
+      shaped.hiddenIds.forEach(id => hidden.add(id)); kept += shaped.kept; dropped += shaped.dropped; replaced += shaped.replaced;
     });
-    // Ids are stable per tile building (focusFeatureId); the OSM id stays in properties.
+    const cm = {requests: plan.requests.length, failed: cmLayers.filter(l => !l).length, truncated: plan.truncated, kept: 0, away: 0, shared: 0, inParts: 0};
+    const seen = new Set();
+    plan.requests.forEach((q, i) => {
+      const k = `${q.tile.z}/${q.tile.x}/${q.tile.y}`;
+      if (!cmLayers[i] || failed.get(k)?.has(q.zone.id)) return;
+      const shaped = shapeCmTile(q.tile, cmLayers[i], {regions, radiusM, offsetM, slot: q.slot, skipRings: partOutlines, seen});
+      features.push(...shaped.features); footprints.push(...shaped.footprints);
+      cm.kept += shaped.kept; cm.away += shaped.away; cm.shared += shaped.shared; cm.inParts += shaped.inParts;
+    });
+    // Ids are stable per tile building (focusFeatureId, cmFeatureId); the OSM id stays in properties.
     currentFeatures = features;
     setFootprints(footprints);
     map.getSource(FOCUS_SOURCE)?.setData({type: 'FeatureCollection', features});
     setHidden(hidden);
+    setContext(context);
+    setCredit(cm.kept > 0);
     setFocusMinZoom(city && !truncated ? FOCUS_MIN_ZOOM : CITY_MIN_ZOOM);
     updateOcclusion();
-    const result = {features: kept, droppedForHosts: dropped, tiles: tiles.length, truncated, minZoom: focusMinZoom, radiusM, offsetM, occluders: occluderIds.length, version};
+    const result = {features: kept + cm.kept, osm: kept, droppedForHosts: dropped, replaced, context: context.length, cm, tiles: tiles.length, truncated, minZoom: focusMinZoom, radiusM, offsetM, occluders: occluderIds.length, version};
     // Every applied result (including zoom-triggered rebuilds) reaches the host app through onResult,
     // so a caller whose own update was superseded still sees the figures that are on screen.
     if (typeof onResult === 'function') { try { onResult(result); } catch (e) { console.warn('Massing onResult', e); } }
@@ -387,6 +661,7 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
   function retheme(next = {}) {
     Object.assign(palette, next);
     if (map.getLayer(CITY_LAYER)) map.setPaintProperty(CITY_LAYER, 'fill-extrusion-color', cityColor());
+    if (map.getLayer(CONTEXT_LAYER)) map.setPaintProperty(CONTEXT_LAYER, 'fill-extrusion-color', contextColor());
     for (const id of [FOCUS_LAYER, OCCLUDER_LAYER]) if (map.getLayer(id)) map.setPaintProperty(id, 'fill-extrusion-color', palette.focus);
     if (map.getLayer(VENUE_LAYER)) map.setPaintProperty(VENUE_LAYER, 'fill-extrusion-color', palette.venue);
   }
@@ -481,6 +756,7 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
     if (key === anchorKey) return;
     anchorKey = key; anchors = next.filter(a => Array.isArray(a) && a.length >= 2);
     stated.clear();
+    if (contextFeatures.length) writeContext();
     if (typeof map.isMoving === 'function') scheduleFade(); else updateFade();
   }
   let fadeTimer = 0;
@@ -542,7 +818,7 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
     scene = SCENE[next] ? next : 'default';
     targets = Array.isArray(nextTargets) ? nextTargets.filter(t => Array.isArray(t?.ring) && t.ring.length >= 4) : [];
     const o = SCENE[scene];
-    if (map.getLayer(CITY_LAYER)) map.setPaintProperty(CITY_LAYER, 'fill-extrusion-opacity', o.city);
+    for (const id of [CITY_LAYER, CONTEXT_LAYER]) if (map.getLayer(id)) map.setPaintProperty(id, 'fill-extrusion-opacity', o.city);
     if (map.getLayer(FOCUS_LAYER)) map.setPaintProperty(FOCUS_LAYER, 'fill-extrusion-opacity', o.focus);
     if (map.getLayer(OCCLUDER_LAYER)) map.setPaintProperty(OCCLUDER_LAYER, 'fill-extrusion-opacity', o.occluder);
     // On a live map the occluders are computed once the selection's work is done (and again when the
@@ -572,11 +848,12 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
     map.off('moveend', scheduleFade);
     map.off('sourcedata', onSourceData);
     try { map.removeFeatureState({source: sourceId, sourceLayer: 'building'}); } catch {}
-    for (const id of [VENUE_LAYER, OCCLUDER_LAYER, FOCUS_LAYER, CITY_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
-    if (map.getSource(FOCUS_SOURCE)) map.removeSource(FOCUS_SOURCE);
-    footprintList = []; footprintById = new Map();
+    for (const id of [VENUE_LAYER, OCCLUDER_LAYER, FOCUS_LAYER, CM_CREDIT_LAYER, CONTEXT_LAYER, CITY_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
+    for (const id of [FOCUS_SOURCE, CM_CREDIT_SOURCE, CONTEXT_SOURCE]) if (map.getSource(id)) map.removeSource(id);
+    footprintList = []; footprintById = new Map(); contextFeatures = [];
   }
   return {update, retheme, setScene, setAnchors, updateFade, dispose, buildings, setHighlight, hitTest, featuresOf, fitPointsOf, obstaclesNear,
-    layerIds: {city: CITY_LAYER, focus: FOCUS_LAYER, occluder: OCCLUDER_LAYER, venue: VENUE_LAYER},
-    get occluders() { return occluderIds.slice(); }, get highlighted() { return highlightIds.slice(); }, get faded() { return stated.size; }, get version() { return version; }};
+    layerIds: {city: CITY_LAYER, context: CONTEXT_LAYER, focus: FOCUS_LAYER, occluder: OCCLUDER_LAYER, venue: VENUE_LAYER, credit: CM_CREDIT_LAYER},
+    get occluders() { return occluderIds.slice(); }, get highlighted() { return highlightIds.slice(); }, get faded() { return stated.size; }, get version() { return version; },
+    get hidden() { return hiddenIds.slice(); }, get context() { return contextFeatures.length; }, get credited() { return credited; }};
 }
