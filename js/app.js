@@ -403,7 +403,7 @@ function renderMapAha(insight) {
   const names = insight.areas.map(a => esc(a.name)).join(' · ');
   el.innerHTML = mode === 'explicit'
     ? `<div>${crumb}<h2>โฟกัส ${num(insight.areas.length)} ${esc(w)}</h2><p>${num(insight.value)} ${esc(u.one)} · ${num(insight.count)} แห่ง</p></div><button type="button" class="btn" data-action="clear-focus">ดูทุกพื้นที่</button>`
-    : `<div>${crumb}<h2><span class="nowrap">${pct(insight.value, insight.homeValue ?? insight.homePlacedValue)}</span> ของ${esc(u.subject)}${esc(provinceByCode(insight.home)?.th || '')} อยู่ใน ${num(insight.areas.length)} ${esc(w)}นี้</h2><p>${names}</p></div>${mode === 'auto'
+    : `<div>${crumb}<h2><span class="nowrap">${pct(insight.value, insight.homeValue ?? insight.homePlacedValue)}</span> ของ${esc(u.subject)}${esc(provinceByCode(insight.home)?.th || '')} อยู่ใน <span class="nowrap">${num(insight.areas.length)} ${esc(w)}นี้</span></h2><p>${names}</p></div>${mode === 'auto'
       ? '<button type="button" class="btn" data-action="clear-focus">ดูทุกพื้นที่</button>'
       : '<button type="button" class="btn primary" data-action="explore-top">โฟกัส</button>'}`;
 }

@@ -273,7 +273,7 @@ export function renderOverview({insight, summary, overview, focusMode = 'auto', 
     const toggle = focusMode === 'auto'
       ? '<button type="button" data-action="clear-focus" class="btn">ดูทุกพื้นที่</button>'
       : `<button type="button" data-action="explore-top" class="btn primary">โฟกัส ${num(count)} ${esc(w)}นี้</button>`;
-    const where = count === 1 ? esc(placeName(insight.areas[0])) : ` ${num(count)} ${esc(w)}นี้`;
+    const where = count === 1 ? esc(placeName(insight.areas[0])) : ` ${nw(`${num(count)} ${esc(w)}นี้`)}`;
     const total = insight.homeValue ?? insight.homePlacedValue;
     aha = `<section class="aha${focusMode === 'auto' ? ' is-auto' : ''}" aria-label="ข้อค้นพบ"><p class="eyebrow">ข้อค้นพบ</p>
       <h2><span class="aha-number data-number">${pct(insight.value, total)}</span><span class="aha-headline">ของ${esc(unit.subject)}${esc(home)} อยู่ใน${where}</span></h2>
