@@ -370,7 +370,7 @@
     "input": "the features of the building being looked at (massing.featuresOf(target.refs)) with display_height_m / display_base_m; on terrain the roof is lifted by the ground at the piece centroid (as MapLibre lifts fill-extrusions) and the walls go down to the lowest ground under the outline (0.3.2; a fixed 10 m showed through the slope)",
     "depth": "scissored depth clear inside the building’s screen box, then its own depth test",
     "seeThrough": "massing.setScene('eye', rings): the focus buildings standing in front of it turn see-through (SCENE.eye)",
-    "labels": "district label chips never sit on the building (refreshLabelView avoid box)",
+    "labels": "district label chips never sit on the building (refreshLabelView avoid box); since 0.3.2 neither do the stays’ name labels (js/labels.js#installHotelLabels avoid → buildingScreenBox)",
     "visibility": "3D only, zoom ≥ 13 (XRAY_MIN_ZOOM); empty outside the building view",
     "colours": "map.activeLayer faces, map.selectedStroke edges — map roles, not data colours",
     "failSafe": "a GL error disables it (failed = true); the massing highlight keeps drawing",
@@ -561,6 +561,6 @@
     "site": "GitHub Pages from main /root",
     "handoff": "dist/CityMETER-Hotel-Developer-Handoff.zip (START_HERE.md, RELEASE_RECEIPT.json, evidence/, source/)",
     "liveCheck": "npm run verify:live",
-    "cacheTag": "?v=20261102-r9 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
+    "cacheTag": "?v=20261102-r10 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
   }
 }
