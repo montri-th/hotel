@@ -30,8 +30,10 @@
  * turns the eye camera corner-on to the building — bearing = dominant wall direction + 45°, so two
  * faces and two vanishing points show — and re-centres and zooms until the projected box of every
  * footprint and roof vertex fills the free part of the map (below the toolbar, above the bottom
- * tray, legend or sheet, clear of the zoom control). Padding stays zero so the principal point is
- * the canvas centre and the horizon stays outside the frame (75° + 24°/2 < 90°).
+ * tray, legend or sheet, clear of the zoom control). The principal point never goes below the canvas
+ * centre, so the horizon stays outside the frame (75° + 24°/2 < 90°); since Hotel 0.3.2 it is moved up
+ * to the free box's centre (a shift lens, `lensPadding`), so the camera looks straight at the building
+ * at the eye pitch on a phone too.
  */
 export const DEFAULT_FOV = 36.87;
 
@@ -256,6 +258,20 @@ export function screenBounds(map, points, project = projectPoint) {
 }
 
 /**
+ * Shift lens of the building view (Hotel 0.3.2): padding that puts the principal point at the centre of the free `box`,
+ * never below the canvas centre (the horizon would enter the frame: pitch + fov/2 < 90 holds only above it). With zero
+ * padding a phone's free strip above the sheet sat ~200 px above the principal point, so the building stood on a ray
+ * 7.5° under the horizon where the fit did not converge; with the lens the camera looks straight at it at the eye pitch.
+ */
+export function lensPadding(map, box) {
+  const c = map.getContainer?.();
+  const W = c ? c.clientWidth : map.width, H = c ? c.clientHeight : map.height;
+  const tx = (box.left + box.right) / 2, ty = (box.top + box.bottom) / 2;
+  if (!Number.isFinite(W) || !Number.isFinite(H)) return {top: 0, bottom: 0, left: 0, right: 0};
+  return {top: 0, bottom: Math.max(0, Math.round(H - 2 * ty)), left: Math.max(0, Math.round(2 * tx - W)), right: Math.max(0, Math.round(W - 2 * tx))};
+}
+
+/**
  * Run `fn` with MapLibre's lift of a camera inside the terrain switched off (Map#_elevateCameraIfInsideTerrain, run by
  * every jump in 5.6.2), so instant jumps keep the camera asked for; `fn` gets MapLibre's check (transform →
  * {pitch, zoom} of the lifted camera, or {}) to ask about the camera it found, or null without one. Restored after.
@@ -310,7 +326,7 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
   const start = {center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), padding: map.getPadding(),
     ...(onTerrain && Number.isFinite(map.transform?.elevation) ? {elevation: map.transform.elevation} : {})};
   setFov(map, p.fov);
-  const zero = {top: 0, bottom: 0, left: 0, right: 0};
+  const lens = lensPadding(map, box);
   const ground = points.filter(q => !q[2]);
   const base = ground.length ? ground : points;
   const anchor = [base.reduce((s, q) => s + q[0], 0) / base.length, base.reduce((s, q) => s + q[1], 0) / base.length];
@@ -372,7 +388,7 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
   };
   const solve = (b, pitch) => {
     asked = pitch;
-    jump({center: anchor, zoom: firstZoom, bearing: b, padding: zero, ...(onTerrain ? {elevation: G} : {})});
+    jump({center: anchor, zoom: firstZoom, bearing: b, padding: lens, ...(onTerrain ? {elevation: G} : {})});
     converge();
     if (onTerrain) {
       // The landed camera orbits the ground under its centre: hold the centre there and converge again — until the
@@ -390,7 +406,7 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
     // On terrain the target carries the centre's elevation it was computed with: an instant jump (reduced motion) then
     // checks the camera against the terrain from the right height (an ease interpolates to the same ground).
     const elevation = onTerrain ? map.transform?.elevation : undefined;
-    return {center: map.getCenter(), zoom: Math.round(map.getZoom() * 1000) / 1000, pitch: Math.round(asked * 100) / 100, bearing: b, padding: zero, ...(Number.isFinite(elevation) ? {elevation} : {})};
+    return {center: map.getCenter(), zoom: Math.round(map.getZoom() * 1000) / 1000, pitch: Math.round(asked * 100) / 100, bearing: b, padding: lens, ...(Number.isFinite(elevation) ? {elevation} : {})};
   };
   const target = withoutLift(map, lifted => {
     // The pitch MapLibre would lift the found camera to (null: clear of the ground, or no terrain check).

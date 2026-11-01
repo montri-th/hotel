@@ -1,6 +1,6 @@
 // Building camera (owner instruction 2026-10-29 19:47 for Fitness, the Shopping centers venue camera of 2026-10-25):
 // two-point perspective of the building being looked at, zoomed to fit the free part of the map. The fit is tested against a pinhole camera with MapLibre's
-// conventions (512-px tiles, principal point at the canvas centre with zero padding, pitch from the
+// conventions (512-px tiles, principal point at the centre of the area inside the padding, pitch from the
 // nadir, bearing clockwise from north), so the algorithm is checked without a browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +28,8 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
     const ppm = (512 * 2 ** cam.zoom) / (40075016.686 * Math.cos(cam.center.lat * RAD));
     return {f, D: f / ppm, p: cam.pitch * RAD, b: cam.bearing * RAD, kx: 111320 * Math.cos(cam.center.lat * RAD)};
   };
+  // The principal point: the centre of the area inside the padding, as MapLibre shifts its projection (centerOffset).
+  const principal = () => [cam.padding.left + (width - cam.padding.left - cam.padding.right) / 2, cam.padding.top + (height - cam.padding.top - cam.padding.bottom) / 2];
   // Altitude above sea level as drawn (no ground lookup); project3 adds the ground under the point.
   const projectAbs3 = ([lng, lat, abs = 0]) => {
     const {f, D, p, b, kx} = geometry();
@@ -36,7 +38,8 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
     const h = abs - cam.elevation; // above the centre the camera orbits
     const z = y * Math.sin(p) - h * Math.cos(p) + D, v = y * Math.cos(p) + h * Math.sin(p);
     if (!(z > 1)) return {x: NaN, y: NaN};
-    return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
+    const [px, py] = principal();
+    return {x: px + (f * x) / z, y: py - (f * v) / z};
   };
   const project3 = ([lng, lat, alt = 0]) => {
     const {f, D, p, b, kx} = geometry();
@@ -45,7 +48,8 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
     const h = alt + (terrain ? terrain(lng, lat) : 0) - cam.elevation; // above the centre the camera orbits
     const z = y * Math.sin(p) - h * Math.cos(p) + D, v = y * Math.cos(p) + h * Math.sin(p);
     if (!(z > 1)) return {x: NaN, y: NaN};
-    return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
+    const [px, py] = principal();
+    return {x: px + (f * x) / z, y: py - (f * v) / z};
   };
   // MapLibre 5.6.2 Map#_elevateCameraIfInsideTerrain, run by every camera change: a camera below the ground under it is
   // raised to that ground over the same spot, still looking at the centre — a lower pitch and a lower zoom.
@@ -75,7 +79,8 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
     project: ([lng, lat]) => project3([lng, lat, 0]),
     unproject([sx, sy]) {
       const {f, D, p, b, kx} = geometry();
-      const X = (sx - width / 2) / f, Yv = (height / 2 - sy) / f;
+      const [px, py] = principal();
+      const X = (sx - px) / f, Yv = (py - sy) / f;
       const y = (Yv * D) / (Math.cos(p) - Yv * Math.sin(p));
       const x = X * (y * Math.sin(p) + D);
       const e = x * Math.cos(b) + y * Math.sin(b), n = -x * Math.sin(b) + y * Math.cos(b);
@@ -120,7 +125,11 @@ test('fit: the building fills the free box — centred, one side touching, the o
   const target = fitBuilding(map, points, {box, bearing, project, animate: false});
   assert.equal(target.pitch, CAMERA.eye.pitch);
   assert.equal(target.bearing, bearing);
-  assert.deepEqual(target.padding, {top: 0, bottom: 0, left: 0, right: 0}, 'principal point at the canvas centre: the horizon stays out of the frame');
+  // Shift lens (0.3.2): the principal point at the free box's centre, never below the canvas centre (horizon out).
+  const p = target.padding;
+  assert.equal(p.top, 0, 'never moved down');
+  assert.ok(Math.abs(p.left + (map.width - p.left - p.right) / 2 - (box.left + box.right) / 2) <= 0.5, 'across: the box centre');
+  assert.ok(Math.abs((map.height - p.bottom) / 2 - (box.top + box.bottom) / 2) <= 0.5, 'down: the box centre');
   assert.ok(CAMERA.eye.pitch + CAMERA.eye.fov / 2 < 90);
   const b = screenBounds(map, points, project);
   const tw = (box.right - box.left) * 0.94, th = (box.bottom - box.top) * 0.94;
@@ -129,6 +138,22 @@ test('fit: the building fills the free box — centred, one side touching, the o
   const fillW = (b.maxX - b.minX) / tw, fillH = (b.maxY - b.minY) / th;
   assert.ok(Math.abs(Math.max(fillW, fillH) - 1) < 0.01, `fills one side (${fillW.toFixed(3)} × ${fillH.toFixed(3)})`);
   assert.ok(Math.min(fillW, fillH) <= 1.001, 'the other side fits');
+});
+
+test('fit (0.3.2): the shift lens moves the principal point up to a high free box (a phone above its sheet), never down', () => {
+  const {map, project} = fakeMap({width: 390, height: 652});
+  const block = rect(60, 40, 0);
+  const points = block.flatMap(([a, b]) => [[a, b, 0], [a, b, 15]]);
+  const strip = {left: 12, top: 54, right: 343, bottom: 194};
+  const target = fitBuilding(map, points, {box: strip, bearing: 30, project, animate: false, maxZoom: 21});
+  assert.deepEqual(target.padding, {top: 0, bottom: 404, left: 0, right: 35});
+  assert.equal(target.pitch, CAMERA.eye.pitch);
+  const b = screenBounds(map, points, project);
+  assert.ok(b.minX >= strip.left - 1 && b.maxX <= strip.right + 1 && b.minY >= strip.top - 1 && b.maxY <= strip.bottom + 1, `inside the strip: ${JSON.stringify(b)}`);
+  // A box under the canvas centre: the lens stays at the centre (the top edge would pass the horizon).
+  const low = fitBuilding(map, points, {box: {left: 0, top: 400, right: 390, bottom: 640}, bearing: 30, project, apply: false, maxZoom: 21});
+  assert.equal(low.padding.top, 0);
+  assert.equal(low.padding.bottom, 0);
 });
 
 test('fit: a tiny building stops at the zoom limit and stays centred; the start camera animates to the target', () => {
