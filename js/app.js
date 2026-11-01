@@ -385,8 +385,10 @@ async function fillTerrain(r, attempt = 0) {
   const chips = terrainChips(facts, {num});
   const now = document.querySelector(`[data-terrain-for="${CSS.escape(r.id)}"]`);
   if (!now) return;
-  // The map may not reach 'idle' while terrain tiles stream in (building view on terrain): read again a little later.
-  if (!facts && attempt < 4) { setTimeout(() => fillTerrain(r, attempt + 1), 1500 * (attempt + 1)); if (attempt) return; }
+  // The map may not reach 'idle' while terrain tiles stream in (building view on terrain), and the sea and tree cover
+  // need the basemap at the stay (a stay chosen far away is read before the camera lands): read again a little later.
+  const partial = facts && facts.seaBand === null && facts.treeShare === null;
+  if ((!facts || partial) && attempt < 4) { setTimeout(() => fillTerrain(r, attempt + 1), 1500 * (attempt + 1)); if (attempt && !facts) return; }
   const html = chips.length ? terrainChipsHTML(chips) : '<span class="hint">อ่านภูมิประเทศไม่ได้ในตอนนี้</span>';
   if (now.innerHTML !== html) now.innerHTML = html;
 }

@@ -132,7 +132,9 @@ export function terrainChips(f, {num = v => String(v)} = {}) {
 const factCache = new Map();
 /**
  * Terrain facts of a row with a point (cached per row). The sea and tree cover come from the basemap tiles loaded
- * for the current view, so they are read while the stay is on screen; outside the loaded area they stay unknown.
+ * for the current view, so they are read only while the stay is on screen and the basemap has loaded there
+ * (`isSourceLoaded`); before that — a stay chosen far from the camera, read before the flight lands — they stay
+ * unknown (`partial`) and are not cached, so the panel reads them again once the camera is there.
  */
 export async function terrainFacts(map, row) {
   if (!row || !Number.isFinite(row.longitude) || !Number.isFinite(row.latitude)) return null;
@@ -140,7 +142,9 @@ export async function terrainFacts(map, row) {
   const {longitude: lon, latitude: lat} = row;
   const [at, ring500, ring250] = await Promise.all([elevationAt(lon, lat), Promise.all(ring(lon, lat, RELIEF_RADIUS_M, 16).map(([x, y]) => elevationAt(x, y))), Promise.all(ring(lon, lat, 250, 8).map(([x, y]) => elevationAt(x, y)))]);
   let seaBand = null, treeShare = null;
-  try {
+  let here = false;
+  try { here = map.getBounds().contains([lon, lat]) && (typeof map.isSourceLoaded !== 'function' || map.isSourceLoaded(SOURCE_ID)); } catch { here = false; }
+  if (here) try {
     const sea = map.querySourceFeatures(SOURCE_ID, {sourceLayer: 'water', filter: ['==', ['get', 'class'], 'ocean']});
     if (sea.length) for (const d of SEA_RINGS) {
       const pts = d ? ring(lon, lat, d, 24) : [[lon, lat]];

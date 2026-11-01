@@ -368,7 +368,7 @@ export function renderStation(p, ctx = {}) {
       <div class="identity">${pic('rail', 'identity-pic')}<div>
         <p class="eyebrow">สถานีรถไฟฟ้า${s.lines?.length ? ` · ${esc(s.lines.join(' · '))}` : ''}${building ? ` · ${pic('construction')}กำลังสร้าง` : ''}</p>
         <h2>สถานี${esc(s.name)}</h2>${s.nameEn ? `<p class="subtle">${esc(s.nameEn)}</p>` : ''}</div></div>
-      <div class="metrics compact">${metricTile(p.rooms, 'ห้อง', 'rooms')}${metricTile(p.count, 'แห่ง', 'hotel')}${metricTile(meters(p.radius), 'รอบสถานี', 'distance', `ระยะตรงจากจุดอ้างอิงของสถานี ${meters(p.radius)}`)}</div>
+      <div class="metrics compact">${metricTile(p.rooms, 'ห้อง', 'rooms')}${metricTile(p.count, 'แห่ง', 'hotel')}${metricTile(p.radius, 'ม. รอบสถานี', 'distance', `ระยะตรงจากจุดอ้างอิงของสถานี ${meters(p.radius)}`)}</div>
       ${actionBar({kind: 'station', station: s, point: {lat: s.lat, lon: s.lon, role: 'station'}})}
       <div class="detail-actions">${link(stationLink(s), 'ดูใน CityMETER Transit', 'btn quiet source-link')}</div>
     </section>
