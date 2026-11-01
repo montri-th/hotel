@@ -3,8 +3,8 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.1",
-  "updatedOn": "2026-11-01",
+  "productVersion": "0.3.2",
+  "updatedOn": "2026-11-02",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
     "commands": {
@@ -249,6 +249,27 @@
         "handoff/VERIFICATION.md"
       ],
       "status": "done"
+    },
+    {
+      "id": "T9",
+      "title": "0.3.2 (owner 2026-11-02 “เวลาคลิกที่ poi hotel แล้วต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณีสิ”): every stay with a point opens the two-point view of a 3D building — the one its pin falls in, else the nearest drawn (300 m, then 800 m); 3D on click; landing guard after eases; x-ray walls to the lowest ground",
+      "dependsOn": [
+        "T6"
+      ],
+      "acceptanceCriteria": [
+        "A13",
+        "A14"
+      ],
+      "files": [
+        "js/app.js",
+        "js/building-join.js",
+        "js/camera.js",
+        "js/maplibre-guard.js",
+        "tests/building-join.test.js",
+        "tests/camera.test.js",
+        "tests/maplibre-guard.test.js"
+      ],
+      "status": "done"
     }
   ],
   "acceptanceCriteria": [
@@ -326,9 +347,9 @@
     },
     {
       "id": "A13",
-      "scenario": "hotel with a point",
-      "expected": "eye preset (pitch 75) framed on its building or a 90 m box; ≤ 2 refits; MapLibre guard installed",
-      "verificationType": "unit (tests/camera.test.js, tests/maplibre-guard.test.js) + render"
+      "scenario": "hotel with a point (pin, label, list row or search)",
+      "expected": "3D switched on; eye preset (pitch 75) framed on the drawn building whose outline holds the pin, else the drawn building nearest the pin within 300 m (800 m after one widen) with the pin in the frame (legend “อาคารใกล้หมุด”); a 90 m box only where nothing is drawn within 800 m; ≤ 3 refits; MapLibre guards (tile cover, elevation freeze) installed; on terrain the camera lands on the ground and the x-ray walls end at the lowest ground under the building",
+      "verificationType": "unit (tests/camera.test.js, tests/maplibre-guard.test.js, tests/building-join.test.js) + render (preview and live)"
     },
     {
       "id": "A14",

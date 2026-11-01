@@ -3,8 +3,8 @@
   "schemaVersion": "1.5.0",
   "documentType": "product-brief",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.1",
-  "updatedOn": "2026-11-01",
+  "productVersion": "0.3.2",
+  "updatedOn": "2026-11-02",
   "datasetCheckedOn": "2026-11-01",
   "language": "th",
   "productName": "CityMETER · Hotel",
@@ -28,7 +28,7 @@
     "charts / table",
     "CityMETER production"
   ],
-  "changesSince": "0.3.1 (2026-11-01, owner “เรื่องภาษา … กระชับอ่านเข้าใจง่าย ใช้ symbol, logo, icon, charts … ไม่มี caveats เลย และเป็นธรรมชาติ”): copy rewritten in the ICP's words — pictograms (rank, date, distance, construction, dataset added to the approved subset), the rail comparison as two bars, unknown rooms as a hatched size bar, the comparison rule as chips, no caveat on screen; one provenance line per view (dataset · source · date · boundary, then “วิธีนับ” → DATA_METHOD.md, where the limits live); the Aha and district shares use the province's whole total (53,516 / 153,200 = 35%). 0.3.0 (2026-11-01, owner point 3 and “อยากให้เห็นอาคารบนภูมิประเทศ”): buildings per อปท. (Bangkok: เขต) — CityMETER Building V4 where it holds ≥ 1.15 × the OpenStreetMap buildings of the unit, else OSM (3,900 of 3,947 units on CityMETER; data/building-units/), OSM buildings mapped in parts kept (LOD2), CityMETER heights called estimates and credited in the attribution; buildings stand on the terrain in the building view (the site's relief decides; the camera, x-ray and pins on the drawn ground; terrain set only while the camera is still). 0.2.0: symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6).",
+  "changesSince": "0.3.2 (2026-11-02, owner “เวลาคลิกที่ poi hotel แล้วต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณีสิ”): every stay with a point opens the two-point view of a 3D building — the drawn building whose outline holds the pin, else the drawn building nearest the pin within 300 m (loaded once more for 800 m when nothing is drawn within 300 m; legend “อาคารใกล้หมุด”, the pin in the frame; a camera choice, never a join); choosing a stay or a building switches the map to 3D; on terrain the camera lands on the ground after every ease (MapLibre 5.6.2 left it frozen), the x-ray walls end at the lowest ground under the building and the fit frames base and roof as drawn (three refits). 0.3.1 (2026-11-01, owner “เรื่องภาษา … กระชับอ่านเข้าใจง่าย ใช้ symbol, logo, icon, charts … ไม่มี caveats เลย และเป็นธรรมชาติ”): copy rewritten in the ICP's words — pictograms (rank, date, distance, construction, dataset added to the approved subset), the rail comparison as two bars, unknown rooms as a hatched size bar, the comparison rule as chips, no caveat on screen; one provenance line per view (dataset · source · date · boundary, then “วิธีนับ” → DATA_METHOD.md, where the limits live); the Aha and district shares use the province's whole total (53,516 / 153,200 = 35%). 0.3.0 (2026-11-01, owner point 3 and “อยากให้เห็นอาคารบนภูมิประเทศ”): buildings per อปท. (Bangkok: เขต) — CityMETER Building V4 where it holds ≥ 1.15 × the OpenStreetMap buildings of the unit, else OSM (3,900 of 3,947 units on CityMETER; data/building-units/), OSM buildings mapped in parts kept (LOD2), CityMETER heights called estimates and credited in the attribution; buildings stand on the terrain in the building view (the site's relief decides; the camera, x-ray and pins on the drawn ground; terrain set only while the camera is still). 0.2.0: symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6).",
   "rowScopes": {
     "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
     "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
@@ -311,7 +311,8 @@
     "points": "hotel points of the scope",
     "rule": "display-time point-in-footprint (js/building-join.js#joinBuildings)",
     "click": "one hotel → the hotel; several → the building panel “ที่พักในอาคารนี้” (“สูงราว”, the outline source in the title and the provenance line)",
-    "neverChanges": "any count or district membership"
+    "neverChanges": "any count or district membership",
+    "nearest": "0.3.2: a hotel whose point falls in no outline is framed on the nearest drawn building (cameraContract.buildingView.target) — never joined, counted or listed in “ที่พักในอาคารนี้”"
   },
   "interactionContract": {
     "mapClicks": "focus pin → the building being looked at (x-ray: frame again) → focus building → station → province view district / province frame (below zoom 8) → district",
@@ -344,11 +345,13 @@
     "buildingView": {
       "owner": "2026-10-29 19:47 “อาคารที่เลือก หรือ on focus ให้แสดงด้วยมุมมอง 2-point perspective เสมอ zoom to fit viewport เสมอด้วย”",
       "module": "js/camera.js#fitBuilding, twoPointBearing, wallAzimuth, occlusionScore, screenBounds (from CityMETER · Shopping centers); js/app.js#frameFocus",
-      "target": "js/app.js#focusTarget — the open building; the building the open venue’s registry point falls in; the building the open hotel’s point falls in",
+      "target": "js/app.js#focusTarget — the open building; the building the open venue’s registry point falls in; the building the open hotel’s point falls in, else (0.3.2, owner 2026-11-02 “เวลาคลิกที่ poi hotel แล้วต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณีสิ”) the drawn building nearest the hotel’s point: js/building-join.js#nearestBuilding — distance from the point to the outline on a local plane, within 300 m (HOTEL_REACH_M), the largest piece within 10 m of the nearest; when nothing is drawn within 300 m the focus tier is loaded once more for 800 m round the point (HOTEL_REACH_FAR_M); legend “อาคารใกล้หมุด”, framed with the point (one zoom step wider, maxZoom 20); a camera choice only, never a join, a count or a located-in claim",
       "bearing": "dominant wall azimuth + 45°, on the diagonal where the drawn focus buildings (massing.obstaclesNear, 400 m) hide least of it, then the one nearest the current bearing",
       "fit": "eye preset, padding zero; fit points = the pieces as the focus tier draws them at building zoom (massing.fitPointsOf → js/massing.js#footprintFitPoints: the offset and fillets of zoom 18, ground and roof), never the shape drawn at the starting zoom (up to 3.6 m wider on every side); every one inside the free box (js/app.js#visibleBox: below the toolbar, above the Aha card, legend, chart tray, table or open phone sheet, left of the zoom control), one side filling 94% of it; maxZoom 21 when the building is known (js/camera.js#BUILDING_MAX_ZOOM — Hotel hotels stand in shophouses and small buildings; the Shopping centers limit 19.5 left a 40 m building at half the box) / 18 while unknown, minZoom 14",
-      "unknown": "a 90 m box round the point (12 m tall) framed the same way; the camera turns to the building when it arrives, at most twice, never after a user camera move",
-      "plan": "3D off: the same footprint fitted flat (fitPitched plan, maxZoom 21 known / 18 unknown)"
+      "unknown": "a 90 m box round the point (12 m tall) framed the same way while the buildings load, and where nothing is drawn within 800 m; the camera turns to the building when it arrives, at most three times, never after a user camera move",
+      "plan": "3D off: the same footprint fitted flat (fitPitched plan, maxZoom 21 known / 18 unknown)",
+      "click": "selectHotel (pin, label, list row, search) and selectBuilding switch the map to 3D (js/app.js#ensure3d) before framing; a link keeps view3d=0 when it asks for it",
+      "terrain": "on terrain each fit point carries the ground it is drawn on (4th value: roof at the piece centroid’s ground, base at the lowest ground under its outline, the pin at its own ground); fitBuilding damps its landed rounds (half steps) and js/maplibre-guard.js#guardElevationFreeze lands the centre on the ground after every programmatic ease (MapLibre 5.6.2 leaves map._elevationFreeze on); refitted when the ground changes by ≥ 3 m or a new building arrives, at most 3 times"
     }
   },
   "tileCoverGuard": {
@@ -356,13 +359,14 @@
     "bug": "MapLibre GL JS 5.6.2 SourceCache._updateRetainedTiles checks the four children of a missing ideal tile whenever the cover zoom + 1 ≤ the source maxzoom; a pitched cover can already hold an ideal tile at the maxzoom, whose children() is ONE overscaled child; when that child is retained, children[1] is undefined and the frame throws “Cannot read properties of undefined (reading 'key')”",
     "seen": "live 2026-10-29 (Claude desktop browser, real OpenFreeMap tiles): openmaptiles (vector, maxzoom 14), cover zoom 13, camera 13.79–13.95, pitch 75, while the building camera flew between branches; reproduced in the build container by stepping the pitched camera out from 19.5 to 13.6 over a building (7–8 errors on 0.2.0, 0 with the guard)",
     "fix": "pad the child list of exactly those ideal tiles to four copies of the overscaled child, so the check reads as MapLibre's own overzoom branch; installed on the shared SourceCache prototype at every style load; only for version 5.6.2",
-    "test": "tests/maplibre-guard.test.js"
+    "test": "tests/maplibre-guard.test.js",
+    "elevationFreeze": "js/maplibre-guard.js#guardElevationFreeze(map, version), 0.3.2: MapLibre 5.6.2 easeTo/flyTo on terrain without freezeElevation leave map._elevationFreeze on (only a gesture or _finalizeElevation clears it), so the render loop stops clamping the centre to the ground and the framed building drifts (seen 2026-11-02: camera 80.97 m vs ground 62.41 m at Sri Panwa); the guard wraps map._afterEase: when the ease ended (not superseded) and no terrain gesture is running, it clears the freeze and sets the centre elevation to the ground; only for version 5.6.2 (tests/maplibre-guard.test.js)"
   },
   "venueXrayContract": {
     "owner": "2026-10-29 19:47 “เช็คอย่าให้ 3d building mass ตึกอื่นบังอาคารที่กำลังดูอยู่”",
     "module": "js/venue-xray.js#installVenueXray(map, {beforeId, toMercator, colors}) → {update(features, {colors}), setEnabled, hitTest(point), dispose, count, enabled, failed} (from CityMETER · Shopping centers / Luxury Brands)",
     "layer": "venue-xray (custom, renderingMode 3d) before place-quarter (js/map-style.js#VENUE_XRAY_BEFORE): drawn over every building and over road names",
-    "input": "the features of the building being looked at (massing.featuresOf(target.refs)) with display_height_m / display_base_m",
+    "input": "the features of the building being looked at (massing.featuresOf(target.refs)) with display_height_m / display_base_m; on terrain the roof is lifted by the ground at the piece centroid (as MapLibre lifts fill-extrusions) and the walls go down to the lowest ground under the outline (0.3.2; a fixed 10 m showed through the slope)",
     "depth": "scissored depth clear inside the building’s screen box, then its own depth test",
     "seeThrough": "massing.setScene('eye', rings): the focus buildings standing in front of it turn see-through (SCENE.eye)",
     "labels": "district label chips never sit on the building (refreshLabelView avoid box)",
@@ -556,6 +560,6 @@
     "site": "GitHub Pages from main /root",
     "handoff": "dist/CityMETER-Hotel-Developer-Handoff.zip (START_HERE.md, RELEASE_RECEIPT.json, evidence/, source/)",
     "liveCheck": "npm run verify:live",
-    "cacheTag": "?v=20261101-r7 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
+    "cacheTag": "?v=20261102-r8 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
   }
 }
