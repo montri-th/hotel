@@ -1,61 +1,68 @@
-# CityMETER Hotel 0.2.0 — verification
+# CityMETER Hotel 0.3.1 — verification
 
-What was checked for this release, how, and what was not. Results are from 2026-11-01 (Asia/Bangkok). The code verified
-here is commit `6e699b7` (cache tag `?v=20261101-r5`); the commit that adds this file changes documentation only. The final
-live attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in
-the commit it attests). Release 0.1.0 was verified the same way (commit `cf8fa6b`, tag `r2`).
+What was checked for releases 0.3.0 and 0.3.1, how, and what was not. Results are from 2026-11-01 (Asia/Bangkok). The
+code verified here is commit `8a05b44` (cache tag `?v=20261101-r7`); the commit that adds this file changes documentation
+only. Release 0.3.0 (commit `0016573`, tag `r6`) was verified live the same day before 0.3.1 replaced it. The final live
+attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the
+commit it attests). Earlier releases: 0.2.0 (`6e699b7`, `r5`), 0.1.0 (`cf8fa6b`, `r2`).
 
-## 1. Unit tests on the real data — 105 pass, 0 fail
+## 1. Unit tests on the real data — 114 pass, 0 fail
 
 `npm test` (Node 22, `node --test tests/*.test.js`):
 
 | File | What it holds |
 |---|---|
-| `data.test.js` | 30,729 rows decode, ids unique, alias row out; Σ rooms 1,033,157 from 30,650 known; unknown rooms never 0; membership counts = `meta.counts`; points with roles; brand → group by id and the “no group” partition; rail/retail straight-line distances recomputed within 1.5 m; publication hygiene; 928 districts / 77 provinces / 78 receipts bound by hash |
-| `insight.test.js` | first Aha fixtures (rooms: Bangkok 53,516/152,864 = 35 %, rail 25,768/38,690 vs 32,732/77,957, outside บางละมุง 62,561; records: Phuket top 2 of 3 = 1,886/2,222); tie rule; spread; filters; EVID-05 (68 measured zeros, no_data for unknown-only rooms); province frames; level words |
-| `views.test.js` | every view (×2 measures) ends with one provenance line (checked 1 พ.ย. 2569) and the unit clause, with no located-inside / sales / share / occupancy / ADR / density claim; first-screen text; district, station, chain and hotel panels; comparison-set rule; missing stays missing; charts; breadcrumb `?d=hotel`; series binding (no star); list order; Google actions; filter chips |
-| `pins.test.js` | one symbol per row with a point; **0.2.0:** symbol area ∝ rooms at every zoom, cap, unknown = the 50-room size (hollow), zoom stays the top-level input, context radius capped; label importance (rooms + recorded price percentiles, a missing price never guessed); detail pins; co-located slots |
-| `labels.test.js` | **new:** importance-then-centre ranking; short names (type, place and generic words, brand words); text labels — brand over site, no logo in a label; central-ellipse candidates; placement off blockers and other labels, capped |
-| `logos.test.js` | **new:** every logo file exists with its SHA-256 and size, a public https source page or a recorded note, no private links, theme-invariant backing, SVGs without scripts or handlers; markup escaped and cache-tagged; files only from `assets/brand-logos/` |
-| `terrain.test.js` | **new:** terrarium decoding; facts of the ground (elevation, relief, higher/lower); chips short with the sentence in the title, unknown and 0 % tree cover left out, never a view/price/risk; terrain thresholds; the fill switch is a hard step, never a fade; hillshade tones |
-| `release.test.js` | one cache tag on every entry and module (import map incl. `labels.js`, `logos.js`, `terrain.js`), one product version (0.2.0), publication hygiene of the tree, handoff JSON against schema 1.5.0 |
-| `icons.test.js` | pictogram font bytes and manifest (19 glyphs, sha256 `3121db92…`), cache tags on icon fonts |
-| `scales`, `camera`, `massing`, `venue-xray`, `building-join`, `maplibre-guard`, `frames`, `geometry`, `mvt`, `map-style` | unchanged contracts carried over from 0.1.0 |
+| `views.test.js` | **0.3.1:** every view (×2 measures) ends with one provenance line — dataset · source · date · boundary as `data-prov` parts (checked 1 พ.ย. 2569), then the “วิธีนับ” link — and carries **no caveat on screen** (no “ไม่ใช่…”, “ยังไม่ได้ตรวจ…”, “อาจเป็น…”, “ไม่ได้แปลว่า…”, “ไม่ทราบช่วงเวลา”, “ค่าประมาณ”, “นับในยอดรวม”) and no located-inside / sales / share / occupancy / ADR / revenue / density claim; first screen “35% ของห้องพักกรุงเทพมหานคร อยู่ใน 3 เขตนี้ · 53,516 จาก 153,200 ห้อง”, rail bars with both bases in the accessible text, “อันดับ 1 นอกกรุงเทพมหานคร”; unknown rooms as a “ไม่ทราบ” size bar; share tiles with numerator and denominator; station radius with the distance pictogram; hotel chips, price date as a source-details field, comparison rule as chips; missing stays missing; charts; breadcrumb; Google actions; filter chips |
+| `insight.test.js` | first Aha fixtures — **0.3.1:** the share of the province's whole total (rooms: 53,516 / 153,200 = 35 %, placed total 152,864; records: Phuket 1,886 / 2,223); rail 25,768/38,690 vs 32,732/77,957; outside บางละมุง 62,561; tie rule; spread; filters; EVID-05; province frames; level words |
+| `building-units.test.js` | **0.3.0:** focus-tier shaping with zones, OSM parts kept, context; CityMETER tiles drawn once (home tile, shared geometry), heights from `height_m`; request plan (nearest first, national slots); store and file validation; `installMassing` end-to-end on a fake map incl. the OSM fallback of a failed tile; shipped files follow the 15 % rule from their recorded counts, Bangkok by เขต, unique slots, hygiene; **0.3.1:** building panel “สูงราว”, the source in the title and the provenance line |
+| `camera.test.js` · `terrain.test.js` · `venue-xray.test.js` | **0.3.0:** terrain fit on the anchor's ground plane; still-camera scheduler for terrain changes; draw order with the context and credit layers |
+| `icons.test.js` | **0.3.1:** pictogram font bytes and manifest (24 glyphs: rank, date, distance, construction and dataset added; sha256 `0e68b6b0…`), cache tags on icon fonts |
+| `release.test.js` | one cache tag on every entry and module (import map incl. `building-units.js`), one product version (0.3.1), publication hygiene of the tree, handoff JSON against schema 1.5.0 |
+| `data`, `pins`, `labels`, `logos`, `scales`, `massing`, `building-join`, `maplibre-guard`, `frames`, `geometry`, `mvt`, `map-style` | contracts carried over from 0.2.0 |
 
 ## 2. LDS and Location Intelligence parity — 124 ok, 0 failed
 
 `node scripts/check-lds-parity.mjs --lds Landometer-Design-System-v0.9.7.md --li Location-Intelligence-Profile-for-LDS-v0.9.7.md`:
-base SHA-256 `d3085cbc…96`, profile SHA-256 `5d485604…3c` (`baseDocument.sha256` = the base). 0.2.0 adds no data colour:
-the hillshade reads basemap tokens, labels and the card read surface and border tokens, the size key reads `--text-muted`
-and `--map-marker-stroke`, hollow cues use the series fill unchanged. Logo backings are the library's recommended
-surfaces (identity, not interface tokens).
+base SHA-256 `d3085cbc…96`, profile SHA-256 `5d485604…3c` (`baseDocument.sha256` = the base). 0.3.0 and 0.3.1 add no data
+colour: CityMETER buildings use the massing tokens of OSM buildings; the rail bars use the neutral foundation fill of the
+ordinal bars; the “ไม่ทราบ” bar uses the EVID-05 no-data hatch (`--data-no-data`); chips and the provenance line read
+border and text tokens.
 
-## 3. Rendered harness (build container)
+## 3. Preview (raw.githack, real basemap, terrain and CityMETER tiles)
 
-Playwright + Chromium + MapLibre GL 5.6.2 from the npm package; OpenFreeMap, unpkg and the terrain tiles are blocked in the
-container (no basemap there). Home, `?metric=count`, a station, `?view3d=0&area=8302`, a hotel deep link and Patong at
-site scale, 1400 px and 390 px, light and dark: no page error. Found and fixed there: hotel labels laid out before the
-district chips of the same frame (now one frame later, chips keep priority); chain names held in the Thai name field
-were not shortened.
+- 0.3.0 (`preview-0.3.0`): Sri Panwa (terrain on, 150 CityMETER buildings on the hill), Amari Phuket (x-ray on terrain,
+  ground 44 m), Patong (16,698 CityMETER buildings), Bangkok วัฒนา (CityMETER, terrain off). Found and fixed there: the
+  closed-ring simplification that voided polygon counts; the terrain fit diverging on slopes (now a plane at the anchor's
+  ground); MapLibre's render loop stopping when terrain was set during an ease (terrain changes now wait for a still
+  camera); terrain switching on in Bangkok (the site's relief at probe scale decides in the building view); the CityMETER
+  building highlight lost after a focus change (national tile-unit slots); terrain facts waiting for an idle map.
+- 0.3.1 (`preview-0.3.1`): first screen, hotel, district, station and building panels, light and dark, 1710 px and
+  390×700 frames. Found and fixed there: the station radius tile split “500 / ม.” (number and unit now apart); the method
+  link's separator underlined; a count split from its word in the map card (“3 / เขตนี้”); sea and tree chips missing
+  after choosing a stay far from the camera (the basemap is read only once loaded at the stay, then read again).
 
-## 4. Preview and live
+## 4. Live
 
-- Preview from the branch `preview-0.2.0` through raw.githack (real basemap and terrain): Khao Kho terrain mode (3D ground,
-  hillshade, fill off at site scale), the two-point camera with terrain on (it framed the hillside behind the resort —
-  fixed: terrain switches off for the building camera, the panel carries the terrain facts), hover card terrain chips
-  (“ต้นไม้ 0%” where OSM maps no wood — fixed: tree cover is shown only when above 0), Patong light theme.
-- GitHub Pages: `main` / root. Byte attestation (`npm run verify:live`): 273 published files of commit `6e699b7` fetched
-  from GitHub Pages, 273 identical (SHA-256), 0 failed (2026-11-01).
-- Live walk in Chrome, desktop 1710 px CSS, dark and light: Bangkok first screen (35 % · คลองเตย วัฒนา ราชเทวี; terrain
-  not loaded; hotel labels clear of the district chips), Khao Kho at site scale (terrain mode, nine labels), Patong
-  (terrain, text labels with brand over site, hover card with the chain logo at 40 px and terrain chips).
-- Phone width on the live site: same-origin 390×700 frames — Patong light and Khao Kho / Bangkok dark (five labels,
-  two-line brand labels, terrain). Found and fixed in this walk: the new status style showed the status line on phones
-  under the expanded attribution (r4: hidden on phones again, as in 0.1.0); owner review: logos in labels were too small
-  to read (r5: labels are text, logos only in the card and the panel).
+- GitHub Pages: `main` / root. Byte attestation (`npm run verify:live`): 0.3.0 — 352 published files of `0016573`, 352
+  identical; 0.3.1 — 352 published files of `8a05b44`, 352 identical (SHA-256), 0 failed (2026-11-01).
+- Live walk in Chrome, desktop 1710 px CSS: 0.3.0 dark — Sri Panwa (terrain ×1.5, ground 70.9 m exaggerated, 150
+  CityMETER buildings, attribution “อาคาร: CityMETER Building V4 | ภูมิประเทศ: Terrain Tiles on AWS”), Amari Phuket
+  (x-ray on the hillside), The Key Bangkok building panel; 0.3.0 light — Sri Panwa, Kathu district (19,367 CityMETER + 7
+  OSM buildings), Patong at zoom 15.2 (16,698 CityMETER, terrain on). 0.3.1 light — first screen, Mercure Bangkok Siam
+  (top and comparison set), เขตวัฒนา; no console error.
+- Phone width on the live site: same-origin 390×700 frames, 0.3.0 Sri Panwa and เขตวัฒนา; 0.3.1 checked on the preview
+  of the same code (dark and light, first screen, hotel, district).
 
-## 5. Not verified
+## 5. Known limits found in the walk (not fixed in 0.3.1)
+
+- On a steep slope the building camera frames the building on the anchor's ground plane; its near corner can sit up to
+  ~25 px under the legend (Amari Phuket).
+- Switching the theme at the moment a far stay is selected can leave the camera where it was (the style reload ends
+  the flight); selecting again flies.
+- A few CityMETER buildings carry one-storey estimates where a hotel is taller (Amari Phuket 3.66 m; OSM has 5 m there).
+
+## 6. Not verified
 
 A physical phone or tablet, Safari and Firefox, a full screen-reader pass, colour-vision simulation, performance on
-low-end devices (terrain mode loads DEM tiles only at hilly sites), the accuracy of the sources themselves, and the
-accuracy of SRTM elevation or OSM water and land cover around each stay (terrain facts describe those datasets).
+low-end devices, the accuracy of the sources themselves, of CityMETER building heights, and of SRTM elevation or OSM
+water and land cover around each stay.
