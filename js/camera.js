@@ -268,11 +268,13 @@ const metresPerPixel = (lat, z) => (40075016.686 * Math.cos(lat * RAD)) / (512 *
  *
  * On terrain (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building stands on the drawn ground — MapLibre
  * lifts a fill-extrusion by the elevation at its centroid — so the fit works on a local plane at the anchor's ground G:
- * every point at its altitude + G (`projectAbs`, no per-point terrain lookup: neighbouring DEM samples on a slope or a
- * tile not loaded yet would tear the frame), the camera centre held at one elevation per round and the pan solved on
- * that plane (the projection's Jacobian; map.unproject's terrain ray reads the last rendered frame and is stale between
- * instant jumps). A second round holds the centre at the ground under the found centre — what MapLibre clamps it to
- * when the camera lands — so the computed frame is the landed one.
+ * every point at its altitude + its ground (`projectAbs`): the ground a point carries as its 4th value (the caller's
+ * one sample per piece, at the piece's centroid, where MapLibre lifts it — 0.3.2: a small building on a slope sat off
+ * the frame when every piece was put at G), else G (no per-vertex terrain lookup: neighbouring DEM samples on a slope
+ * or a tile not loaded yet would tear the frame); the camera centre held at one elevation per round and the pan
+ * solved on that plane (the projection's Jacobian; map.unproject's terrain ray reads the last rendered frame and is
+ * stale between instant jumps). A second round holds the centre at the ground under the found centre — what
+ * MapLibre clamps it to when the camera lands — so the computed frame is the landed one.
  */
 export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZoom = 14, maxZoom = 19.5, fill = 0.94, animate = true, duration = 900, apply = true, project = projectPoint, projectAbs = projectAltitude} = {}) {
   if (!points?.length || !box) return null;
@@ -298,7 +300,7 @@ export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZ
     if (!onTerrain) return screenBounds(map, points, project);
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const q of points) {
-      const s = projectAbs(map, [q[0], q[1], (q[2] || 0) + G]);
+      const s = projectAbs(map, [q[0], q[1], (q[2] || 0) + (Number.isFinite(q[3]) ? q[3] : G)]);
       if (!Number.isFinite(s?.x) || !Number.isFinite(s?.y)) return null;
       if (s.x < minX) minX = s.x; if (s.x > maxX) maxX = s.x; if (s.y < minY) minY = s.y; if (s.y > maxY) maxY = s.y;
     }
@@ -341,12 +343,15 @@ export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZ
   };
   converge();
   if (onTerrain) {
-    // The landed camera orbits the ground under its centre: hold the centre there and converge again (≤ 3 rounds).
+    // The landed camera orbits the ground under its centre: hold the centre there and converge again — until the
+    // held ground is the ground under the found centre. A close camera on a steep slope swings between two centres
+    // (0.3.2: ±0.5 m each round on a 30 % slope), so after the first round the held ground moves halfway (≤ 10 rounds).
     let held = G;
-    for (let round = 0; round < 3; round++) {
+    for (let round = 0; round < 10; round++) {
       const c = map.getCenter(), e = groundAt(map, [c.lng, c.lat]);
-      if (Math.abs(e - held) < 0.5) break;
-      held = e; map.jumpTo({elevation: e});
+      if (Math.abs(e - held) < 0.1) break;
+      held = round ? (held + e) / 2 : e;
+      map.jumpTo({elevation: held});
       converge();
     }
   }

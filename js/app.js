@@ -646,10 +646,20 @@ function highlightIds() {
 function focusShape(target = focusTarget()) {
   const features = target?.refs.length ? state.massing?.featuresOf(target.refs) || [] : [];
   const rings = features.flatMap(f => outerRings(f).map(ring => ({ring, height: Number(f.properties.height) || 3})));
-  let points = features.length ? state.massing?.fitPointsOf(features.map(f => f.id), 18) || [] : [];
+  // On terrain each piece stands on the ground at its centroid (as drawn and as the x-ray lifts it): its fit points
+  // carry that ground (4th value, js/camera.js#fitBuilding). A piece whose DEM sample is not there yet takes the pin's.
+  const map = state.map, terrain = Boolean(map?.terrain) && state.view3d;
+  const pinGround = terrain && target ? groundAt(map, target.anchor) : 0;
+  const groundOf = f => { const g = groundAt(map, centroidOf(f)); return g || pinGround; };
+  let points = features.flatMap(f => {
+    const pts = state.massing?.fitPointsOf([f.id], 18) || [];
+    if (!terrain) return pts;
+    const g = groundOf(f);
+    return pts.map(q => [q[0], q[1], q[2], g]);
+  });
   if (!points.length) points = rings.flatMap(({ring, height}) => ring.flatMap(([lng, lat]) => [[lng, lat, 0], [lng, lat, height]]));
   // The building nearest the pin is framed with the pin, so the stay's symbol stays in view beside it.
-  if (points.length && target?.near) points = [...points, [target.anchor[0], target.anchor[1], 0]];
+  if (points.length && target?.near) points = [...points, terrain ? [target.anchor[0], target.anchor[1], 0, pinGround] : [target.anchor[0], target.anchor[1], 0]];
   if (!points.length && target) {
     // Not known yet: a 90 m box round the point (12 m tall), framed the same way.
     const [lon, lat] = target.anchor, dLat = 45 / 110574, dLng = 45 / (111320 * Math.cos((lat * Math.PI) / 180));
@@ -742,7 +752,7 @@ function frameFocus({instant = false} = {}) {
   const known = shape.rings.length > 0;
   const obstacles = known ? state.massing?.obstaclesNear(target.anchor, 400, target.refs) || [] : [];
   const bearing = known ? twoPointBearing(shape.rings.map(t => t.ring), map.getBearing(), obstacles) : map.getBearing();
-  fitBuilding(map, shape.points, {box, bearing, maxZoom: known ? BUILDING_MAX_ZOOM : 18, animate: animate() && !instant});
+  fitBuilding(map, shape.points, {box, bearing, maxZoom: known ? (target.near ? BUILDING_MAX_ZOOM - 1 : BUILDING_MAX_ZOOM) : 18, animate: animate() && !instant});
   return true;
 }
 

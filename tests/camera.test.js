@@ -162,6 +162,23 @@ test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed cam
     'ignoring the ground would frame it differently');
 });
 
+test('fit on terrain (0.3.2): a point carrying its own ground (4th value) is framed where it is drawn — a small building down the slope from the pin', () => {
+  // A 12 m villa 30 m south of (down the slope from) the pin on a 30 % slope: drawn at the ground of its own centroid.
+  const terrain = (lng, lat) => 60 + 0.3 * (lat - LAT) * KY;
+  const {map, project, projectAbs} = fakeMap({terrain});
+  const villa = rect(12, 12, 6, [0, -30]);
+  const centroid = [villa.slice(0, -1).reduce((s, q) => s + q[0], 0) / 4, villa.slice(0, -1).reduce((s, q) => s + q[1], 0) / 4];
+  const g = terrain(...centroid), pin = [LON, LAT];
+  const points = [...villa.flatMap(([a, b]) => [[a, b, 0, g], [a, b, 6, g]]), [pin[0], pin[1], 0, terrain(...pin)]];
+  const drawn = [...villa.flatMap(([a, b]) => [[a, b, g], [a, b, 6 + g]]), [pin[0], pin[1], terrain(...pin)]];
+  const box = {left: 12, top: 70, right: 330, bottom: 470};
+  const target = fitBuilding(map, points, {box, bearing: 30, project, projectAbs, animate: false, maxZoom: 21});
+  map.jumpTo({...target}); map.land();
+  const b = screenBounds(map, drawn, (_, q) => projectAbs(map, q));
+  assert.ok(b.minX >= box.left - 2 && b.maxX <= box.right + 2 && b.minY >= box.top - 2 && b.maxY <= box.bottom + 2, `inside the box: ${JSON.stringify(b)}`);
+  assert.ok(Math.abs((b.minY + b.maxY) / 2 - (box.top + box.bottom) / 2) < 3, `centred down (${((b.minY + b.maxY) / 2).toFixed(1)})`);
+});
+
 test('two-point bearing avoids a drawn building standing between the camera and the venue', () => {
   const venue = [rect(60, 60, 0)];
   // A 40 m component just south-west of the venue: looking from the south-west (bearing 45) it hides the venue.
