@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {guardRetainedTiles, padOverscaledChildren, GUARDED_VERSION} from '../js/maplibre-guard.js';
+import {landAfterEase, guardElevationFreeze, guardRetainedTiles, padOverscaledChildren, GUARDED_VERSION} from '../js/maplibre-guard.js';
 import {MAP_VERSION} from '../js/vendors.js';
 
 // The parts of MapLibre 5.6.2 the bug lives in: OverscaledTileID.children and the child-cover check of
@@ -84,4 +84,24 @@ test('padOverscaledChildren touches only ideal tiles at or above maxzoom while t
   const later = new TileID(15, 0, 14, 5, 5);
   assert.equal(padOverscaledChildren([later], 14, 14), 0, 'cover zoom at maxzoom: MapLibre takes its overzoom branch');
   assert.equal(padOverscaledChildren([later], 13, undefined), 0);
+});
+
+test('guard 2: a programmatic ease on terrain ends with the centre landed on the ground (freeze cleared before moveend); gestures and other versions untouched', () => {
+  const events = [];
+  const tr = {center: {lng: 98.41, lat: 7.8}, tileZoom: 15, elevation: 80.97, setElevation(e) { this.elevation = e; }};
+  const map = {terrain: {getElevationForLngLatZoom: () => 62.41}, transform: tr, _elevationFreeze: true, handlers: {_terrainMovement: false},
+    getCenterClampedToGround: () => true, triggerRepaint() { events.push('repaint'); },
+    _afterEase(eventData, easeId) { events.push(['moveend', this.transform.elevation, this._elevationFreeze]); }};
+  assert.equal(guardElevationFreeze(map, '5.7.0'), false, 'another version: off');
+  assert.equal(guardElevationFreeze(map, '5.6.2'), true);
+  assert.equal(guardElevationFreeze(map, '5.6.2'), true, 'installed once');
+  map._afterEase({}, undefined);
+  assert.deepEqual(events.at(-1), ['moveend', 62.41, false], 'landed and unfrozen before moveend');
+  // A gesture owns the freeze; an ease stopped for another with the same id fires nothing.
+  map._elevationFreeze = true; map.transform.elevation = 70; map.handlers._terrainMovement = true;
+  assert.equal(landAfterEase(map), false); assert.equal(map.transform.elevation, 70);
+  map.handlers._terrainMovement = false; map._easeId = 'x';
+  map._afterEase({}, 'x');
+  assert.equal(map.transform.elevation, 70, 'same-id stop: left to the next ease');
+  assert.equal(landAfterEase({terrain: null}), false, 'no terrain: nothing to land');
 });

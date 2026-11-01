@@ -53,3 +53,36 @@ export function guardRetainedTiles(map, version) {
   Object.defineProperty(proto, '__citymeterRetainGuard', {value: true});
   return true;
 }
+
+/**
+ * Guard 2 (Hotel 0.3.2, found 2026-11-02 on a hillside resort): an easeTo/flyTo on terrain without `freezeElevation`
+ * leaves `map._elevationFreeze` set — only `_finalizeElevation` (eases with `freezeElevation`) and the gesture handler
+ * clear it — so later frames no longer clamp the centre to the ground: the camera keeps the elevation sampled on the
+ * ease's last frame from the DEM tiles loaded then (coarse while finer tiles stream in). Seen 18 m off at Sri Panwa,
+ * which put the framed building under the legend. When a programmatic ease ends (not a gesture's own move), the
+ * guard clears the freeze and lands the centre on the ground under it before `moveend`, as the render loop of a still
+ * map does; centre and zoom stay. Pinned 5.6.2 only.
+ */
+export function landAfterEase(map) {
+  if (!map?.terrain || !map._elevationFreeze || map.handlers?._terrainMovement) return false;
+  map._elevationFreeze = false;
+  if (typeof map.getCenterClampedToGround === 'function' && !map.getCenterClampedToGround()) return true;
+  const tr = map.transform, e = map.terrain.getElevationForLngLatZoom?.(tr.center, tr.tileZoom);
+  if (Number.isFinite(e) && typeof tr.setElevation === 'function') tr.setElevation(e);
+  map.triggerRepaint?.();
+  return true;
+}
+
+/** Install guard 2 on this map (its `_afterEase`); true when installed (or already), false for another version. */
+export function guardElevationFreeze(map, version) {
+  if (version !== GUARDED_VERSION || typeof map?._afterEase !== 'function') return false;
+  if (map.__citymeterLandGuard) return true;
+  const original = map._afterEase;
+  map._afterEase = function guardedAfterEase(eventData, easeId) {
+    // An ease stopped to start another with the same id fires nothing (MapLibre returns early): leave it to that one.
+    if (!(this._easeId && easeId && this._easeId === easeId)) landAfterEase(this);
+    return original.call(this, eventData, easeId);
+  };
+  Object.defineProperty(map, '__citymeterLandGuard', {value: true});
+  return true;
+}

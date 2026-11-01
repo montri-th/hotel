@@ -62,7 +62,7 @@ import {installMassing, outerRings} from './massing.js';
 import {createBuildingUnitStore, cmTileUrl, CM_ATTRIBUTION} from './building-units.js';
 import {presetFor, applyPreset, fitPitched, fitBuilding, twoPointBearing, screenBounds, groundAt, BUILDING_MAX_ZOOM} from './camera.js';
 import {installVenueXray} from './venue-xray.js';
-import {guardRetainedTiles} from './maplibre-guard.js';
+import {guardRetainedTiles, guardElevationFreeze} from './maplibre-guard.js';
 import {buildBreadcrumb, renderBreadcrumb, breadcrumbText} from './breadcrumb.js';
 import {rampLegendHTML} from './scales.js';
 import {cueMarkup} from './cues.js';
@@ -1381,6 +1381,8 @@ function installSpatialLayers() {
   state.loaded = true;
   // MapLibre 5.6.2 throws in its tile cover when the pitched building camera zooms out through 13–14 (js/maplibre-guard.js).
   guardRetainedTiles(map, maplibregl.getVersion?.());
+  // After a programmatic ease on terrain MapLibre 5.6.2 stops clamping the centre to the ground (js/maplibre-guard.js).
+  guardElevationFreeze(map, maplibregl.getVersion?.());
   const palette = basemapPalette(theme());
   state.provinceLayers = state.provincesGeo?.features?.length ? installProvinceLayers(map, state.provincesGeo) : null;
   state.areaLayers = installAreaLayers(map, {areas: state.frames.areas()});
