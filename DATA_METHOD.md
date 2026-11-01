@@ -1,8 +1,23 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.2.0 (built 2026-11-01 from the export of 2026-11-01); the page computes everything from the data
+a snapshot of release 0.3.1 (built 2026-11-01 from the export of 2026-11-01); the page computes everything from the data
 at run time, so these are fixtures, not constants.
+
+## วิธีนับ — อ่านตัวเลขในหน้าอย่างไร
+
+หน้าจอไม่มีคำเตือน (เจ้าของ 1 พ.ย. 2569: “ไม่มี caveats เลย”) ทุกบรรทัดที่มาท้ายหน้ามีลิงก์ “วิธีนับ” มาที่นี่ ขอบเขตของตัวเลขอยู่ตรงนี้ที่เดียว
+
+- **ห้อง** = จำนวนห้องที่แหล่งบันทึก (`rooms_selected`) รวมต่อพื้นที่ ไม่ใช่ห้องว่างต่อคืน อัตราการเข้าพัก หรือขนาดตลาด ที่พักที่ไม่ทราบจำนวนห้องไม่นับเป็น 0 ห้อง (แท่ง “ไม่ทราบ” ลายทแยง)
+- **แห่ง** = รายการที่พักหนึ่งรายการตามแหล่ง ยังไม่ได้ตรวจภาคสนามว่ายังเปิดอยู่ ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักทั้งประเทศ
+- **สัดส่วนของจังหวัด** = ห้อง (หรือแห่ง) ในพื้นที่ ÷ ทั้งจังหวัดในตัวกรอง รวมที่พักที่แหล่งระบุได้แค่จังหวัด ซึ่งนับในยอดจังหวัดแต่ไม่อยู่ในสีของเขต/อำเภอใด
+- **ใกล้รถไฟฟ้า** = ห่างจุดอ้างอิงของสถานีที่เปิดแล้วไม่เกิน 500 ม. เป็นระยะตรง ไม่ใช่ระยะเดินหรือเวลาเดินทาง นับเฉพาะที่พักที่มีพิกัด (ตัวตั้งและตัวหารอยู่ในคำอธิบายของแต่ละแท่ง)
+- **ราคาที่บันทึก** = ต่ำสุด สูงสุด เฉลี่ยต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้ แสดงรายโรงแรมเท่านั้น
+- **คู่เทียบ** = ที่พักประเภทเดียวกัน ห้องครึ่งเท่าถึงสองเท่า ในระยะตรง 2 กม. เรียงใกล้ก่อน เป็นรายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่ชุดคู่แข่งที่ยืนยันแล้ว
+- **เครือ** = จากแบรนด์ที่ชุดข้อมูลบันทึกพร้อมหลักฐาน ที่พักที่ไม่มีแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ
+- **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
+- **ภูมิประเทศ** = พื้นดินรอบหมุดของที่พัก (รัศมี 500 ม. ต้นไม้ 300 ม.) จาก SRTM 30 ม. (สำรวจปี 2543) และแผนที่ OSM ไม่ใช่การยืนยันวิว ราคา หรือความเสี่ยง
+- **สถานีที่กำลังสร้าง** = โครงการ ยังไม่ใช่บริการ
 
 ## 1. Sources
 
@@ -40,7 +55,8 @@ No ratio to area or population is drawn. Recorded rooms per km² or per person w
 measure the data does not support.
 
 **Recorded prices** (`min/max/avg_price_raw_thb`, 28,381 CityMETER Hotel V3 rows, `price_period = unknown`) are shown
-per hotel as “ราคาที่บันทึก … ไม่ทราบช่วงเวลา”, in the table and in the comparison set — never summed, averaged across
+per hotel as “ราคาที่บันทึก” (the unknown period is the “วันที่ราคา · ไม่ระบุในแหล่ง” field of the hotel's source
+details and a line of “วิธีนับ”), in the table and in the comparison set — never summed, averaged across
 hotels or called a rate, an ADR or revenue (owner decision 2026-11-01: publish per hotel, including the recorded prices).
 Star ratings are not published (64 rows only, `source_recorded_not_certification_verified`; a star would read as a rating).
 
@@ -95,12 +111,15 @@ walking route, a travel time or a catchment.
 - **First Aha** (`js/area-insight.js`): the leading province = the province with the most of the measure among rows
   placed at district level; up to three of its districts with the most of it, never cutting through a tie and never
   every district that holds the measure (a province with N ≤ 3 such districts shows its top N − 1); share =
-  Σ focus ÷ the province's placed total. Rail comparison: share of the measure within 500 m of an operating station
+  Σ focus ÷ the province's whole total in the selection (`homeValue`: placed rows and rows placed only at province
+  level; since 0.3.1, so the sentence reads “35% ของห้องพักกรุงเทพมหานคร” without a qualifier). The district panel's
+  share of its province uses the same denominator. Rail comparison: share of the measure within 500 m of an operating station
   among the focus rows with a point vs the rest of the province's placed rows with a point. Outside finding: the
   district(s) with the most of the measure outside that province.
-  Snapshot (rooms): Bangkok · คลองเตย 20,679 · วัฒนา 17,774 · ราชเทวี 15,063 = 53,516 / 152,864 (35%); rail 67%
+  Snapshot (rooms): Bangkok · คลองเตย 20,679 · วัฒนา 17,774 · ราชเทวี 15,063 = 53,516 / 153,200 (35%; placed
+  total 152,864 + 336 rooms placed only at province level); rail 67%
   (25,768/38,690) vs 42% (32,732/77,957); outside: บางละมุง ชลบุรี 62,561. Snapshot (records): Phuket · เมืองภูเก็ต
-  1,024 · กะทู้ 862 = 1,886 / 2,222 (85%).
+  1,024 · กะทู้ 862 = 1,886 / 2,223 (85%).
 - **Station panel** (`buildStationProfile`): rows with a point within 500 m of the station's reference point (a row near
   two stations is listed at both). **Station ranking** (`stationsOf`): each row counted once, at its nearest operating
   station.
@@ -196,8 +215,9 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   central Bangkok) would lose their levels as CityMETER prisms. MapLibre fill-extrusion draws no roof shapes, so the
   levels are what the override keeps.
 - **Wording**: the attribution names “อาคาร: CityMETER Building V4” while any of its buildings is drawn; the building
-  panel names the outline source and calls a CityMETER height “ค่าประมาณ CityMETER”; the join of stays to buildings
-  (“จุดตกในอาคาร”) is the same for both sources (keys `osm:` / `cm:`).
+  panel says “สูงราว” with the source in its title and in the provenance line (“หมุดในขอบอาคาร CityMETER Building V4”);
+  the join of stays to buildings (a pin inside the outline: “ที่พักในอาคารนี้”) is the same for both sources (keys
+  `osm:` / `cm:`).
 
 ## 8. Not published
 

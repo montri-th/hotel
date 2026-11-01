@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "product-statement",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.0",
+  "productVersion": "0.3.1",
   "updatedOn": "2026-11-01",
   "dataset_id": "research.TH.hotel",
   "productionDatasetCode": "hotel",
@@ -86,7 +86,7 @@
     "ขอบเขตเดียวกับ CityMETER production และลิงก์ ?d=hotel",
     "ข้ามชุดข้อมูลในทะเบียนเดียวกัน: Transit, Shopping centers, งานวิจัยอาคาร — ผูกด้วย id พร้อม commit/sha256",
     "คู่เทียบในคลิกเดียว ด้วยกฎเปิดเผย (ประเภทเดียวกัน ½–2 เท่า 2 กม.)",
-    "ความจริงก่อนความสวย: ไม่ทราบ ≠ 0 · ราคาที่บันทึก ไม่ทราบช่วงเวลา · ระยะตรง · provenance ทุกมุมมอง"
+    "ความจริงก่อนความสวย: ไม่ทราบ ≠ 0 · ราคาที่บันทึก · ระยะตรง · บรรทัดที่มาทุกมุมมองพร้อมลิงก์วิธีนับ · ไม่มีคำเตือนบนหน้าจอ (owner 2026-11-01)"
   ],
   "firstFinding": {
     "evidence": "Observed fact",

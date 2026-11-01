@@ -43,7 +43,7 @@ test('every panel view ends with one provenance line — dataset · source · da
       assert.ok(/แหล่ง\s*จาก Hotel V3 · ทะเบียน ททท\. · เว็บทางการ/.test(t), `${name}: source`);
       assert.ok(t.includes('ตรวจ 1 พ.ย. 2569'), `${name}: date`);
       assert.ok(/ขอบเขต \S/.test(t), `${name}: boundary`);
-      assert.ok(html.includes('<a class="prov-method" href="DATA_METHOD.md"'), `${name}: the method link`);
+      assert.ok(html.includes('<span class="prov-part prov-method"><a href="DATA_METHOD.md"'), `${name}: the method link`);
       assert.equal((html.match(/class="hint panel-foot provenance"/g) || []).length, 1, `${name}: exactly one provenance line`);
       // Owner 2026-11-01: “ไม่มี caveats เลย” — exactness comes from names, numerators and denominators, and the provenance.
       assert.ok(!/ไม่ใช่|ยังไม่ได้ตรวจ|อาจเป็น|ไม่ได้แปลว่า|ไม่ทราบช่วงเวลา|ยืนยันแล้ว|ค่าประมาณ|นับในยอดรวม/.test(t), `${name}: no caveat on screen — ${(t.match(/.{0,40}(ไม่ใช่|ยังไม่ได้ตรวจ|อาจเป็น|ไม่ได้แปลว่า|ไม่ทราบช่วงเวลา|ยืนยันแล้ว|ค่าประมาณ|นับในยอดรวม).{0,40}/) || [''])[0]}`);
@@ -201,5 +201,5 @@ test('shares print whole percentages; a non-zero part never prints as 0%', () =>
   assert.equal(pct(1, 352), '<1%');
   assert.equal(pct(0, 10), '0%');
   assert.equal(pct(3, 0), '—');
-  assert.ok(text(provenance({meta: {checkedOn: '2026-10-25', context: {rail: {asOf: '2026-10-31'}}}, unit: unitWords('rooms')}, 'x', {rail: true})).includes('สถานี CityMETER Transit 31 ต.ค. 2569'));
+  assert.ok(text(provenance({meta: {checkedOn: '2026-10-25', context: {rail: {asOf: '2026-10-31'}}}, unit: unitWords('rooms')}, 'x', {rail: true})).includes('CityMETER Transit 31 ต.ค. 2569'));
 });

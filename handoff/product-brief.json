@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "product-brief",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.0",
+  "productVersion": "0.3.1",
   "updatedOn": "2026-11-01",
   "datasetCheckedOn": "2026-11-01",
   "language": "th",
@@ -28,7 +28,7 @@
     "charts / table",
     "CityMETER production"
   ],
-  "changesSince": "0.3.0 (2026-11-01, owner point 3 and “อยากให้เห็นอาคารบนภูมิประเทศ”): buildings per อปท. (Bangkok: เขต) — CityMETER Building V4 where it holds ≥ 1.15 × the OpenStreetMap buildings of the unit, else OSM (3,900 of 3,947 units on CityMETER; data/building-units/), OSM buildings mapped in parts kept (LOD2), CityMETER heights called estimates and credited in the attribution; buildings stand on the terrain in the building view (the site's relief decides; the camera, x-ray and pins on the drawn ground; terrain set only while the camera is still). 0.2.0: symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6).",
+  "changesSince": "0.3.1 (2026-11-01, owner “เรื่องภาษา … กระชับอ่านเข้าใจง่าย ใช้ symbol, logo, icon, charts … ไม่มี caveats เลย และเป็นธรรมชาติ”): copy rewritten in the ICP's words — pictograms (rank, date, distance, construction, dataset added to the approved subset), the rail comparison as two bars, unknown rooms as a hatched size bar, the comparison rule as chips, no caveat on screen; one provenance line per view (dataset · source · date · boundary, then “วิธีนับ” → DATA_METHOD.md, where the limits live); the Aha and district shares use the province's whole total (53,516 / 153,200 = 35%). 0.3.0 (2026-11-01, owner point 3 and “อยากให้เห็นอาคารบนภูมิประเทศ”): buildings per อปท. (Bangkok: เขต) — CityMETER Building V4 where it holds ≥ 1.15 × the OpenStreetMap buildings of the unit, else OSM (3,900 of 3,947 units on CityMETER; data/building-units/), OSM buildings mapped in parts kept (LOD2), CityMETER heights called estimates and credited in the attribution; buildings stand on the terrain in the building view (the site's relief decides; the camera, x-ray and pins on the drawn ground; terrain set only while the camera is still). 0.2.0: symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6).",
   "rowScopes": {
     "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
     "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
@@ -38,11 +38,11 @@
     "scope": "scopeRows",
     "measure": "rooms (default) | count",
     "ranking": "เขต/อำเภอ by the measure (then the other measure, then name) inside the home province = the province holding the most of the measure among rows placed at district level; up to three and never every district holding the measure (N ≤ 3 → top N − 1); never cut through a tie; none left → spread",
-    "headlineTemplate": "{share}% ของ{ห้องพัก|ที่พัก}ใน{home}ที่ระบุ{เขต|อำเภอ}ได้ อยู่ใน {n} {เขต|อำเภอ}นี้",
+    "headlineTemplate": "{share}% ของ{ห้องพัก|ที่พัก}{home} อยู่ใน {n} {เขต|อำเภอ}นี้ (one district: อยู่ใน{เขต|อำเภอ}{name})",
     "numerator": "Σ measure of the focused districts (matched membership)",
-    "denominator": "Σ measure of the home province’s rows that carry a district (rows placed only at province level stated apart)",
-    "personality": "rail: share of the measure within 500 m (straight line) of an operating CityMETER Transit station among the focus rows with a point vs the rest of the province’s placed rows with a point, both bases stated; hidden when neither side has any",
-    "secondaryFinding": "district(s) with the most of the measure outside the home province (every district tied); “มากกว่า{เขต}ใดใน{home}” when it exceeds the first focus district; hidden with a province filter and when the top is < 2",
+    "denominator": "Σ measure of every row of the home province in the selection (homeValue: rows with a district and rows placed only at province level; since 0.3.1)",
+    "personality": "rail: two bars — share of the measure within 500 m (straight line) of an operating CityMETER Transit station among the focus rows with a point vs the rest of the province’s placed rows with a point; both bases in each bar’s title and accessible text; hidden when neither side has any",
+    "secondaryFinding": "district(s) with the most of the measure outside the home province (every district tied); “อันดับ 1 นอก{home}”, “มากกว่าทุก{เขต}ของ{home}” when it exceeds the first focus district; hidden with a province filter and when the top is < 2",
     "defaultFocus": "auto",
     "defaultCamera": "city preset, fitPitched over the focused districts",
     "action": "ดูทุกพื้นที่ (?areas=all); เปรียบเทียบพื้นที่ (opens charts); district names are links",
@@ -150,7 +150,7 @@
     "areas": "Σ measure per เขต/อำเภอ (rooms → LI li.supply; records → LDS count)",
     "provinces": "Σ measure per province frame (same family)",
     "eligibility": "none — totals; ties are never cut (firstAha.ranking)",
-    "combined": "Σ focus ÷ the home province’s placed total (a share, numerator and denominator shown)",
+    "combined": "Σ focus ÷ the home province’s whole total in the selection (homeValue: placed and province-only rows, since 0.3.1; a share, numerator and denominator shown)",
     "notDrawn": "no per-area or per-person ratio: recorded rooms are not a density or a market measure",
     "ramp": "all 41 samples of the family LUT by rank among the measured nonzero values being read (js/scales.js#buildRamp; owner standing rule “Color scale ขอให้ใช้ 41 scales ตาม LDS เสมอ”); map, legend, labels, rank bars and the district chart read one ramp; the matrix has its own ramp over its cells"
   },
@@ -282,13 +282,13 @@
     "module": "js/profile-model.js#compsetOf",
     "rule": "same accommodation group, known rooms ½–2× the hotel’s, within 2,000 m straight line, nearest first, up to 10, every row of the dataset",
     "around": "every record within 2,000 m (any group) with rooms and unknown count",
-    "words": "รายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่คู่แข่งที่ยืนยันแล้ว"
+    "words": "คู่เทียบ · rule as chips (ประเภท · ½–2× ห้อง · ≤ 2 กม.); never คู่แข่ง; the limits live behind “วิธีนับ” (owner 2026-11-01: no caveat on screen)"
   },
   "priceContract": {
     "field": "min/max/avg_price_raw_thb of CityMETER Hotel V3",
     "period": "unknown",
     "shown": "per hotel only: fact chip, panel facts, comparison set, table",
-    "words": "ราคาที่บันทึก · ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้",
+    "words": "chip “฿x–y ที่บันทึก” · source details “ราคาที่บันทึก … ต่อคืน · CityMETER Hotel V3” and “วันที่ราคา · ไม่ระบุในแหล่ง” (owner 2026-11-01: no caveat line)",
     "never": "summed, averaged across hotels, called a rate"
   },
   "contextActionsContract": {
@@ -310,7 +310,7 @@
     "buildings": "focus-tier footprints: OpenStreetMap (pieces of one outline cut by tile edges, building:parts, podium + tower grouped) or, inside a CityMETER unit, CityMETER Building V4 (whole buildings, keys cm:)",
     "points": "hotel points of the scope",
     "rule": "display-time point-in-footprint (js/building-join.js#joinBuildings)",
-    "click": "one hotel → the hotel; several → the building panel (names the outline source; a CityMETER height reads “ค่าประมาณ CityMETER”)",
+    "click": "one hotel → the hotel; several → the building panel “ที่พักในอาคารนี้” (“สูงราว”, the outline source in the title and the provenance line)",
     "neverChanges": "any count or district membership"
   },
   "interactionContract": {
@@ -556,6 +556,6 @@
     "site": "GitHub Pages from main /root",
     "handoff": "dist/CityMETER-Hotel-Developer-Handoff.zip (START_HERE.md, RELEASE_RECEIPT.json, evidence/, source/)",
     "liveCheck": "npm run verify:live",
-    "cacheTag": "?v=20261101-r6 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
+    "cacheTag": "?v=20261101-r7 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
   }
 }

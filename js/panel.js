@@ -98,10 +98,10 @@ const MASS_TH = Object.freeze({
 export function provenance(ctx = {}, boundary = '', {rail = false, retail = false, terrain = false} = {}) {
   const meta = ctx.meta || {};
   const sources = ['Hotel V3', 'ทะเบียน ททท.', 'เว็บทางการ',
-    rail ? `สถานี CityMETER Transit ${thaiDate(meta.context?.rail?.asOf || '')}`.trim() : '',
-    retail ? 'ศูนย์การค้า CityMETER Shopping centers' : '',
-    terrain ? `ภูมิประเทศ SRTM 30 ม. (2543)${ctx.osmDate ? ` · OSM ${thaiDate(ctx.osmDate)}` : ''}` : ''].filter(Boolean);
-  return `<p class="hint panel-foot provenance"><span class="prov-part" data-prov="dataset">${pic('dataset')}<span class="sr-only">ชุดข้อมูล </span>CityMETER Hotel</span> <span class="prov-part" data-prov="source"><span class="sr-only">แหล่ง</span>จาก ${esc(sources.join(' · '))}</span><span class="prov-part" data-prov="date">${pic('date')}<span class="sr-only">ตรวจ </span>${esc(thaiDate(meta.checkedOn || ''))}</span><span class="prov-part" data-prov="boundary">${pic('area')}<span class="sr-only">ขอบเขต </span>${esc(boundary)}</span><a class="prov-method" href="${METHOD_URL}" target="_blank" rel="noopener">วิธีนับ</a></p>`;
+    rail ? `CityMETER Transit ${thaiDate(meta.context?.rail?.asOf || '')}`.trim() : '',
+    retail ? 'CityMETER Shopping centers' : '',
+    terrain ? `SRTM 30 ม. (2543)${ctx.osmDate ? ` · OSM ${thaiDate(ctx.osmDate)}` : ''}` : ''].filter(Boolean);
+  return `<p class="hint panel-foot provenance"><span class="prov-part" data-prov="dataset">${pic('dataset')}<span class="sr-only">ชุดข้อมูล </span>CityMETER Hotel</span> <span class="prov-part" data-prov="source"><span class="sr-only">แหล่ง</span>จาก ${esc(sources.join(' · '))}</span><span class="prov-part" data-prov="date">${pic('date')}<span class="sr-only">ตรวจ </span>${esc(thaiDate(meta.checkedOn || ''))}</span><span class="prov-part" data-prov="boundary">${pic('area')}<span class="sr-only">ขอบเขต </span>${esc(boundary)}</span><span class="prov-part prov-method"><a href="${METHOD_URL}" target="_blank" rel="noopener">วิธีนับ</a></span></p>`;
 }
 
 /* ---------- shared fragments ---------- */

@@ -208,7 +208,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 /* Provenance (owner 2026-11-01, short copy): dataset · source · date · boundary as pictogram-led parts, then the method. */
 .provenance .pictogram { width: 14px; height: 14px; font-size: 14px; vertical-align: -2px; margin-right: 3px; }
 .provenance [data-prov="date"]::before, .provenance [data-prov="boundary"]::before, .provenance .prov-method::before { content: "·"; margin: 0 6px; color: var(--text-metadata); }
-.provenance .prov-method { text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+.provenance .prov-method { white-space: nowrap; }
+.provenance .prov-method a { text-decoration: underline; text-underline-offset: 2px; }
 
 /* Ranking list (panel) */
 .rank-list { list-style: none; padding: 0; display: grid; gap: 4px; }
