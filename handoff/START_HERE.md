@@ -1,6 +1,6 @@
 # CityMETER Hotel — Developer Handoff
 
-รุ่นเผยแพร่ 0.2.0 · 1 พ.ย. 2569 · ชีตวิจัยตรวจแหล่ง 1 พ.ย. 2569
+รุ่นเผยแพร่ 0.3.0 · 1 พ.ย. 2569 · ชีตวิจัยตรวจแหล่ง 1 พ.ย. 2569
 
 เริ่มอ่าน `source/handoff/README.md` จากนั้น Product Statement (`source/PRODUCT_STATEMENT.md` + `source/handoff/product-statement.json`), Product Brief และ Implementation Plan ในโฟลเดอร์ `source/handoff` ทั้ง `.md` และ `.json` ใช้คู่กัน
 

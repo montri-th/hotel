@@ -378,13 +378,15 @@ function renderPanel(summary = summarize(state.rows)) {
 }
 
 /** Terrain chips of the open stay (async; the DEM tiles and the basemap water/land cover are read in the browser). */
-async function fillTerrain(r) {
+async function fillTerrain(r, attempt = 0) {
   const box = document.querySelector(`[data-terrain-for="${CSS.escape(r?.id || '')}"]`);
   if (!box) return;
   const facts = state.map && state.loaded ? await terrainFacts(state.map, r).catch(() => null) : null;
   const chips = terrainChips(facts, {num});
   const now = document.querySelector(`[data-terrain-for="${CSS.escape(r.id)}"]`);
   if (!now) return;
+  // The map may not reach 'idle' while terrain tiles stream in (building view on terrain): read again a little later.
+  if (!facts && attempt < 4) { setTimeout(() => fillTerrain(r, attempt + 1), 1500 * (attempt + 1)); if (attempt) return; }
   const html = chips.length ? terrainChipsHTML(chips) : '<span class="hint">อ่านภูมิประเทศไม่ได้ในตอนนี้</span>';
   if (now.innerHTML !== html) now.innerHTML = html;
 }

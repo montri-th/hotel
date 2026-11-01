@@ -1,6 +1,6 @@
 {
   "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
-  "productVersion": "0.2.0",
+  "productVersion": "0.3.0",
   "updatedOn": "2026-11-01",
   "ldsVersion": "0.9.7",
   "release": "v0.9.7-owner.1",
@@ -62,13 +62,13 @@
     "choropleth": "li.supply (rooms) or count (records), all 41 samples by rank over the measured nonzero values; beneath the basemap’s first line layer; zoom 8–14.5 (8–12.5 in terrain mode, hard switch), the selected จังหวัด from zoom 4; EVID-05 measured / measured_zero (sample 0 + 2 px zero outline) / no_data (rooms unknown: hatch)",
     "provinces": "the same measure per province frame below zoom 8 without a จังหวัด filter, outlines to zoom 12, ink-chip labels to zoom 9, panel list",
     "symbols": "focus rows with a point as cue icons whose area grows with the recorded rooms (hollow = unknown); context rows as grey circles by rooms, ≤ 6 px radius; HTML pins from zoom 15.5; the pin label is hotel name · rooms; stations of CityMETER Transit as quiet clickable rings from zoom 10.5, names from 13.5",
-    "buildings": "hotel points × focus-tier OSM footprints (display-time join; tile-edge pieces, parts and podium + tower grouped as one building); the building being looked at in map.activeLayer, drawn over every other building and road name by the x-ray, focus buildings in front see-through",
+    "buildings": "per อปท. (Bangkok: เขต): CityMETER Building V4 where it holds ≥ 1.15 × the OSM buildings of the unit, else OSM (data/building-units/); OSM buildings mapped in parts kept; same quiet massing tones and rounded shape for both sources; the attribution names CityMETER Building V4 while drawn",
     "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius",
     "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel",
     "symbolSize": "area ∝ recorded rooms (js/model.js#pinRadius), hollow = unknown rooms, quiet context ≤ 6 px radius (owner 2026-11-01)",
     "labels": "from zoom 12.5: ≤ 9 (phone 5) labels in the central ellipse ranked by rooms + recorded price percentiles; text only — group cue, brand in bold over the site for a branded stay (else one short name), bed pictogram + rooms; measured placement off the chrome and the district chips (js/labels.js)",
     "logos": "chain-brand identity marks (data/brand-logos.json, SHA-256 checked, theme-invariant backing, never recoloured or redrawn), only at a readable size: hover card ≈ 40 px, hotel panel ≈ 44 px — never in a map label",
-    "terrain": "terrain mode at hilly sites only (zoom ≥ 12.5, 3D, relief ≥ 30 m in view): 3D ground × 1.5 + hillshade in basemap tones; the district fill switches off at 12.5 (hard switch, never a fade); off for the building camera (js/terrain.js)",
+    "terrain": "terrain mode at hilly sites (zoom ≥ 12.5, 3D, relief ≥ 30 m in view) and round a building or stay being looked at (relief ≥ 30 m within ±1 km of the site, 0.3.0): 3D ground × 1.5 + hillshade in basemap tones; the district fill switches off at 12.5 (hard switch, never a fade); buildings, the x-ray and the building camera stand on the drawn ground; switched only while the camera is still (js/terrain.js, js/camera.js)",
     "iconFirstText": "district chips carry the measure pictogram, the status is a pin + number, legend items are a symbol + 1–2 words; sentences live in titles and accessible names (owner 2026-11-01)"
   },
   "outboundActions": "js/ask.js — Google AI Mode (hotel: still open, rates now, reviews, getting there · district/station: where to stay · group: brands and openings · overview: supply and occupancy news), Maps and Street View per view, pictograms ai/streetview/maps, one disclaimer line",

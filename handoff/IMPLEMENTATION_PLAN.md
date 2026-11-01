@@ -1,4 +1,4 @@
-# CityMETER Hotel — Implementation Plan (0.2.0)
+# CityMETER Hotel — Implementation Plan (0.3.0)
 
 คู่กับ `implementation-plan.json`
 
@@ -18,11 +18,13 @@ Static site บน GitHub Pages · ES modules ผ่าน import map (ทุก
 | `js/map-layers.js` · `js/provinces.js` · `js/frames.js` · `js/areas.js` | choropleth เขต/อำเภอ, กรอบจังหวัด, ขอบเขตรายจังหวัด, ดัชนีพื้นที่ |
 | `js/pins.js` · `js/stations.js` | หมุดที่พัก (ขนาดตามห้อง), สถานีรถไฟฟ้าและวงรัศมี |
 | `js/ask.js` · `js/breadcrumb.js` · `js/navigation.js` | ปุ่ม Google, เส้นทาง, ไอคอนและวิธีใช้ |
-| `js/massing.js` · `js/camera.js` · `js/venue-xray.js` · `js/building-join.js` · `js/maplibre-guard.js` · `js/map-style.js` · `js/mvt.js` · `js/geometry.js` | มวลอาคาร กล้อง มุมมองอาคาร (สืบทอดจาก Fitness 0.3.1) |
+| `js/massing.js` · `js/camera.js` · `js/venue-xray.js` · `js/building-join.js` · `js/maplibre-guard.js` · `js/map-style.js` · `js/mvt.js` · `js/geometry.js` | มวลอาคาร กล้อง มุมมองอาคาร (สืบทอดจาก Fitness 0.3.1) · 0.3.0: อาคาร CityMETER Building V4 ในพื้นที่ที่ใช้ และกล้อง/x-ray บนภูมิประเทศ |
+| `js/building-units.js` | 0.3.0: แหล่งอาคารราย อปท./เขต (`data/building-units/`) — โหลดรายจังหวัด, ขอบเขตพื้นที่ CityMETER, URL tile production, attribution |
+| `js/labels.js` · `js/logos.js` · `js/terrain.js` | 0.2.0: ชื่อกลางจอ, โลโก้เครือ, ภูมิประเทศ (0.3.0: รวมรอบอาคารที่เปิด) |
 
 ## งาน (ทั้งหมดเสร็จในรุ่นนี้)
 
-T1 สร้างข้อมูล · T2 สัญญามาตรวัดและสี · T3 ข้อค้นพบแรก · T4 สถานี/โรงแรม/คู่เทียบ/เครือ · T5 กราฟ ตาราง ปุ่ม Google ไอคอน · T6 มุมมองอาคาร (สืบทอด) · T7 เอกสาร · T8 เผยแพร่และตรวจ live
+T1 สร้างข้อมูล · T2 สัญญามาตรวัดและสี · T3 ข้อค้นพบแรก · T4 สถานี/โรงแรม/คู่เทียบ/เครือ · T5 กราฟ ตาราง ปุ่ม Google ไอคอน · T6 มุมมองอาคาร (สืบทอด) · T7 เอกสาร · T8 เผยแพร่และตรวจ live · 0.3.0: นับอาคาร OSM/CityMETER ราย อปท./เขต แล้วเลือกแหล่งตามเกณฑ์ 15% (`scripts/build-building-units.py`) · อาคารบนภูมิประเทศในมุมมองอาคาร
 
 ## Acceptance criteria
 
@@ -30,4 +32,4 @@ A1 decode ครบ ไม่หลุด · A2 ความเป็นส่�
 
 ## Backlog
 
-B1 ราคาสังเกตรายวัน (`46_PRICE_OBSERVATIONS`) เพื่อฤดูกาล · B2 มวลอาคารวิจัย 642 ชิ้น · B3 ผูก 20 แบรนด์ที่ยังไม่มีเครือในชีต · B4 Locale Insight และ Population รายเขต · B5 feed สำหรับ agent รายเขต · B6 ตรวจสถานะการเปิดดำเนินงานรอบใหม่
+B1 ราคาสังเกตรายวัน (`46_PRICE_OBSERVATIONS`) เพื่อฤดูกาล · B2 มวลอาคารวิจัย 642 ชิ้น · B3 ผูก 20 แบรนด์ที่ยังไม่มีเครือในชีต · B4 Locale Insight และ Population รายเขต · B5 feed สำหรับ agent รายเขต · B6 ตรวจสถานะการเปิดดำเนินงานรอบใหม่ · B7 ผูกที่พักหลายอาคารกับขอบเขตไซต์ (ทีมวิจัยตรวจ 300 แห่งแรกใน `49_SITE_BOUNDARY_CHECK`)

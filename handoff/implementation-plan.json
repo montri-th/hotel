@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.2.0",
+  "productVersion": "0.3.0",
   "updatedOn": "2026-11-01",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
@@ -18,7 +18,8 @@
       "handoff:manifest": "node scripts/build-handoff.mjs",
       "handoff:bundle": "node scripts/build-handoff.mjs --zip dist/CityMETER-Hotel-Developer-Handoff.zip",
       "verify:live": "node scripts/verify-live.mjs",
-      "build:logos": "python3 -I scripts/build-logos.py --help"
+      "build:logos": "python3 -I scripts/build-logos.py --help",
+      "build:units": "python3 -I scripts/build-building-units.py --api <base info cache> --geom <LAO geometry cache> --counts <building counts .json> --out ."
     },
     "libraries": {
       "maplibre": "MapLibre GL JS 5.6.2 (unpkg, pinned; js/maplibre-guard.js)",
@@ -44,8 +45,8 @@
       "js/ask.js": "",
       "js/breadcrumb.js": "",
       "js/building-join.js": "",
-      "js/massing.js": "",
-      "js/camera.js": "",
+      "js/massing.js": "city and focus massing tiers; CityMETER Building V4 inside CityMETER units (shapeCmTile, planCmRequests), OSM parts override, context layer, credit",
+      "js/camera.js": "presets, pitched fits and the building camera (terrain-aware: groundAt, projectAltitude)",
       "js/venue-xray.js": "",
       "js/map-style.js": "",
       "js/maplibre-guard.js": "",
@@ -56,7 +57,8 @@
       "js/launch.js": "",
       "js/labels.js": "names near the middle of the view (importance = rooms + recorded price percentiles), short names, hover card of icon chips",
       "js/logos.js": "chain-brand logo registry (data/brand-logos.json): identity marks on their backing, cache-tagged by SHA-256",
-      "js/terrain.js": "terrain mode at hilly sites (3D ground, hillshade, relief probe) and the terrain facts of a stay"
+      "js/terrain.js": "terrain mode at hilly sites and round a building or stay (site relief), changes only while the camera is still; the terrain facts of a stay",
+      "js/building-units.js": "buildings per area: the per-province unit files (data/building-units/), CityMETER zones, production tile URLs and the attribution"
     },
     "data": [
       "data/hotels.json",
@@ -378,8 +380,8 @@
     },
     {
       "id": "B7",
-      "item": "Point 3: buildings per อปท. (เขต in Bangkok) with the source chosen per area by the 15 % rule; OSM building parts kept inside CityMETER areas; research site boundaries for the top 300 resorts and pool villas",
-      "evidence": "approved by the owner 2026-11-01, next release"
+      "item": "Point 3 follow-up: join a stay spread over several buildings to its site (research boundaries of the 300 most important resorts and pool villas, 49_SITE_BOUNDARY_CHECK)",
+      "evidence": "point 3 released in 0.3.0 (buildings per อปท./เขต); site boundaries pending the research team"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "citymeter-hotel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "CityMETER · Hotel — district-first 3D map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
@@ -18,6 +18,7 @@
     "handoff:manifest": "node scripts/build-handoff.mjs",
     "handoff:bundle": "node scripts/build-handoff.mjs --zip dist/CityMETER-Hotel-Developer-Handoff.zip",
     "verify:live": "node scripts/verify-live.mjs",
-    "build:logos": "python3 -I scripts/build-logos.py --help"
+    "build:logos": "python3 -I scripts/build-logos.py --help",
+    "build:units": "python3 -I scripts/build-building-units.py --help"
   }
 }

@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "product-brief",
   "productId": "citymeter-hotel",
-  "productVersion": "0.2.0",
+  "productVersion": "0.3.0",
   "updatedOn": "2026-11-01",
   "datasetCheckedOn": "2026-11-01",
   "language": "th",
@@ -28,7 +28,7 @@
     "charts / table",
     "CityMETER production"
   ],
-  "changesSince": "0.2.0 (2026-11-01, owner consult points 2, 4, 5 and icon-first map text): symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6). Point 3 (buildings per อปท., source per area by the 15 % rule) is approved for the next release.",
+  "changesSince": "0.3.0 (2026-11-01, owner point 3 and “อยากให้เห็นอาคารบนภูมิประเทศ”): buildings per อปท. (Bangkok: เขต) — CityMETER Building V4 where it holds ≥ 1.15 × the OpenStreetMap buildings of the unit, else OSM (3,900 of 3,947 units on CityMETER; data/building-units/), OSM buildings mapped in parts kept (LOD2), CityMETER heights called estimates and credited in the attribution; buildings stand on the terrain in the building view (the site's relief decides; the camera, x-ray and pins on the drawn ground; terrain set only while the camera is still). 0.2.0: symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6).",
   "rowScopes": {
     "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
     "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
@@ -307,10 +307,10 @@
     "note": "เปิดใน Google · ผลลัพธ์ไม่ใช่ข้อมูล CityMETER"
   },
   "buildingJoinContract": {
-    "buildings": "focus-tier OSM footprints (pieces of one outline cut by tile edges, building:parts, podium + tower grouped)",
+    "buildings": "focus-tier footprints: OpenStreetMap (pieces of one outline cut by tile edges, building:parts, podium + tower grouped) or, inside a CityMETER unit, CityMETER Building V4 (whole buildings, keys cm:)",
     "points": "hotel points of the scope",
     "rule": "display-time point-in-footprint (js/building-join.js#joinBuildings)",
-    "click": "one hotel → the hotel; several → the building panel",
+    "click": "one hotel → the hotel; several → the building panel (names the outline source; a CityMETER height reads “ค่าประมาณ CityMETER”)",
     "neverChanges": "any count or district membership"
   },
   "interactionContract": {
@@ -325,11 +325,13 @@
     "palette": "--basemap-* tokens of assets/theme.css; data colours never set there"
   },
   "massingContract": {
-    "cityTier": "basemap building extrusions, quiet, faded with distance from the focus",
-    "focusTier": "rounded footprints from z14 tiles in the focus regions (≤ 16 tiles nearest the camera; from zoom 12 in 3D when complete, else 13)",
+    "cityTier": "basemap building extrusions, quiet, faded with distance from the focus; OpenFreeMap features replaced by CityMETER buildings are hidden (one hashed match) and their buildings outside the focus come back in a context layer drawn the same way",
+    "focusTier": "rounded footprints from z14 tiles in the focus regions (≤ 16 tiles nearest the camera; from zoom 12 in 3D when complete, else 13): OpenStreetMap, or CityMETER Building V4 tiles (≤ 40 requests, per อปท. or แขวง) inside CityMETER units",
     "hostTier": "unused (no host geometry in this product)",
     "rounding": "roundingRadiusM(zoom) 3–12 m",
-    "enclosure": "encloseOffsetM keeps the rounded shape around the original outline"
+    "enclosure": "encloseOffsetM keeps the rounded shape around the original outline",
+    "buildingSource": "per unit from data/building-units/ (scripts/build-building-units.py): CityMETER Building V4 when its count ≥ 1.15 × the OSM count of the unit (owner 2026-11-01), else OSM; OSM buildings mapped in parts stay inside CityMETER units; a missing CityMETER tile leaves its part on OSM",
+    "terrain": "fill-extrusions stand on the terrain at their centroid (MapLibre); the building camera fits on the anchor's ground plane and the landed centre's ground; the x-ray solid is lifted the same way"
   },
   "cameraContract": {
     "presets": {
@@ -554,6 +556,6 @@
     "site": "GitHub Pages from main /root",
     "handoff": "dist/CityMETER-Hotel-Developer-Handoff.zip (START_HERE.md, RELEASE_RECEIPT.json, evidence/, source/)",
     "liveCheck": "npm run verify:live",
-    "cacheTag": "?v=20261101-r5 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
+    "cacheTag": "?v=20261101-r6 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
   }
 }

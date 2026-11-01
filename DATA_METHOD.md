@@ -142,11 +142,15 @@ walking route, a travel time or a catchment.
   recommended surface (theme-invariant backing), at a readable size in the hover card (≈ 40 px tall) and the hotel
   panel (≈ 44 px). Rights stay with each owner; showing a mark to identify a brand is not
   an endorsement or a licence.
-- **Terrain mode** (`js/terrain.js`): at site scale (zoom ≥ 12.5, 3D view, not a building or stay being looked at), when
-  the visible ground spans at least 30 m (p95 − p5 of a 14 × 14 sample of the DEM at zoom 11; off below 20 m or zoom
-  12.2), the map shows 3D ground exaggerated × 1.5 (said in the legend) and a hillshade in basemap tones; the district
-  fill switches off from zoom 12.5 (a hard switch). DEM: Terrain Tiles on AWS (Mapzen/Tilezen terrarium; SRTM 30 m,
-  acquired 2000, over Thailand).
+- **Terrain mode** (`js/terrain.js`): at site scale (zoom ≥ 12.5, 3D view), when the visible ground spans at least 30 m
+  (p95 − p5 of a 14 × 14 sample of the DEM at zoom 11; off below 20 m or zoom 12.2), the map shows 3D ground exaggerated
+  × 1.5 (said in the legend) and a hillshade in basemap tones; the district fill switches off from zoom 12.5 (a hard
+  switch). Since 0.3.0 (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building or stay being looked at keeps
+  terrain too: its site decides — p95 − p5 of a 12 × 12 sample at zoom 11 over ±1 km ≥ 30 m (Sri Panwa 31 m, above
+  Patong 154 m; Bangkok's towers read 16–20 m) — and the building camera, the x-ray and the pins stand on the drawn
+  ground. Terrain is switched on or off only while the camera is still (MapLibre 5.6.2 stops rendering when a terrain
+  is set during a camera move). DEM: Terrain Tiles on AWS (Mapzen/Tilezen terrarium; SRTM 30 m, acquired 2000, over
+  Thailand).
 - **Terrain facts of a stay** (card and panel): ground elevation at the point (DEM zoom 13); relief = max − min of the
   point and 24 points on rings of 250 m and 500 m; higher/lower than its surroundings when the point differs from the
   mean of the 500 m ring by ≥ 15 m; the nearest of the rings 0 · 150 · 300 · 600 · 1,200 m (straight line) that reaches
@@ -168,7 +172,14 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   vertices with a closed-ring Douglas–Peucker). The count in the unit's bounding box is an upper bound: where
   1.15 × it is still ≤ the CityMETER count, or it is 0, it decides without a polygon count. A unit whose OSM count
   could not be read stays on OSM. Units where both sources hold fewer than 10 buildings are flagged `gap`.
-- **Result**: see `data/building-units/index.json` (`meta.totals`, one summary row per province) — UNIT_RESULT
+- **Result** (counts of 2026-11-01, `data/building-units/index.json`): 3,947 units hold a stay with a point (3,897 อปท. and
+  the 50 เขต). CityMETER Building V4 is drawn in 3,900 of them, OpenStreetMap in 47 (stays with a point: 27,816 in
+  CityMETER units, 1,206 in OSM units). Bangkok: 46 of 50 เขต on CityMETER; บางรัก, ป้อมปราบศัตรูพ่าย, สัมพันธวงศ์ and
+  ยานนาวา stay on OSM. The OSM units are mostly old towns and islands OSM maps closely (เชียงคาน, เกาะช้าง, เกาะเต่า,
+  ศาลาด่าน, ปาย, พระนครศรีอยุธยา). OSM counts: 3,330 units decided by the bounding-box upper bound, 437 with no OSM building
+  in the box, 180 by polygon count; 28 units were counted on an Overpass mirror holding OSM of 2026-06-01, the rest on
+  OSM of 2026-11-01 (`meta.osm.osmBaseDays`). 3 units hold fewer than 10 buildings in both sources (`gap`). Reported,
+  not patched: a few CityMETER counts look low for a town (เทศบาลตำบลเชียงคาน 98, เทศบาลเมืองนครพนม 72).
 - **On the map** (`js/building-units.js`, `js/massing.js`): inside a CityMETER unit the focus tier draws the unit's
   CityMETER Building V4 buildings — production tiles `building/detailMvt/14/{x}/{y}` read per อปท. (Bangkok: per แขวง),
   every building drawn once from the tile that holds its interior point — with the same rounded, slightly enlarged
