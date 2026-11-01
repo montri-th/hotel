@@ -758,7 +758,7 @@ function frameFocus({instant = false} = {}) {
   const box = visibleBox();
   state.userCamera = false;
   // The ground the frame was computed on (0 off terrain or before its DEM tile arrives): onGroundChange refits when it moves.
-  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor)};
+  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor), box};
   if (!state.view3d) {
     const [q0] = shape.points;
     const b = shape.points.reduce((acc, q) => acc.extend([q[0], q[1]]), new maplibregl.LngLatBounds([q0[0], q0[1]], [q0[0], q0[1]]));
@@ -787,6 +787,21 @@ function onGroundChange() {
   if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= MAX_REFITS) return;
   if (Math.abs(groundAt(state.map, target.anchor) - (state.framed.ground || 0)) < 3) return; // the frame still holds
   state.framed.refits++;
+  frameFocus();
+}
+
+/**
+ * The free box changed after the building was framed — the legend re-rendered for the new zoom (an area's ramp gives
+ * way to the stay's keys, 0.3.2: Hotel Nikko Bangkok filled 86 % of the box instead of 94 %), a tray or a sheet: frame
+ * it again in the box it now has, unless the user moved the map (the refits count here too).
+ */
+function refitOnNewBox() {
+  const target = twoPoint() ? focusTarget() : null;
+  const framed = state.framed;
+  if (!target || !framed?.box || framed.id !== target.id || state.userCamera || framed.refits >= MAX_REFITS) return;
+  const b = visibleBox(), f = framed.box;
+  if (Math.max(Math.abs(b.top - f.top), Math.abs(b.bottom - f.bottom), Math.abs(b.left - f.left), Math.abs(b.right - f.right)) < 8) return;
+  framed.refits++;
   frameFocus();
 }
 
@@ -1514,7 +1529,7 @@ function initMap() {
     state.legendObserver ||= trackLegend();
     state.labels = installAreaLabels(state.map, $('map'), {className: 'neighborhood-label', hostId: 'area-labels', hostLabel: 'เขต/อำเภอบนแผนที่', minZoom: PROVINCE_VIEW_MIN_ZOOM, verb: 'กดเพื่อสำรวจพื้นที่', onSelect: id => selectArea(id, {fromMap: true}), reservedBottom: labelBottomSpace, maxLabels: 40});
     state.provinceLabels = installAreaLabels(state.map, $('map'), {className: 'province-label', hostId: 'province-labels', hostLabel: 'จังหวัดบนแผนที่', minZoom: 0, maxZoom: PROVINCE_LABEL_MAX_ZOOM, verb: 'กดเพื่อดูจังหวัด', detailZoomClass: false, onSelect: code => selectProvince(code), reservedBottom: labelBottomSpace, maxLabels: 77, avoid: '.neighborhood-label:not([hidden])'});
-    state.map.on('zoomend', () => { if (state.loaded) renderLegend(); });
+    state.map.on('zoomend', () => { if (state.loaded) { renderLegend(); refitOnNewBox(); } });
     // Coalesced: a camera fit jumps the map many times in one task; labels and frame loading follow the last position.
     state.map.on('moveend', scheduleLabelView);
     // The open stay's terrain chips read the basemap tiles round it: read again once the map has settled there.
