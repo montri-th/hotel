@@ -129,15 +129,18 @@ walking route, a travel time or a catchment.
   price ranks on its rooms alone and one without rooms on its price alone; the price is never guessed and the score is
   never shown. At most 9 labels on desktop and 5 on a phone, measured and placed so they never cover the map chrome,
   the district chips, the popup or each other.
-- **Short names**: a leading type word (โรงแรม …), the province name (Thai or English, กรุงเทพฯ) and generic endings
-  (รีสอร์ท แอนด์ สปา, Hotel …) are dropped; a chain hotel with a logo reads in English without the brand words the logo
-  shows. Never shorter than 3 characters; the full name is the accessible name and heads the card.
+- **Label text**: a branded stay reads as two lines of text — the brand in bold, then the site: its name (English when
+  there is one) without the brand words, a leading type word (โรงแรม …), the province name (Thai or English, กรุงเทพฯ)
+  and generic endings (รีสอร์ท แอนด์ สปา, Hotel …); other stays read as one such short name. Never shorter than 3
+  characters; the full name is the accessible name and heads the card. Logos are not drawn in labels: at label size
+  they cannot be read (owner 2026-11-01).
 - **Chain logos** (`data/brand-logos.json`, `assets/brand-logos/`, `scripts/build-logos.py`): the research team's
   chain-brand logo library (`Hotel_Chain_Logos_Web`, checked 2026-11-01) joined by `48_LOGO_LIBRARY`; 107 of 112 brands
   of this release. Every file's SHA-256 matches the library manifest and the tab; SVGs are checked for scripts, handlers
   and external references; rasters above 512 px or 64 KB are scaled uniformly to 384 px (WebP) after a transparent
   margin is trimmed — never recoloured, cropped into the artwork, traced or upscaled. Each logo sits on the library's
-  recommended surface (theme-invariant backing). Rights stay with each owner; showing a mark to identify a brand is not
+  recommended surface (theme-invariant backing), at a readable size in the hover card (≈ 40 px tall) and the hotel
+  panel (≈ 44 px). Rights stay with each owner; showing a mark to identify a brand is not
   an endorsement or a licence.
 - **Terrain mode** (`js/terrain.js`): at site scale (zoom ≥ 12.5, 3D view, not a building or stay being looked at), when
   the visible ground spans at least 30 m (p95 − p5 of a 14 × 14 sample of the DEM at zoom 11; off below 20 m or zoom

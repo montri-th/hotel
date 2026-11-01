@@ -5,8 +5,9 @@
  *
  * From LABEL_MIN_ZOOM, the focus rows whose point lies in the central ellipse of the visible map (CENTRE_SHARE of its
  * half-width and half-height) compete for a short label: the brand logo (chain brands with an approved logo,
- * js/logos.js) or the group cue, a short name, and the bed pictogram with the recorded rooms (left out when
- * unknown — never 0). Ranking: row.importance (js/model.js#importanceScores — rooms and recorded price
+ * the group cue, short text — a branded stay: the brand in bold and the site under it; otherwise one short name —
+ * and the bed pictogram with the recorded rooms (left out when unknown — never 0). Chain logos (js/logos.js) are
+ * shown at a readable size in the card and the panel, never squeezed into a label (owner 2026-11-01). Ranking: row.importance (js/model.js#importanceScores — rooms and recorded price
  * percentiles), then nearness to the centre. At most LABEL_MAX labels (desktop / phone). Each label is measured and
  * placed above its point, else below it; it never covers the map chrome, another label or the open popup.
  * During a camera move the placed labels follow their points every frame (no re-ranking); the set is ranked again
@@ -15,7 +16,7 @@
  * the accessible names and chip titles only; the provenance line stays in the panel.
  */
 import {cueMarkup} from './cues.js';
-import {logoMarkup, logoOf} from './logos.js';
+import {logoMarkup} from './logos.js';
 import {terrainFacts, terrainChips} from './terrain.js';
 
 export const LABEL_MIN_ZOOM = 12.5;
@@ -67,6 +68,21 @@ export function shortName(row, {hasLogo = false, places = []} = {}) {
   if (name.length >= 3) return name;
   // Everything was a brand, type or place word: keep the brand-less name if it still says something, else the name.
   return afterBrand.length >= 3 ? afterBrand : original;
+}
+
+/**
+ * Pure: what a label says (owner 2026-11-01: “ป้าย logo เล็กไปก็มองไม่ออก … หาแบบที่ user อ่านง่าย เห็นเข้าใจเร็ว”).
+ * A branded stay reads as two short lines of text — the brand in bold, then the site (its name without the brand,
+ * type and place words); a stay without a brand is one line. Logos are too small to read at label size: they appear
+ * in the card and the panel instead. Returns {brand, site, rooms}.
+ */
+export function labelParts(row, {places = []} = {}) {
+  const brand = String(row.brand?.name || '').trim();
+  const rooms = Number.isFinite(row.rooms) && row.rooms > 0 ? row.rooms : null;
+  if (!brand) return {brand: '', site: shortName(row, {places}), rooms};
+  let site = shortName(row, {hasLogo: true, places});
+  if (!site || site.toLowerCase() === brand.toLowerCase()) site = '';
+  return {brand, site, rooms};
 }
 
 /**
@@ -128,14 +144,18 @@ export function installHotelLabels(map, container, {onSelect, bounds, radius = (
   function element(row) {
     let e = pool.get(row.id);
     if (e) return e;
-    const logo = row.brand ? logoOf(row.brand.id) : null;
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'hotel-label';
     el.dataset.id = row.id;
     const rooms = known(row) ? `${num(row.rooms)} ห้อง` : 'ไม่ทราบจำนวนห้อง';
     el.setAttribute('aria-label', [row.name || row.nameEn, rooms, row.brand?.name].filter(Boolean).join(' · '));
-    el.innerHTML = `${logo ? logoMarkup(row.brand.id, {className: 'brand-logo hl-logo'}) : `<span class="hl-cue" aria-hidden="true">${cueMarkup(row.series)}</span>`}<span class="hl-name">${esc(shortName(row, {hasLogo: Boolean(logo), places: placesOf(row)}))}</span>${known(row) ? `<span class="hl-rooms data-number"><i class="pictogram pic-rooms" aria-hidden="true"></i>${esc(num(row.rooms))}</span>` : ''}`;
+    const parts = labelParts(row, {places: placesOf(row)});
+    const text = parts.brand
+      ? `<span class="hl-text"><strong class="hl-brand">${esc(parts.brand)}</strong>${parts.site ? `<span class="hl-site">${esc(parts.site)}</span>` : ''}</span>`
+      : `<span class="hl-text"><span class="hl-name">${esc(parts.site)}</span></span>`;
+    el.classList.toggle('is-branded', Boolean(parts.brand));
+    el.innerHTML = `<span class="hl-cue" aria-hidden="true">${cueMarkup(row.series)}</span>${text}${parts.rooms ? `<span class="hl-rooms data-number"><i class="pictogram pic-rooms" aria-hidden="true"></i>${esc(num(parts.rooms))}</span>` : ''}`;
     el.onclick = () => onSelect?.(row);
     el.onmouseenter = () => { if (finePointer()) showCard(row, el); };
     el.onmouseleave = () => hideCard(row);
@@ -222,14 +242,14 @@ export function installHotelLabels(map, container, {onSelect, bounds, radius = (
   async function showCard(row, anchor = null) {
     if (!row) return;
     cardRow = row; cardAnchor = anchor;
-    const logo = row.brand ? logoMarkup(row.brand.id, {className: 'brand-logo hc-logo'}) : '';
+    const logo = row.brand ? logoMarkup(row.brand.id, {className: 'brand-logo hc-logo'}) : '';  // readable size: the card, not the label
     const chips = [
       `<span class="hc-chip">${cueMarkup(row.series)}${esc(groupName(row))}</span>`,
       known(row) ? chip('rooms', `${num(row.rooms)} ห้อง`) : chip('rooms', 'ไม่ทราบห้อง', 'แหล่งไม่ได้บันทึกจำนวนห้อง'),
       row.price ? chip('price', `${priceText(row.price)} ที่บันทึก`, 'ราคาต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา') : '',
       row.brand && !logo ? chip('chain', row.brand.name) : '',
     ].filter(Boolean).join('');
-    card.innerHTML = `<div class="hc-head">${logo}<div><strong>${esc(row.name || row.nameEn)}</strong>${row.nameEn && row.nameEn !== row.name ? `<span class="hc-sub">${esc(row.nameEn)}</span>` : ''}</div></div>
+    card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${row.nameEn && row.nameEn !== row.name ? `<span class="hc-sub">${esc(row.nameEn)}</span>` : ''}</div></div>
       <div class="hc-chips">${chips}</div><div class="hc-chips hc-terrain" aria-live="off"></div>`;
     card.hidden = false;
     placeCard();

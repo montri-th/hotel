@@ -66,8 +66,8 @@
     "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius",
     "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel",
     "symbolSize": "area ∝ recorded rooms (js/model.js#pinRadius), hollow = unknown rooms, quiet context ≤ 6 px radius (owner 2026-11-01)",
-    "labels": "from zoom 12.5: ≤ 9 (phone 5) names in the central ellipse ranked by rooms + recorded price percentiles; chain logo or group cue, short name, bed pictogram + rooms; measured placement off the chrome and the district chips (js/labels.js)",
-    "logos": "chain-brand identity marks (data/brand-logos.json, SHA-256 checked, theme-invariant backing, never recoloured or redrawn)",
+    "labels": "from zoom 12.5: ≤ 9 (phone 5) labels in the central ellipse ranked by rooms + recorded price percentiles; text only — group cue, brand in bold over the site for a branded stay (else one short name), bed pictogram + rooms; measured placement off the chrome and the district chips (js/labels.js)",
+    "logos": "chain-brand identity marks (data/brand-logos.json, SHA-256 checked, theme-invariant backing, never recoloured or redrawn), only at a readable size: hover card ≈ 40 px, hotel panel ≈ 44 px — never in a map label",
     "terrain": "terrain mode at hilly sites only (zoom ≥ 12.5, 3D, relief ≥ 30 m in view): 3D ground × 1.5 + hillshade in basemap tones; the district fill switches off at 12.5 (hard switch, never a fade); off for the building camera (js/terrain.js)",
     "iconFirstText": "district chips carry the measure pictogram, the status is a pin + number, legend items are a symbol + 1–2 words; sentences live in titles and accessible names (owner 2026-11-01)"
   },

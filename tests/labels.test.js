@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rankLabelCandidates, shortName, centreCandidates, placeLabels, LABEL_MIN_ZOOM, LABEL_MAX} from '../js/labels.js';
+import {rankLabelCandidates, shortName, labelParts, centreCandidates, placeLabels, LABEL_MIN_ZOOM, LABEL_MAX} from '../js/labels.js';
 
 // Owner 2026-11-01 (point 5): names near the middle of the view, most important first (rooms + recorded price),
 // short (icons before words), never covering the chrome or each other.
@@ -31,4 +31,12 @@ test('candidates come from the central ellipse only; placement avoids blockers a
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   for (const p of placed) assert.ok(!blockers.some(b => overlaps(p.box, b)), 'never on the chrome');
   for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.ok(!overlaps(placed[i].box, placed[j].box), 'never on another label');
+});
+
+test('label text: a branded stay reads brand + site as text (logos are too small for a label); others one short name', () => {
+  // Owner 2026-11-01: “ป้าย logo เล็กไปก็มองไม่ออก … หาแบบที่ user อ่านง่าย เห็นเข้าใจเร็ว”.
+  const P = ['ภูเก็ต', 'Phuket'];
+  assert.deepEqual(labelParts({name: 'Grand Mercure Phuket Patong', nameEn: '', rooms: 314, brand: {name: 'Grand Mercure'}}, {places: P}), {brand: 'Grand Mercure', site: 'Patong', rooms: 314});
+  assert.deepEqual(labelParts({name: 'Holiday Inn Resort', nameEn: '', rooms: null, brand: {name: 'Holiday Inn Resort'}}, {places: P}), {brand: 'Holiday Inn Resort', site: '', rooms: null}, 'no site line when it would repeat the brand; unknown rooms → no number');
+  assert.deepEqual(labelParts({name: 'โรงแรมภูเก็ต เกรซแลนด์ รีสอร์ท แอนด์ สปา', nameEn: 'Phuket Graceland Resort and Spa', rooms: 600, brand: null}, {places: P}), {brand: '', site: 'เกรซแลนด์', rooms: 600});
 });
