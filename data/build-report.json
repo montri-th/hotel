@@ -1,0 +1,46 @@
+{
+ "release": "hotel-data-2026-11-01",
+ "export": {
+  "sha256": "c0f8a1356ae15f0c5a69c1d6c183a59a6397a881180ca183a194daeb1ce3d115",
+  "title": "CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24"
+ },
+ "counts": {
+  "admin.name": 2117,
+  "admin.point": 197,
+  "admin.province": 35,
+  "admin.source": 28380,
+  "alias.excluded": 1,
+  "brand": 468,
+  "points": 29149,
+  "price.recorded": 28381,
+  "rooms.known": 30477,
+  "rooms.sum": 996784,
+  "rows": 30729,
+  "source.provinceDisagree": 1
+ },
+ "checks": {
+  "sourcePointDisagree": 7,
+  "sourcePointDisagreeSample": [
+   "HT-3a3406d2-25f6-4041-855d-57c35779a5b6",
+   "HT-443c7f2e-709e-4a22-b114-32c3277698bb",
+   "HT-66c2faa2-35b6-47ac-8350-19d32e0a1255",
+   "HT-c4751f15-5c43-4a3a-9e42-9c0657ed95e3",
+   "HT-3a968983-2cee-4609-887d-9d2746a6a740",
+   "HT-1e2bb4ba-3ead-4960-923a-16d06408c57a",
+   "HT-23f55fc5-65bf-41c8-8b59-6361cb2c31b3"
+  ]
+ },
+ "conflicts": 0,
+ "stations": 274,
+ "retail": 584,
+ "brands": 118,
+ "chains": 18,
+ "inBuilding": 126,
+ "files": [
+  {
+   "path": "data/hotels.json",
+   "bytes": 5920594,
+   "sha256": "5e78bc1edcb9ebb6950ca3e036b3b0d9b8ff8b3bba33ae4751acc057d77f0194"
+  }
+ ]
+}

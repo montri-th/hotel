@@ -1,0 +1,376 @@
+{
+  "$schema": "./handoff.schema.json",
+  "schemaVersion": "1.5.0",
+  "documentType": "implementation-plan",
+  "productId": "citymeter-hotel",
+  "productVersion": "0.1.0",
+  "updatedOn": "2026-11-01",
+  "architecture": {
+    "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
+    "commands": {
+      "test": "node --test tests/*.test.js",
+      "start": "python3 -m http.server 4173 --bind 127.0.0.1",
+      "build:base": "python3 -I scripts/fetch-base.py --help",
+      "build:boundaries": "python3 -I scripts/build-boundaries.py --help",
+      "build:receipts": "python3 -I scripts/build-receipts.py --help",
+      "build:data": "python3 -I scripts/build-data.py --help",
+      "check:lds": "node scripts/check-lds-parity.mjs",
+      "handoff:manifest": "node scripts/build-handoff.mjs",
+      "handoff:bundle": "node scripts/build-handoff.mjs --zip dist/CityMETER-Hotel-Developer-Handoff.zip",
+      "verify:live": "node scripts/verify-live.mjs"
+    },
+    "libraries": {
+      "maplibre": "MapLibre GL JS 5.6.2 (unpkg, pinned; js/maplibre-guard.js)",
+      "earcut": "js/vendor/earcut.js (ISC)",
+      "tiles": "OpenFreeMap planet (OpenMapTiles schema)"
+    },
+    "modules": {
+      "js/app.js": "",
+      "js/model.js": "",
+      "js/areas.js": "",
+      "js/area-insight.js": "",
+      "js/profile-model.js": "",
+      "js/panel.js": "",
+      "js/charts.js": "",
+      "js/chart-model.js": "",
+      "js/map-layers.js": "",
+      "js/provinces.js": "",
+      "js/frames.js": "",
+      "js/scales.js": "",
+      "js/cues.js": "",
+      "js/pins.js": "",
+      "js/stations.js": "",
+      "js/ask.js": "",
+      "js/breadcrumb.js": "",
+      "js/building-join.js": "",
+      "js/massing.js": "",
+      "js/camera.js": "",
+      "js/venue-xray.js": "",
+      "js/map-style.js": "",
+      "js/maplibre-guard.js": "",
+      "js/mvt.js": "",
+      "js/geometry.js": "",
+      "js/navigation.js": "",
+      "js/vendors.js": "",
+      "js/launch.js": ""
+    },
+    "data": [
+      "data/hotels.json",
+      "data/area-index.json",
+      "data/frames/{CODE}.json",
+      "data/provinces.geojson",
+      "data/boundary-receipts.json"
+    ]
+  },
+  "selection": {
+    "filterFields": [
+      "search",
+      "group",
+      "size",
+      "province",
+      "chain"
+    ],
+    "queryFields": [
+      "metric",
+      "area",
+      "areas",
+      "view",
+      "hotel",
+      "station",
+      "view3d"
+    ],
+    "rowScopes": {
+      "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
+      "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
+      "rows": "baseRows narrowed by the district focus: pins with detail, counters, the table (a building or station panel shows its own rows)"
+    },
+    "panelActions": [
+      "select-area",
+      "select-hotel",
+      "select-building",
+      "select-station",
+      "select-province",
+      "filter-chain",
+      "filter-group",
+      "set-metric",
+      "back",
+      "explore-top",
+      "clear-focus",
+      "open-charts",
+      "open-table",
+      "clear-filter",
+      "leave-area"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Data build from the research master + production base info + Transit + Shopping centers",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "A1",
+        "A2"
+      ],
+      "files": [
+        "scripts/build-data.py",
+        "scripts/fetch-base.py",
+        "scripts/build-receipts.py",
+        "data/hotels.json"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T2",
+      "title": "Measure contract (rooms | records), li.supply + count ramps, EVID-05 no_data for unknown rooms",
+      "dependsOn": [
+        "T1"
+      ],
+      "acceptanceCriteria": [
+        "A3",
+        "A4"
+      ],
+      "files": [
+        "js/model.js",
+        "js/scales.js",
+        "js/map-layers.js",
+        "js/provinces.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T3",
+      "title": "First Aha with rail comparison and the N − 1 rule",
+      "dependsOn": [
+        "T2"
+      ],
+      "acceptanceCriteria": [
+        "A5"
+      ],
+      "files": [
+        "js/area-insight.js",
+        "js/panel.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T4",
+      "title": "Station layer and panel (CityMETER Transit), hotel panel with comparison set, chain card",
+      "dependsOn": [
+        "T2"
+      ],
+      "acceptanceCriteria": [
+        "A6",
+        "A7"
+      ],
+      "files": [
+        "js/stations.js",
+        "js/profile-model.js",
+        "js/panel.js",
+        "js/app.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T5",
+      "title": "Charts, table, Google actions, pictograms, copy",
+      "dependsOn": [
+        "T3",
+        "T4"
+      ],
+      "acceptanceCriteria": [
+        "A8"
+      ],
+      "files": [
+        "js/charts.js",
+        "js/chart-model.js",
+        "js/ask.js",
+        "assets/icons/material-pictogram-300.woff2",
+        "index.html",
+        "styles.css"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T6",
+      "title": "Building view, camera and tile-cover guard carried over from Fitness 0.3.1 unchanged",
+      "dependsOn": [
+        "T2"
+      ],
+      "acceptanceCriteria": [
+        "A13"
+      ],
+      "files": [
+        "js/camera.js",
+        "js/massing.js",
+        "js/venue-xray.js",
+        "js/maplibre-guard.js",
+        "js/building-join.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T7",
+      "title": "Docs: product statement, data method, owner preferences, agent summary, handoff",
+      "dependsOn": [
+        "T5"
+      ],
+      "acceptanceCriteria": [
+        "A2",
+        "A8"
+      ],
+      "files": [
+        "PRODUCT_STATEMENT.md",
+        "DATA_METHOD.md",
+        "AGENTS.md",
+        "llms.txt",
+        "handoff/"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T8",
+      "title": "Publish to GitHub Pages and verify live",
+      "dependsOn": [
+        "T6",
+        "T7"
+      ],
+      "acceptanceCriteria": [
+        "A9",
+        "A14"
+      ],
+      "files": [
+        "scripts/verify-live.mjs",
+        "handoff/VERIFICATION.md"
+      ],
+      "status": "done"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "A1",
+      "scenario": "decode hotels.json",
+      "expected": "30729 rows, nothing dropped, ids unique, alias row out",
+      "verificationType": "unit (tests/data.test.js)"
+    },
+    {
+      "id": "A2",
+      "scenario": "publication hygiene",
+      "expected": "no address, phone, raw record, private link; https sources only",
+      "verificationType": "unit (tests/data.test.js, tests/release.test.js)"
+    },
+    {
+      "id": "A3",
+      "scenario": "rooms measure",
+      "expected": "Σ rooms = 996784; unknown rooms never 0",
+      "verificationType": "unit"
+    },
+    {
+      "id": "A4",
+      "scenario": "colour parity",
+      "expected": "li.supply and count LUTs equal the LDS/LI source files",
+      "verificationType": "script (npm run check:lds)"
+    },
+    {
+      "id": "A5",
+      "scenario": "first screen",
+      "expected": "34% (44897/130608) in คลองเตย · ราชเทวี · วัฒนา; rail 19577/30071 vs 24305/64530",
+      "verificationType": "unit (tests/insight.test.js) + render"
+    },
+    {
+      "id": "A6",
+      "scenario": "station panel",
+      "expected": "hotels within 500 m with the radius drawn; link to CityMETER Transit",
+      "verificationType": "unit (tests/views.test.js) + render"
+    },
+    {
+      "id": "A7",
+      "scenario": "comparison set",
+      "expected": "same group, ½–2× rooms, ≤ 2 km, nearest first; never itself",
+      "verificationType": "unit"
+    },
+    {
+      "id": "A8",
+      "scenario": "every view",
+      "expected": "one provenance line + unit clause; Thai copy at 1440 and 390 px, light and dark",
+      "verificationType": "unit + render"
+    },
+    {
+      "id": "A9",
+      "scenario": "live",
+      "expected": "GitHub Pages serves the same bytes as main; walk in a real browser",
+      "verificationType": "script (npm run verify:live) + live walk"
+    },
+    {
+      "id": "A10",
+      "scenario": "tie at the cut",
+      "expected": "only districts strictly above the tie are the focus; all equal → spread",
+      "verificationType": "unit (tests/insight.test.js)"
+    },
+    {
+      "id": "A11",
+      "scenario": "records measure in Phuket (3 districts)",
+      "expected": "top 2 only: เมืองภูเก็ต · กะทู้ = 1886/2222; no rail line",
+      "verificationType": "unit + render"
+    },
+    {
+      "id": "A12",
+      "scenario": "membership",
+      "expected": "placed rows sit in a production district of their own province; admin counts match meta.counts",
+      "verificationType": "unit (tests/data.test.js)"
+    },
+    {
+      "id": "A13",
+      "scenario": "hotel with a point",
+      "expected": "eye preset (pitch 75) framed on its building or a 90 m box; ≤ 2 refits; MapLibre guard installed",
+      "verificationType": "unit (tests/camera.test.js, tests/maplibre-guard.test.js) + render"
+    },
+    {
+      "id": "A14",
+      "scenario": "phone 390 px",
+      "expected": "five toolbar buttons in one row; the Aha card sits above the legend (--legend-height); sheet readable in light and dark",
+      "verificationType": "render + live walk"
+    }
+  ],
+  "developerWorkflow": [
+    "edit the research sheet, export .xlsx",
+    "npm run build:data (see DATA_METHOD.md §10)",
+    "npm test",
+    "npm run check:lds -- --lds <base> --li <profile>",
+    "bump ?v= tag + package.json + design-intent + handoff JSON",
+    "push main",
+    "npm run verify:live",
+    "walk the live site at 1440 and 390 px, light and dark"
+  ],
+  "backlog": [
+    {
+      "id": "B1",
+      "item": "Dated price observations (46_PRICE_OBSERVATIONS) for seasonality",
+      "evidence": "planned"
+    },
+    {
+      "id": "B2",
+      "item": "Draw the 642 research building masses once reviewed",
+      "evidence": "planned"
+    },
+    {
+      "id": "B3",
+      "item": "Link the 20 brands without a group in 17_BRANDS (research sheet)",
+      "evidence": "research follow-up"
+    },
+    {
+      "id": "B4",
+      "item": "Locale Insight and Population context per district",
+      "evidence": "planned"
+    },
+    {
+      "id": "B5",
+      "item": "Agent feed beyond llms.txt (per-district JSON)",
+      "evidence": "planned"
+    },
+    {
+      "id": "B6",
+      "item": "Operation re-validation round (open/closed) for the register",
+      "evidence": "planned"
+    }
+  ]
+}

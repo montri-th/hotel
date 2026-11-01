@@ -1,0 +1,264 @@
+{
+  "$schema": "./handoff.schema.json",
+  "schemaVersion": "1.5.0",
+  "documentType": "product-statement",
+  "productId": "citymeter-hotel",
+  "productVersion": "0.1.0",
+  "updatedOn": "2026-11-01",
+  "dataset_id": "research.TH.hotel",
+  "productionDatasetCode": "hotel",
+  "language": "th",
+  "liveUrl": "https://montri-th.github.io/hotel/",
+  "markdown": "PRODUCT_STATEMENT.md",
+  "positioning": {
+    "one_line_highlight": "แผนที่เมือง 3 มิติของห้องพักทั่วไทย ที่บอกว่ากระจุกตรงไหน ใกล้รถไฟฟ้าแค่ไหน และมีที่พักใดให้เทียบ พร้อมแหล่งของทุกตัวเลข",
+    "question": "ห้องพักกระจุกอยู่ตรงไหน และใกล้รถไฟฟ้าแค่ไหน",
+    "unique_advantage": "วัดด้วยห้องพักที่แหล่งบันทึก (capacity) บนเขต/อำเภอของ CityMETER production พร้อมบริบทสถานีรถไฟฟ้าและศูนย์การค้าจากชุดข้อมูลในทะเบียนเดียวกัน และคู่เทียบรายโรงแรมที่กฎเปิดเผย",
+    "unique_vs_competitors": "OTA และแผนที่ค้นสถานที่ตอบทีละโรงแรม ทะเบียนหน่วยงานไม่มีแผนที่และบริบท รายงานที่ปรึกษาไม่ลงระดับอำเภอ — Hotel รวมห้อง × เขต/อำเภอ × ขนส่ง × คู่เทียบ ที่ตรวจย้อนได้ทุกแถว"
+  },
+  "users": {
+    "primary_users": [
+      "ทีมพัฒนาโครงการและนักลงทุนที่ดิน/โรงแรม",
+      "ทีมขยายเครือและ revenue ของผู้ประกอบการโรงแรม",
+      "หน่วยงานท่องเที่ยว จังหวัด และ อปท.",
+      "ผู้ประเมินมูลค่าและสถาบันการเงิน"
+    ],
+    "functional_needs": [
+      "อุปทานห้องรอบทำเลต่อเขต/อำเภอ",
+      "ประเภทและขนาดของที่พักรอบ ๆ",
+      "ระยะถึงสถานีรถไฟฟ้าและศูนย์การค้า",
+      "คู่เทียบเบื้องต้นขนาดใกล้กัน",
+      "ห้องประชุมตามทะเบียนสำหรับงาน MICE"
+    ],
+    "emotional_needs": [
+      "มั่นใจว่าไม่ได้เข้าไปในย่านที่อุปทานล้น",
+      "อธิบายต่อผู้บริหารได้ด้วยหลักฐาน",
+      "ไม่พลาดคู่เทียบสำคัญ"
+    ],
+    "trigger_voice_in_head": [
+      "แถวนี้มีห้องพักอยู่แล้วเท่าไร ขนาดเท่าเราหรือเปล่า",
+      "ใน 2 กม. มีโรงแรมขนาดเราอยู่กี่แห่ง ใครบ้าง",
+      "อำเภอเรารับคนได้แค่ไหน เมื่อเทียบกับอำเภออื่น"
+    ],
+    "value_proposition": "ตอบ “เขตไหน ห้องเท่าไร ใกล้อะไร เทียบกับใคร” ในหนึ่งหน้าจอ พร้อมแหล่งของทุกตัวเลข",
+    "evidence": "Hypothesis — Product Brief v6 §1.7.1 (Hotel / Tourism P0); not validated with external users"
+  },
+  "problem": {
+    "statement": "ข้อมูลที่พักกระจัดกระจายใน OTA ทะเบียน ททท. รายชื่อของจังหวัด และหน้าทางการของแต่ละเครือ ไม่มีภาพที่บอกว่าห้องพักกระจุกที่เขตใด ใกล้ขนส่งแค่ไหน และมีคู่เทียบขนาดใกล้กันใดอยู่รอบ ๆ",
+    "urgency": "โรงแรมเป็นการลงทุนอาคารที่ย้ายไม่ได้ อุปทานในย่านเดียวกันเปลี่ยนสมมติฐานรายได้ทั้งโครงการ (Inference)",
+    "severity": "การตัดสินใจทำเลผิดมีต้นทุนสูงกว่าธุรกิจที่เช่าพื้นที่ (Inference)"
+  },
+  "competitor_landscape": {
+    "present_competitors": [
+      {
+        "name": "OTA และแผนที่ค้นสถานที่",
+        "how_users_use_it": "ค้นโรงแรมรอบจุด ดูราคาและรีวิว",
+        "strength": "ข้อมูลสด คุ้นมือ",
+        "gap": "ไม่รวมห้องเป็นอุปทานต่อพื้นที่ ไม่บอกที่มาของจำนวนห้อง"
+      },
+      {
+        "name": "ทะเบียนที่พักของหน่วยงาน (ททท. จังหวัด)",
+        "how_users_use_it": "ดาวน์โหลดตารางแล้วนับเอง",
+        "strength": "เป็นทางการ ครอบคลุม",
+        "gap": "ไม่มีแผนที่ ไม่มีขอบเขตที่ตรงกับ production ไม่มีบริบทขนส่ง"
+      },
+      {
+        "name": "รายงานตลาดโรงแรมของที่ปรึกษา",
+        "how_users_use_it": "อ่านภาพรวมเมืองหลัก",
+        "strength": "มีอัตราการเข้าพักและ ADR",
+        "gap": "รายปี เฉพาะเมืองหลัก ไม่ลงระดับอำเภอ ไม่เปิดให้ตรวจรายแถว"
+      },
+      {
+        "name": "เดินทำเลและ Street View",
+        "how_users_use_it": "ดูหน้างานรอบแปลง",
+        "strength": "เห็นของจริง",
+        "gap": "ช้า ไม่เป็นระบบ เทียบหลายทำเลไม่ได้"
+      }
+    ],
+    "aspirational_competitors": [
+      "hospitality analytics ที่มีข้อมูล STR/ADR/occupancy",
+      "แผนที่ค้นสถานที่ระดับโลก"
+    ],
+    "expected_quality_bar": "ตอบ “เขตไหน ห้องเท่าไร ใกล้อะไร เทียบกับใคร” ในหนึ่งหน้าจอภายในหนึ่งนาที และทุกตัวเลขเปิดย้อนถึงแหล่งได้ (Hypothesis)"
+  },
+  "winning_strategy": [
+    "วัดสิ่งที่การลงทุนสนใจ: ห้องพัก (li.supply) เป็นค่าเริ่มต้น สลับเป็นจำนวนที่พักได้",
+    "ขอบเขตเดียวกับ CityMETER production และลิงก์ ?d=hotel",
+    "ข้ามชุดข้อมูลในทะเบียนเดียวกัน: Transit, Shopping centers, งานวิจัยอาคาร — ผูกด้วย id พร้อม commit/sha256",
+    "คู่เทียบในคลิกเดียว ด้วยกฎเปิดเผย (ประเภทเดียวกัน ½–2 เท่า 2 กม.)",
+    "ความจริงก่อนความสวย: ไม่ทราบ ≠ 0 · ราคาที่บันทึก ไม่ทราบช่วงเวลา · ระยะตรง · provenance ทุกมุมมอง"
+  ],
+  "firstFinding": {
+    "evidence": "Observed fact",
+    "rooms": {
+      "home": "BKK",
+      "areas": [
+        {
+          "id": "1033",
+          "name": "คลองเตย",
+          "value": 16886
+        },
+        {
+          "id": "1037",
+          "name": "ราชเทวี",
+          "value": 14146
+        },
+        {
+          "id": "1039",
+          "name": "วัฒนา",
+          "value": 13865
+        }
+      ],
+      "value": 44897,
+      "homePlacedValue": 130608,
+      "sharePct": 34,
+      "rail": {
+        "m": 500,
+        "focus": {
+          "within": 19577,
+          "base": 30071
+        },
+        "rest": {
+          "within": 24305,
+          "base": 64530
+        }
+      },
+      "outside": {
+        "id": "2004",
+        "name": "บางละมุง",
+        "province": "CBI",
+        "value": 61480
+      }
+    },
+    "records": {
+      "home": "PKT",
+      "areas": [
+        {
+          "id": "8301",
+          "name": "เมืองภูเก็ต",
+          "value": 1024
+        },
+        {
+          "id": "8302",
+          "name": "กะทู้",
+          "value": 862
+        }
+      ],
+      "value": 1886,
+      "homePlacedValue": 2222,
+      "sharePct": 85,
+      "rail": {
+        "m": 500,
+        "focus": {
+          "within": 0,
+          "base": 1838
+        },
+        "rest": {
+          "within": 0,
+          "base": 329
+        }
+      },
+      "outside": {
+        "id": "5001",
+        "name": "เมืองเชียงใหม่",
+        "province": "CMI",
+        "value": 870
+      }
+    }
+  },
+  "data_transparency": {
+    "unit": {
+      "row": "one row of 01_VENUES — a source-listed accommodation record (CityMETER Hotel V3, TAT accommodation register, official group and property pages, provincial lists); not a field-verified census of operating hotels",
+      "rooms": "rooms_selected — the room count the sheet selected from its sources; recorded stock, not rooms available per night; unknown stays unknown",
+      "price": "min/max/avg_price_raw_thb of CityMETER Hotel V3; THB; the source period is unknown; not a current rate, an ADR or revenue"
+    },
+    "sources": [
+      "CityMETER Hotel (ชุดข้อมูลโรงแรมของ CityMETER production)",
+      "หน้าทางการของโรงแรม (งานวิจัย 3D)",
+      "ทะเบียนที่พัก ททท. (TAT Data Catalog)",
+      "รายชื่อโรงแรมบนเว็บไซต์ทางการของเครือ",
+      "รายชื่อที่พักที่หน่วยงานจังหวัด/กทม. เผยแพร่",
+      "หน้าทางการของที่พัก (เริ่มจากรายชื่อบน OTA)",
+      "หน้าทางการของที่พัก (รอบตรวจตัวตน)",
+      "แค็ตตาล็อกทางการของ Urban Hospitality Group",
+      "หน้าทางการของเครือ (รอบตรวจเครือแม่)"
+    ],
+    "checkedOn": "2026-10-25",
+    "exportSha256": "c0f8a1356ae15f0c5a69c1d6c183a59a6397a881180ca183a194daeb1ce3d115",
+    "method": "DATA_METHOD.md",
+    "excludedFields": [
+      "address",
+      "subdistrict",
+      "telephone",
+      "lat_raw",
+      "lng_raw",
+      "operator_name",
+      "source_record_id",
+      "notes",
+      "source_quality_flags",
+      "record_review_status",
+      "building_source_id",
+      "star_raw",
+      "star_selected",
+      "16_BRANCH_SPATIAL_CANDIDATES.branch_name",
+      "README text"
+    ]
+  },
+  "known_limitations": [
+    "Records are source-listed accommodation records; operation is not revalidated (operation_not_revalidated) and the register is not a census.",
+    "Rooms are recorded stock; unknown rooms stay out of room totals and are counted apart.",
+    "Recorded prices have an unknown source period; they are not current rates, ADR or revenue.",
+    "Brands are the brand names the sheet selected with evidence; a record without a brand is not proof of an independent hotel.",
+    "Distances to rail stations and retail venues are straight-line distances between reference points."
+  ],
+  "claimBoundary": {
+    "canSay": [
+      "ห้องพักที่แหล่งบันทึกกระจุกที่ใด",
+      "ประเภทและขนาดของที่พัก",
+      "ระยะตรงถึงสถานีและศูนย์การค้า",
+      "แบรนด์ที่ชุดข้อมูลบันทึกกับเครือใด",
+      "ราคาที่แหล่งเคยบันทึก (ไม่ทราบช่วงเวลา)"
+    ],
+    "cannotSay": [
+      "อัตราการเข้าพัก",
+      "ADR",
+      "RevPAR",
+      "รายได้",
+      "ความต้องการ",
+      "ส่วนแบ่งตลาด",
+      "ราคาวันนี้",
+      "ห้องว่างต่อคืน",
+      "ความหนาแน่น",
+      "ยืนยันว่าเปิดอยู่วันนี้",
+      "ระดับดาว",
+      "ระยะเดินหรือเวลาเดินทาง"
+    ]
+  },
+  "hypotheses_to_validate": [
+    {
+      "hypothesis": "ผู้ใช้เลือกมาตรวัดห้องมากกว่าแห่งในการเลือกทำเล",
+      "test": "สัมภาษณ์ 5 คนต่อกลุ่มด้วยคำถามทำเลจริง",
+      "criterion": "≥ 70% เลือกห้องเป็นค่าแรก"
+    },
+    {
+      "hypothesis": "สัดส่วนใกล้รถไฟฟ้าเป็นตัวแบ่งทำเลที่ใช้ได้ในกรุงเทพฯ",
+      "test": "ให้ทีมพัฒนาโครงการเทียบ 3 แปลงโดยใช้และไม่ใช้ข้อมูลนี้",
+      "criterion": "อันดับเปลี่ยนหรือมั่นใจขึ้นใน ≥ 3 ใน 5 ทีม"
+    },
+    {
+      "hypothesis": "คู่เทียบ 2 กม. ใกล้กับ compset ที่ผู้ประเมินเลือกเอง",
+      "test": "เทียบกับ compset ของผู้ประเมิน 10 โครงการ",
+      "criterion": "ทับซ้อน ≥ 50% ของ 5 อันดับแรก"
+    },
+    {
+      "hypothesis": "หน่วยงาน/อปท. ใช้ห้องพักต่ออำเภอและห้องประชุมตามทะเบียนในการวางแผน",
+      "test": "ทดลองกับ 2 จังหวัดนำร่อง",
+      "criterion": "ใช้ในเอกสารวางแผนจริง ≥ 1 ฉบับ"
+    },
+    {
+      "hypothesis": "ห้องที่แหล่งบันทึกใกล้อุปทานที่เปิดขายจริงพอสำหรับการคัดกรอง",
+      "test": "สุ่มตรวจ 200 แห่งกับหน้าทางการ/OTA",
+      "criterion": "คลาด ≤ 10% ใน ≥ 80% ของตัวอย่าง"
+    }
+  ]
+}

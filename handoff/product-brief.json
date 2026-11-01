@@ -1,0 +1,555 @@
+{
+  "$schema": "./handoff.schema.json",
+  "schemaVersion": "1.5.0",
+  "documentType": "product-brief",
+  "productId": "citymeter-hotel",
+  "productVersion": "0.1.0",
+  "updatedOn": "2026-11-01",
+  "datasetCheckedOn": "2026-10-25",
+  "language": "th",
+  "productName": "CityMETER · Hotel",
+  "repository": "https://github.com/montri-th/hotel",
+  "liveUrl": "https://montri-th.github.io/hotel/",
+  "productStatement": "PRODUCT_STATEMENT.md",
+  "job": "ห้องพักกระจุกอยู่ตรงไหน และใกล้รถไฟฟ้าแค่ไหน — แล้วเจาะลงถึงสถานี โรงแรม และคู่เทียบ",
+  "audiences": [
+    "ทีมพัฒนาโครงการและนักลงทุนที่ดิน/โรงแรม",
+    "ทีมขยายเครือและ revenue ของผู้ประกอบการโรงแรม",
+    "หน่วยงานท่องเที่ยว จังหวัด และ อปท.",
+    "ผู้ประเมินมูลค่าและสถาบันการเงิน"
+  ],
+  "journey": [
+    "first Aha (3D city scene, rooms)",
+    "switch the measure (ห้องพัก | ที่พัก)",
+    "district → groups, sizes, stations, chains, hotels",
+    "station → hotels within 500 m",
+    "hotel → building view, facts, comparison set",
+    "Google next question",
+    "charts / table",
+    "CityMETER production"
+  ],
+  "changesSince": "first release; code base carried over from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6)",
+  "rowScopes": {
+    "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
+    "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
+    "rows": "baseRows narrowed by the district focus: pins with detail, counters, the table (a building or station panel shows its own rows)"
+  },
+  "firstAha": {
+    "scope": "scopeRows",
+    "measure": "rooms (default) | count",
+    "ranking": "เขต/อำเภอ by the measure (then the other measure, then name) inside the home province = the province holding the most of the measure among rows placed at district level; up to three and never every district holding the measure (N ≤ 3 → top N − 1); never cut through a tie; none left → spread",
+    "headlineTemplate": "{share}% ของ{ห้องพัก|ที่พัก}ใน{home}ที่ระบุ{เขต|อำเภอ}ได้ อยู่ใน {n} {เขต|อำเภอ}นี้",
+    "numerator": "Σ measure of the focused districts (matched membership)",
+    "denominator": "Σ measure of the home province’s rows that carry a district (rows placed only at province level stated apart)",
+    "personality": "rail: share of the measure within 500 m (straight line) of an operating CityMETER Transit station among the focus rows with a point vs the rest of the province’s placed rows with a point, both bases stated; hidden when neither side has any",
+    "secondaryFinding": "district(s) with the most of the measure outside the home province (every district tied); “มากกว่า{เขต}ใดใน{home}” when it exceeds the first focus district; hidden with a province filter and when the top is < 2",
+    "defaultFocus": "auto",
+    "defaultCamera": "city preset, fitPitched over the focused districts",
+    "action": "ดูทุกพื้นที่ (?areas=all); เปรียบเทียบพื้นที่ (opens charts); district names are links",
+    "model": "js/area-insight.js#summarizeAreaInsight",
+    "filter": "js/area-insight.js#filterAreaRows",
+    "defaultSnapshot": {
+      "asOf": "2026-10-25",
+      "builtOn": "2026-11-01",
+      "rooms": {
+        "home": "BKK",
+        "areas": [
+          {
+            "id": "1033",
+            "name": "คลองเตย",
+            "value": 16886
+          },
+          {
+            "id": "1037",
+            "name": "ราชเทวี",
+            "value": 14146
+          },
+          {
+            "id": "1039",
+            "name": "วัฒนา",
+            "value": 13865
+          }
+        ],
+        "value": 44897,
+        "homePlacedValue": 130608,
+        "sharePct": 34,
+        "rail": {
+          "m": 500,
+          "focus": {
+            "within": 19577,
+            "base": 30071
+          },
+          "rest": {
+            "within": 24305,
+            "base": 64530
+          }
+        },
+        "outside": {
+          "id": "2004",
+          "name": "บางละมุง",
+          "province": "CBI",
+          "value": 61480
+        }
+      },
+      "records": {
+        "home": "PKT",
+        "areas": [
+          {
+            "id": "8301",
+            "name": "เมืองภูเก็ต",
+            "value": 1024
+          },
+          {
+            "id": "8302",
+            "name": "กะทู้",
+            "value": 862
+          }
+        ],
+        "value": 1886,
+        "homePlacedValue": 2222,
+        "sharePct": 85,
+        "rail": {
+          "m": 500,
+          "focus": {
+            "within": 0,
+            "base": 1838
+          },
+          "rest": {
+            "within": 0,
+            "base": 329
+          }
+        },
+        "outside": {
+          "id": "5001",
+          "name": "เมืองเชียงใหม่",
+          "province": "CMI",
+          "value": 870
+        }
+      },
+      "note": "regression fixtures (tests/insight.test.js), never UI constants"
+    },
+    "fallbacks": {
+      "spread": "every district of the home province holds the same value → spread finding, the camera frames them",
+      "unplaced": "no district can be ranked → the count and a table action",
+      "empty": "no row → clear filters action"
+    }
+  },
+  "countingUnitContract": {
+    "default": "rooms recorded (Σ rooms_selected, ห้อง)",
+    "alternatives": [
+      "records (แห่ง)"
+    ],
+    "words": {
+      "rooms": "ห้อง",
+      "count": "แห่ง"
+    },
+    "rule": "one row = one row of 01_VENUES (source-listed record, operation not revalidated); unknown rooms counted apart, never 0; the alias row is out of every figure",
+    "switch": "legend radio group, URL ?metric=count"
+  },
+  "metricContract": {
+    "areas": "Σ measure per เขต/อำเภอ (rooms → LI li.supply; records → LDS count)",
+    "provinces": "Σ measure per province frame (same family)",
+    "eligibility": "none — totals; ties are never cut (firstAha.ranking)",
+    "combined": "Σ focus ÷ the home province’s placed total (a share, numerator and denominator shown)",
+    "notDrawn": "no per-area or per-person ratio: recorded rooms are not a density or a market measure",
+    "ramp": "all 41 samples of the family LUT by rank among the measured nonzero values being read (js/scales.js#buildRamp; owner standing rule “Color scale ขอให้ใช้ 41 scales ตาม LDS เสมอ”); map, legend, labels, rank bars and the district chart read one ramp; the matrix has its own ramp over its cells"
+  },
+  "coverageContract": {
+    "covered": "every เขต/อำเภอ of the 77 provinces is in the register’s national scope",
+    "states": {
+      "measured": "ramp sample by rank",
+      "measured_zero": "sample 0 + zero outline — no record of the dataset is placed there under the filters",
+      "no_data": "rooms only: the district has records but none with known rooms (hatch)",
+      "out_of_scope": "not drawn"
+    },
+    "unplaced": "rows without a district are counted apart (province only, conflict), never shown as 0"
+  },
+  "categoricalCueContract": {
+    "registry": "landometer-series-10-v8",
+    "bindBy": "accommodation group id (js/cues.js#GROUP_SERIES)",
+    "groups": {
+      "hotel": {
+        "series": 2,
+        "th": "โรงแรม",
+        "types": [
+          "hotel"
+        ]
+      },
+      "resort": {
+        "series": 1,
+        "th": "รีสอร์ท",
+        "types": [
+          "resort"
+        ]
+      },
+      "apartment": {
+        "series": 3,
+        "th": "อพาร์ตเมนต์และเซอร์วิสอพาร์ตเมนต์",
+        "types": [
+          "serviced_apartment",
+          "apartment_accommodation"
+        ]
+      },
+      "guesthouse": {
+        "series": 4,
+        "th": "เกสต์เฮาส์และโฮสเทล",
+        "types": [
+          "guesthouse",
+          "youth_lodging"
+        ]
+      },
+      "bungalow": {
+        "series": 5,
+        "th": "บังกะโล",
+        "types": [
+          "bungalow"
+        ]
+      },
+      "homestay": {
+        "series": 10,
+        "th": "โฮมสเตย์",
+        "types": [
+          "homestay"
+        ]
+      },
+      "other": {
+        "series": 9,
+        "th": "ที่พักอื่น",
+        "types": [
+          "motel",
+          "floating_accommodation",
+          "park_or_government_lodging",
+          "guest_residence",
+          "accommodation_other",
+          "accommodation_unclassified"
+        ]
+      }
+    },
+    "noStar": true,
+    "sizeCue": "pin size by recorded rooms (< 50 or unknown · 50–199 · 200+), colour stays the group’s"
+  },
+  "framesContract": {
+    "index": "data/area-index.json — 928 districts and 77 provinces, no geometry (codes, names, production areaSqm, label, bbox)",
+    "frames": "data/frames/{CODE}.json — district outlines per province (77 files)",
+    "loading": "the selection’s provinces at once; the provinces under the map at district zoom (≤ 6 per move); never all 77 up front; versioned with the release tag",
+    "failure": "reported and retried on the next request; panels, charts and table never depend on outlines"
+  },
+  "mapFocusContract": {
+    "principle": "detail only for the focused part — the selected district, the station, the hotel, the automatic or explicit focus; everything else visible but quiet",
+    "states": {
+      "auto": "default top districts; released when none of them is on screen",
+      "explicit": "?areas=a,b,c",
+      "none": "?areas=all"
+    },
+    "choropleth": "li.supply (rooms) or count (records), 41-sample ramp by rank, under the basemap’s first line layer; zoom 8–14.5; the selected จังหวัด from zoom 4; measured_zero = sample 0 + 2 px zero outline; no_data = hatch"
+  },
+  "contextContract": {
+    "rail": {
+      "source": {
+        "source": "CityMETER · Transit (montri-th/transit)",
+        "commit": "5f5232d077be08929d8a3325b7003be492688b09",
+        "file": "data/transit.json",
+        "sha256": "0916636a7c50a8832f25c073a9b667bc440ee74aef41bdfe499e663e1cc0bb18",
+        "release": "transit-data-2026-10-31-r1",
+        "asOf": "2026-10-31",
+        "rule": "operating = on the operator roster of CityMETER · Transit; construction = a project station, not a service; straight-line distance from the hotel point to the station reference point, up to 2000 m"
+      },
+      "drawn": "operating stations as quiet rings from zoom 10.5 (names from 13.5), clickable → station panel; the open station’s 500 m radius dashed",
+      "hotel": "nearest operating station within 2 km and nearest station under construction (words only)"
+    },
+    "retail": {
+      "source": {
+        "source": "CityMETER Shopping centers (montri-th/shoppingcenter)",
+        "commit": "2bd3052ddef7595f6887bfb57838c5fbc257750f",
+        "file": "data/venues.json",
+        "sha256": "8ae465e87237e53879b9b3b03a73ffa9d2de5a2e63fb3e39e6f9e07303ed4462",
+        "asOf": "2026-10-26",
+        "groups": {
+          "mall": "ศูนย์การค้า",
+          "community": "คอมมูนิตีมอลล์",
+          "outlet": "เอาต์เล็ต",
+          "component": "ส่วนค้าปลีกในโครงการ",
+          "hoststore": "ห้างและซูเปอร์มาร์เก็ต"
+        },
+        "rule": "countable, located venues of the groups listed with status supply; straight-line distance from the hotel point to the venue reference point, up to 1500 m"
+      },
+      "hotel": "nearest venue within 1.5 km, linked to the same venue in CityMETER Shopping centers by id"
+    },
+    "inBuilding": "16_BRANCH_SPATIAL_CANDIDATES qualified spatial_candidate_requires_identity_review: a branch of another CityMETER research dataset whose source point falls in the same research building mass; not a tenancy, floor or located-in claim",
+    "distances": "straight lines between reference points — never a walking route, travel time or catchment"
+  },
+  "compsetContract": {
+    "module": "js/profile-model.js#compsetOf",
+    "rule": "same accommodation group, known rooms ½–2× the hotel’s, within 2,000 m straight line, nearest first, up to 10, every row of the dataset",
+    "around": "every record within 2,000 m (any group) with rooms and unknown count",
+    "words": "รายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่คู่แข่งที่ยืนยันแล้ว"
+  },
+  "priceContract": {
+    "field": "min/max/avg_price_raw_thb of CityMETER Hotel V3",
+    "period": "unknown",
+    "shown": "per hotel only: fact chip, panel facts, comparison set, table",
+    "words": "ราคาที่บันทึก · ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้",
+    "never": "summed, averaged across hotels, called a rate"
+  },
+  "contextActionsContract": {
+    "module": "js/ask.js#contextActions",
+    "views": [
+      "hotel",
+      "building",
+      "area",
+      "station",
+      "chain",
+      "overview"
+    ],
+    "ai": "Google AI Mode (udm=50) with a question written for the view",
+    "maps": "Google Maps search by public names",
+    "streetView": "only with a point (hotel point, station reference point “ใกล้สถานี”)",
+    "note": "เปิดใน Google · ผลลัพธ์ไม่ใช่ข้อมูล CityMETER"
+  },
+  "buildingJoinContract": {
+    "buildings": "focus-tier OSM footprints (pieces of one outline cut by tile edges, building:parts, podium + tower grouped)",
+    "points": "hotel points of the scope",
+    "rule": "display-time point-in-footprint (js/building-join.js#joinBuildings)",
+    "click": "one hotel → the hotel; several → the building panel",
+    "neverChanges": "any count or district membership"
+  },
+  "interactionContract": {
+    "mapClicks": "focus pin → the building being looked at (x-ray: frame again) → focus building → station → province view district / province frame (below zoom 8) → district",
+    "reframe": "every way into a building view frames it again",
+    "quietDots": "never focusable or clickable",
+    "keyboard": "roving tabindex over HTML pins from zoom 15.5; roving tablist for chart views; arrow keys on the measure switch; visible focus everywhere"
+  },
+  "basemapContract": {
+    "generator": "js/map-style.js (no hosted style URL)",
+    "tiles": "https://tiles.openfreemap.org/planet (OpenMapTiles schema)",
+    "palette": "--basemap-* tokens of assets/theme.css; data colours never set there"
+  },
+  "massingContract": {
+    "cityTier": "basemap building extrusions, quiet, faded with distance from the focus",
+    "focusTier": "rounded footprints from z14 tiles in the focus regions (≤ 16 tiles nearest the camera; from zoom 12 in 3D when complete, else 13)",
+    "hostTier": "unused (no host geometry in this product)",
+    "rounding": "roundingRadiusM(zoom) 3–12 m",
+    "enclosure": "encloseOffsetM keeps the rounded shape around the original outline"
+  },
+  "cameraContract": {
+    "presets": {
+      "plan": "pitch 0 (3D off)",
+      "city": "pitch 56 · bearing 28 · fov 36.87 (overview)",
+      "model": "pitch 60 · fov 14 (district, hotel without a point)",
+      "eye": "pitch 75 · fov 24 (the building view: venue, building, hotel with a point)"
+    },
+    "fitting": "fitPitched (overview, district): flat fit, then zoom out until every outline vertex is inside the padded viewport, then in while it still fits; pitch ≤ 90 − fov/2 − 3",
+    "buildingView": {
+      "owner": "2026-10-29 19:47 “อาคารที่เลือก หรือ on focus ให้แสดงด้วยมุมมอง 2-point perspective เสมอ zoom to fit viewport เสมอด้วย”",
+      "module": "js/camera.js#fitBuilding, twoPointBearing, wallAzimuth, occlusionScore, screenBounds (from CityMETER · Shopping centers); js/app.js#frameFocus",
+      "target": "js/app.js#focusTarget — the open building; the building the open venue’s registry point falls in; the building the open hotel’s point falls in",
+      "bearing": "dominant wall azimuth + 45°, on the diagonal where the drawn focus buildings (massing.obstaclesNear, 400 m) hide least of it, then the one nearest the current bearing",
+      "fit": "eye preset, padding zero; fit points = the pieces as the focus tier draws them at building zoom (massing.fitPointsOf → js/massing.js#footprintFitPoints: the offset and fillets of zoom 18, ground and roof), never the shape drawn at the starting zoom (up to 3.6 m wider on every side); every one inside the free box (js/app.js#visibleBox: below the toolbar, above the Aha card, legend, chart tray, table or open phone sheet, left of the zoom control), one side filling 94% of it; maxZoom 21 when the building is known (js/camera.js#BUILDING_MAX_ZOOM — Hotel hotels stand in shophouses and small buildings; the Shopping centers limit 19.5 left a 40 m building at half the box) / 18 while unknown, minZoom 14",
+      "unknown": "a 90 m box round the point (12 m tall) framed the same way; the camera turns to the building when it arrives, at most twice, never after a user camera move",
+      "plan": "3D off: the same footprint fitted flat (fitPitched plan, maxZoom 21 known / 18 unknown)"
+    }
+  },
+  "tileCoverGuard": {
+    "module": "js/maplibre-guard.js#guardRetainedTiles(map, version) → boolean; padOverscaledChildren(idealTileIDs, zoom, maxzoom)",
+    "bug": "MapLibre GL JS 5.6.2 SourceCache._updateRetainedTiles checks the four children of a missing ideal tile whenever the cover zoom + 1 ≤ the source maxzoom; a pitched cover can already hold an ideal tile at the maxzoom, whose children() is ONE overscaled child; when that child is retained, children[1] is undefined and the frame throws “Cannot read properties of undefined (reading 'key')”",
+    "seen": "live 2026-10-29 (Claude desktop browser, real OpenFreeMap tiles): openmaptiles (vector, maxzoom 14), cover zoom 13, camera 13.79–13.95, pitch 75, while the building camera flew between branches; reproduced in the build container by stepping the pitched camera out from 19.5 to 13.6 over a building (7–8 errors on 0.2.0, 0 with the guard)",
+    "fix": "pad the child list of exactly those ideal tiles to four copies of the overscaled child, so the check reads as MapLibre's own overzoom branch; installed on the shared SourceCache prototype at every style load; only for version 5.6.2",
+    "test": "tests/maplibre-guard.test.js"
+  },
+  "venueXrayContract": {
+    "owner": "2026-10-29 19:47 “เช็คอย่าให้ 3d building mass ตึกอื่นบังอาคารที่กำลังดูอยู่”",
+    "module": "js/venue-xray.js#installVenueXray(map, {beforeId, toMercator, colors}) → {update(features, {colors}), setEnabled, hitTest(point), dispose, count, enabled, failed} (from CityMETER · Shopping centers / Luxury Brands)",
+    "layer": "venue-xray (custom, renderingMode 3d) before place-quarter (js/map-style.js#VENUE_XRAY_BEFORE): drawn over every building and over road names",
+    "input": "the features of the building being looked at (massing.featuresOf(target.refs)) with display_height_m / display_base_m",
+    "depth": "scissored depth clear inside the building’s screen box, then its own depth test",
+    "seeThrough": "massing.setScene('eye', rings): the focus buildings standing in front of it turn see-through (SCENE.eye)",
+    "labels": "district label chips never sit on the building (refreshLabelView avoid box)",
+    "visibility": "3D only, zoom ≥ 13 (XRAY_MIN_ZOOM); empty outside the building view",
+    "colours": "map.activeLayer faces, map.selectedStroke edges — map roles, not data colours",
+    "failSafe": "a GL error disables it (failed = true); the massing highlight keeps drawing",
+    "geojsonMaxzoom": "every GeoJSON source uses maxzoom 24 (js/map-layers.js#GEOJSON_MAXZOOM, the most geojson-vt allows), two levels above BUILDING_MAX_ZOOM: MapLibre 5.6.2 throws in SourceCache._updateRetainedTiles when the near tiles of a pitched cover reach a GeoJSON source maxzoom before they have data (seen in CityMETER · Shopping centers 2026-10-25); under the eye preset the near tiles sit up to about half a level above the camera (tests/release.test.js)"
+  },
+  "breadcrumbContract": {
+    "levels": [
+      "ประเทศไทย",
+      "จังหวัด",
+      "เขต/อำเภอ"
+    ],
+    "productionPath": "/v3/citymeter/{code}/D/{district}?d=hotel",
+    "demoQuery": "?province=BKK&area=1039",
+    "provinceCodes": "production route codes (base info lv0 abbrEn)",
+    "datasetCode": "hotel (production bundle 8791-a57a12f97b5c3d83.js, checked 2026-11-01)"
+  },
+  "provinceContract": {
+    "frames": "data/provinces.geojson",
+    "fill": "the measure below zoom 8 without a province filter",
+    "labels": "ink chips to zoom 9",
+    "unknown": "none in this export"
+  },
+  "pictogramContract": {
+    "file": "assets/icons/material-pictogram-300.woff2",
+    "sha256": "2b59e62a84b9d3435c682b1995d4f5b55d1f0dc3188e1a0450e120da4fa8b5e7",
+    "glyphs": [
+      "area",
+      "province",
+      "segment",
+      "venue",
+      "ai",
+      "streetview",
+      "maps",
+      "building",
+      "hotel",
+      "rooms",
+      "rail",
+      "meeting",
+      "price",
+      "chain",
+      "compare"
+    ],
+    "rule": "decorative (aria-hidden); the text carries the meaning; no star"
+  },
+  "panel": {
+    "modes": [
+      "overview (+ chain card)",
+      "area",
+      "station",
+      "building",
+      "hotel"
+    ],
+    "actions": [
+      "select-area",
+      "select-hotel",
+      "select-building",
+      "select-station",
+      "select-province",
+      "filter-chain",
+      "filter-group",
+      "set-metric",
+      "back",
+      "explore-top",
+      "clear-focus",
+      "open-charts",
+      "open-table",
+      "clear-filter",
+      "leave-area"
+    ],
+    "models": {
+      "overview": "js/profile-model.js#buildOverview",
+      "area": "buildAreaProfile",
+      "station": "buildStationProfile",
+      "building": "buildBuildingProfile",
+      "hotel": "buildHotelDetail (+ compsetOf)",
+      "chain": "buildChainProfile"
+    },
+    "provenance": "exactly one line per view: dataset · source (+ Transit / Shopping centers when shown) · date · boundary, and the unit clause"
+  },
+  "data": {
+    "file": "data/hotels.json",
+    "rows": 30729,
+    "counts": {
+      "admin.name": 2117,
+      "admin.point": 197,
+      "admin.province": 35,
+      "admin.source": 28380,
+      "alias.excluded": 1,
+      "brand": 468,
+      "points": 29149,
+      "price.recorded": 28381,
+      "rooms.known": 30477,
+      "rooms.sum": 996784,
+      "rows": 30729,
+      "source.provinceDisagree": 1
+    },
+    "registryId": "research.TH.hotel",
+    "exportSha256": "c0f8a1356ae15f0c5a69c1d6c183a59a6397a881180ca183a194daeb1ce3d115",
+    "checkedOn": "2026-10-25",
+    "builtOn": "2026-11-01",
+    "stations": 274,
+    "retail": 584,
+    "brands": 118,
+    "chains": 18,
+    "method": "DATA_METHOD.md",
+    "build": "scripts/build-data.py"
+  },
+  "visualSystem": {
+    "lds": "Landometer-Design-System-v0.9.7.md (standalone-0.9.7-r1, v0.9.7-owner.1, color-srgb-10, sha256 d3085cbc…96)",
+    "locationIntelligence": "Location-Intelligence-Profile-for-LDS-v0.9.7.md (location-intelligence-profile-lds-0.9.7-r1, sha256 5d485604…3c): li.supply",
+    "parity": "scripts/check-lds-parity.mjs — 124 checks",
+    "themes": "light and dark; analytical HEX identical on both",
+    "fonts": "Bai Jamjuree · IBM Plex Sans Thai Looped · Arvo · JetBrains Mono (assets/lds/build-kit)"
+  },
+  "invariants": [
+    {
+      "id": "H1",
+      "rule": "unknown rooms are never 0 (counted apart; district no_data under rooms; chips read records)"
+    },
+    {
+      "id": "H2",
+      "rule": "recorded prices are per hotel only, “ราคาที่บันทึก”, period unknown; never summed or averaged across hotels"
+    },
+    {
+      "id": "H3",
+      "rule": "membership is the district matched at build time (row.admin); never re-assigned on screen"
+    },
+    {
+      "id": "H4",
+      "rule": "distances are straight lines between reference points; never walking time or catchment"
+    },
+    {
+      "id": "H5",
+      "rule": "the Aha never cuts a tie and never focuses every district holding the measure"
+    },
+    {
+      "id": "H6",
+      "rule": "every panel view ends with exactly one provenance line and the unit clause"
+    },
+    {
+      "id": "H7",
+      "rule": "one symbol = one row with a point; never clustered"
+    },
+    {
+      "id": "H8",
+      "rule": "groups join by id only; a brand without a group reads ไม่ระบุเครือ"
+    },
+    {
+      "id": "H9",
+      "rule": "colours only from assets/theme.css, js/scales.js, js/cues.js; 41 samples by rank; same HEX on both themes"
+    },
+    {
+      "id": "H10",
+      "rule": "no address, phone, raw record, researcher text, private document link or Landometer commercial term in the repository"
+    }
+  ],
+  "chartContracts": [
+    {
+      "viewKey": "areas",
+      "title": "เขต/อำเภอ",
+      "question": "เขต/อำเภอไหนมีห้องพัก (หรือที่พัก) มากที่สุด",
+      "encoding": "bars in the map’s ramp colour, top 20 of every ranked district",
+      "metric": "the current measure",
+      "scope": "scopeRows"
+    },
+    {
+      "viewKey": "mix",
+      "title": "ประเภทที่พัก",
+      "question": "แต่ละเขต/อำเภอเป็นที่พักประเภทใด",
+      "encoding": "top 12 districts × 7 groups, equal cells, own 41-sample ramp, measured zero outlined",
+      "metric": "the current measure",
+      "scope": "scopeRows"
+    },
+    {
+      "viewKey": "chains",
+      "title": "เครือ",
+      "question": "เครือไหนมีห้องพัก (หรือที่พัก) มากที่สุด",
+      "encoding": "bars in one neutral foundation fill, brands count in the label",
+      "metric": "the current measure",
+      "scope": "scopeRows (rows with a group)"
+    }
+  ],
+  "delivery": {
+    "site": "GitHub Pages from main /root",
+    "handoff": "dist/CityMETER-Hotel-Developer-Handoff.zip (START_HERE.md, RELEASE_RECEIPT.json, evidence/, source/)",
+    "liveCheck": "npm run verify:live",
+    "cacheTag": "?v=20261101-r1 on every entry file and, through the import map in index.html, on every ES module; the frame files take the same tag from import.meta.url; bump it with package.json version (tests/release.test.js); icon fonts inside the stylesheets carry ?v=<first 8 hex of their SHA-256> (tests/icons.test.js)"
+  }
+}

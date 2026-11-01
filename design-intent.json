@@ -1,0 +1,71 @@
+{
+  "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
+  "productVersion": "0.1.0",
+  "updatedOn": "2026-11-01",
+  "ldsVersion": "0.9.7",
+  "release": "v0.9.7-owner.1",
+  "revision": "standalone-0.9.7-r1",
+  "colorSetId": "color-srgb-10",
+  "baseDocumentSha256": "d3085cbc0a50195f1cbf0c77b1d77c0d19b84364daf2948eb367348d65432d96",
+  "locationIntelligenceProfile": "applied for rooms: li.supply (location-intelligence-profile-lds-0.9.7-r1, sha256 5d4856041709735d3a04d4a510a88b551df86c211fdcab8a0707e8fe7c9efc3b; baseDocument d3085cbc…96) — rooms recorded are a capacity quantity (กำลังให้บริการที่มีอยู่), evidence state unverified (operation not revalidated); records use the base count family",
+  "layoutReference": "https://landometer.com/v3/citymeter",
+  "fontRoles": {
+    "body": "Bai Jamjuree 400/600",
+    "thaiHeadings": "IBM Plex Sans Thai Looped 700",
+    "latinHeadings": "Arvo 700",
+    "dataAndMetrics": "JetBrains Mono 400; tabular numerals",
+    "navigation": "Material Symbols Rounded approved nav-7 subset; FILL 0 / wght 300 / GRAD 0 / opsz 24",
+    "pictograms": "Material Symbols Rounded 15-glyph pictogram subset built from the same source font (2512 B, sha256 2b59e62a84b9…): area, province, segment, venue, ai, streetview, maps, building + hotel, rooms (bed), rail (train), meeting (groups), price (payments), chain (account_tree), compare (compare_arrows); owner test exception 2026-10-22; no star glyph"
+  },
+  "colors": {
+    "applied": "assets/theme.css — foundation pairs, semantic states, map roles, dataState (noData, zero), categorical series 1–10 (landometer-series-10-v8 soft fill + ink), count classes, basemap-only tokens",
+    "analytical": "js/scales.js — li.supply for rooms (scaleVersion 671112f34b878219faf90fb3fd07cc05a919c134d798ff40fbc8ab278273c497) and count for records (4ff5c1fb4be71ecd13c48685b38371b528bcd4ce369ce964a75354c2eb4d0980); exact 41-sample LUTs; identical HEX on both themes; all 41 samples by rank among the measured nonzero values (buildRamp; owner standing rule “Color scale ขอให้ใช้ 41 scales ตาม LDS เสมอ”), legend with every sample and value ticks; numbers on low-contrast samples on a plate; a district whose records all have unknown rooms is no_data (hatch) under rooms",
+    "categorical": "js/cues.js — accommodation group id → series (resort 1 circle, hotel 2 square, apartment 3 triangle, guesthouse 4 diamond, bungalow 5 cross, other 9 dash, homestay 10 plus); no star",
+    "status": "no status pills: every row is a source-listed record (operation not revalidated), said once in the provenance clause",
+    "reportedDifference": "LDS analytical scale records list dark noData #3B4849 / zeroOutline #BAC6C0, while machine.tokens.dataState lists dark #404844 / #93A398; the map follows the EVID-05 treatment (dataState), as in Restaurants and Pharmacy, and the difference stays reported to the owner",
+    "parity": "scripts/check-lds-parity.mjs against the LDS base file and the Location Intelligence Profile: 124 checks (handoff/VERIFICATION.md)",
+    "notDistributed": "full LDS library, the Location Intelligence Profile, other analytical families",
+    "context": "stations (CityMETER Transit) as quiet rings: card fill + text-secondary stroke, selected = map.selectedStroke with a dashed 500 m radius; size cue of pins by recorded rooms; foundation fill for ordinal bars (size bands, stations, groups)"
+  },
+  "firstAha": "share of the leading province’s rooms placed at district level that sit in up to three districts with the most rooms (never cutting a tie, never every district holding rooms), the share of rooms within 500 m of an operating rail station there against the rest of the province (rows with a point; both bases), and the district(s) with the most rooms outside it; the same with records under the count measure; computed per selection; the map opens in the 3D city preset with those districts focused automatically and the rest quiet",
+  "countingUnit": "measure switch: rooms recorded (ห้อง, default; unknown rooms counted apart, never 0) or records (แห่ง); prices shown per hotel as recorded, period unknown",
+  "focusAndQuiet": {
+    "implementation": "app.js focus modes (auto/explicit/none) and row scopes; map-layers.js filled/quiet/province feature-state; pins.js cue symbols vs grey context dots; massing.js quiet city tier vs rounded focus tier, see-through front buildings in the building view (setScene eye); venue-xray.js draws the building being looked at over everything else; stations.js quiet station rings and the selected station radius; camera.js presets and the building view (fitBuilding, twoPointBearing); provinces.js frames below zoom 8 without a จังหวัด filter"
+  },
+  "geometryAndMetricContract": "one row per symbol, only rows with a point; membership = production district matched at build time (row.admin: source · name · point · province · conflict); totals only (rooms or records); outlines per province on demand",
+  "accessibility": [
+    "native form labels and disclosure",
+    "visible focus on every control including pins, area labels and chart marks",
+    "keyboard pin tour (arrow keys) at detail zoom, excluding quiet context dots",
+    "roving tablist for the chart views",
+    "reduced motion respected",
+    "table equivalent for every map view",
+    "categorical shape cues beside colour; text labels in every legend and list",
+    "empty, map-failure, frame-failure and load-error paths with actions",
+    "Thai labels for the map’s own controls (MapLibre locale)",
+    "measure switch as a radio group (arrow keys), its state announced"
+  ],
+  "validation": {
+    "status": "release verification recorded in handoff/VERIFICATION.md",
+    "renderedHarness": "Playwright + MapLibre 5.6.2 from the npm package; OpenFreeMap and unpkg blocked in the build container (stub TileJSON with empty tiles: no basemap, no OSM buildings there); 1440×900 and 390×844, light and dark; live walk on GitHub Pages for the real basemap",
+    "scope": "Applied LDS values, fonts and actual rendered interfaces. No blanket LDS, CVD, native-device or market-completeness claim."
+  },
+  "layoutContract": {
+    "headerPx": 48,
+    "readingPanelWidth": "min(max(300px, 28%), 440px)",
+    "map": "full remaining viewport below header",
+    "chartTray": "collapsible bottom overlay",
+    "mobilePortrait": "full map, five toolbar buttons in one row (วิธีใช้ and Product statement at the top of the sheet), bottom sheet with sticky close, compact Aha card on the map while the sheet is closed"
+  },
+  "mapContract": {
+    "basemap": "generated at runtime by js/map-style.js on https://tiles.openfreemap.org/planet with --basemap-* tokens",
+    "choropleth": "li.supply (rooms) or count (records), all 41 samples by rank over the measured nonzero values; beneath the basemap’s first line layer; zoom 8–14.5, the selected จังหวัด from zoom 4; EVID-05 measured / measured_zero (sample 0 + 2 px zero outline) / no_data (rooms unknown: hatch)",
+    "provinces": "the same measure per province frame below zoom 8 without a จังหวัด filter, outlines to zoom 12, ink-chip labels to zoom 9, panel list",
+    "symbols": "focus rows with a point as cue icons in three sizes by recorded rooms; context rows as grey circles; HTML pins from zoom 15.5; the pin label is hotel name · rooms; stations of CityMETER Transit as quiet clickable rings from zoom 10.5, names from 13.5",
+    "buildings": "hotel points × focus-tier OSM footprints (display-time join; tile-edge pieces, parts and podium + tower grouped as one building); the building being looked at in map.activeLayer, drawn over every other building and road name by the x-ray, focus buildings in front see-through",
+    "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius",
+    "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel"
+  },
+  "outboundActions": "js/ask.js — Google AI Mode (hotel: still open, rates now, reviews, getting there · district/station: where to stay · group: brands and openings · overview: supply and occupancy news), Maps and Street View per view, pictograms ai/streetview/maps, one disclaimer line",
+  "copy": "short natural Thai: ห้อง / แห่ง / ที่พัก / ประเภท / ขนาด / เครือ / แบรนด์ / สถานี / เขต·อำเภอ / ระยะตรง / ราคาที่บันทึก; units on every number; one provenance line per panel view"
+}
