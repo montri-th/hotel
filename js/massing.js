@@ -108,13 +108,14 @@ export function focusFeatureId(tile, ordinal) {
 
 /**
  * CityMETER Building V4 in the focus tier (owner 2026-11-01, point 3). Its tiles carry no feature ids, so a building's
- * id is its z14 tile, the slot of the tile unit it was read with (the unit's position among the tile units of that
- * tile, by id) and its ordinal in that response: from 2^52 up, apart from every OSM id (focusFeatureId < 2^52 at z14),
- * and below 2^53 (exact).
+ * id is its z14 tile, the national slot of the tile unit it was read with (data/building-units: one index per อปท. or
+ * แขวง, whatever the focus) and its ordinal in that response — the same building keeps its id when the focus changes
+ * (a district, then the square round a stay). From 2^52 up, apart from every OSM id (focusFeatureId < 2^52 at z14),
+ * and below 2^53 (exact): 24 bits of tile, 13 of slot, 15 of ordinal.
  */
 export const CM_ID_BASE = 2 ** 52;
-export const CM_SLOTS = 32;
-const CM_ORDINALS = 524288; // 2^19 per tile unit and tile
+export const CM_SLOTS = 8192;
+const CM_ORDINALS = 32768; // per tile unit and z14 tile (a dense z14 tile holds about 3,000)
 export function cmFeatureId(tile, slot, ordinal) {
   return CM_ID_BASE + (((tile.x % 4096) * 4096 + (tile.y % 4096)) * CM_SLOTS + (slot % CM_SLOTS)) * CM_ORDINALS + (ordinal % CM_ORDINALS);
 }
@@ -172,11 +173,13 @@ export function planCmRequests(tiles, zones, {max = MAX_CM_REQUESTS, center = nu
       if (tus.length) units.push({zone: z, tus});
     }
     if (!units.length) continue;
-    const slots = units.flatMap(u => u.tus.map(tu => tu.id)).sort();
+    // The national slot of a tile unit (data/building-units); a file without one falls back to the order in the tile.
+    const local = units.flatMap(u => u.tus.map(tu => tu.id)).sort();
+    const slotOf = tu => (Number.isInteger(tu.slot) && tu.slot >= 0 && tu.slot < CM_SLOTS ? tu.slot : local.indexOf(tu.id));
     const tileKey = `${t.z}/${t.x}/${t.y}`;
     for (const {zone, tus} of units) {
-      if (requests.length + tus.length > max || tus.some(tu => slots.indexOf(tu.id) >= CM_SLOTS)) { truncated = true; continue; }
-      for (const tu of tus) requests.push({tile: t, zone, tileUnit: tu, tileType: zone.tileType, slot: slots.indexOf(tu.id), key: `${tileKey}|${tu.id}`});
+      if (requests.length + tus.length > max) { truncated = true; continue; }
+      for (const tu of tus) requests.push({tile: t, zone, tileUnit: tu, tileType: zone.tileType, slot: slotOf(tu), key: `${tileKey}|${tu.id}`});
       if (!zonesByTile.has(tileKey)) zonesByTile.set(tileKey, new Set());
       zonesByTile.get(tileKey).add(zone.id);
     }
@@ -530,7 +533,8 @@ export function installMassing(map, {sourceId = 'openmaptiles', beforeId, colors
   }
   function writeContext() {
     for (const f of contextFeatures) { const p = f.geometry.coordinates[0]?.[0]; f.properties.fade = p ? Math.round(fadeFor(p) * 20) / 20 : 1; }
-    map.getSource(CONTEXT_SOURCE)?.setData({type: 'FeatureCollection', features: contextFeatures});
+    // Fully faded buildings take the ground colour (invisible): not drawn at all (they come back if the anchors move).
+    map.getSource(CONTEXT_SOURCE)?.setData({type: 'FeatureCollection', features: contextFeatures.filter(f => f.properties.fade < 1)});
   }
   /** One CityMETER Building V4 tile of one tile unit (null layer when the tile is empty). */
   async function loadCmTile(request) {

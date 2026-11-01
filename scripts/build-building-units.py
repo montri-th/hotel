@@ -133,7 +133,7 @@ def main():
     osm_bases = sorted(set(counts_doc.get('osmBases') or []) | {r['osmBase'] for r in rows.values() if r.get('osmBase')})
     out_dir = os.path.join(a.out, 'data', 'building-units')
     os.makedirs(out_dir, exist_ok=True)
-    summary, totals, missing_geom = [], collections.Counter(), []
+    summary, totals, missing_geom, prepared = [], collections.Counter(), [], []
     for p in lv0:
         base = json.load(open(os.path.join(a.api, f"base-{p['id']}.json"), encoding='utf-8'))['value']
         units = []
@@ -149,7 +149,7 @@ def main():
                 src, basis = decide(r.get('cm'), r.get('osm'), r.get('osmUpper'), r.get('osmMethod'))
                 u = {'id': d['id'], 'code': str(d['code']), 'name': d['nameTh'], 'kind': 'district', 'source': src, 'basis': basis, 'hotels': r.get('hotels', 0),
                      'cm': r.get('cm'), 'osm': r.get('osm'), 'osmUpper': r.get('osmUpper'), 'osmMethod': r.get('osmMethod'), 'gap': is_gap(r.get('cm'), r.get('osm'), r.get('osmUpper')),
-                     'bbox': lonlat_bbox(d['extent']), 'area': str(d['code'])}
+                     'bbox': lonlat_bbox(d['extent']), 'area': str(d['code']), 'osmBaseDay': r.get('osmBaseDay')}
                 if src == 'cm':
                     geom = frames.get(str(d['code']))
                     if not geom:
@@ -164,7 +164,7 @@ def main():
                 src, basis = decide(r.get('cm'), r.get('osm'), r.get('osmUpper'), r.get('osmMethod'))
                 u = {'id': m['id'], 'code': str(m['code']), 'name': m['nameTh'], 'kind': 'municipality', 'source': src, 'basis': basis, 'hotels': r.get('hotels', 0),
                      'cm': r.get('cm'), 'osm': r.get('osm'), 'osmUpper': r.get('osmUpper'), 'osmMethod': r.get('osmMethod'), 'gap': is_gap(r.get('cm'), r.get('osm'), r.get('osmUpper')),
-                     'bbox': lonlat_bbox(m['extent'])}
+                     'bbox': lonlat_bbox(m['extent']), 'osmBaseDay': r.get('osmBaseDay')}
                 if src == 'cm':
                     gpath = os.path.join(a.geom, m['id'] + '.json')
                     geom = None
@@ -178,6 +178,17 @@ def main():
         if not units:
             continue
         units.sort(key=lambda u: (-u['hotels'], u['code']))
+        prepared.append((p, units))
+    # Every CityMETER tile unit gets one national index (`slot`): with the z14 tile and the ordinal in its response it
+    # makes a building id that stays the same whatever the focus (js/massing.js#cmFeatureId).
+    all_tile_units = sorted({t['id'] for _, units in prepared for u in units if u['source'] == 'cm' for t in u['tileUnits']})
+    slot_of = {tid: i for i, tid in enumerate(all_tile_units)}
+    assert len(slot_of) < 8192, 'tile-unit index exceeds the id space'
+    for p, units in prepared:
+        for u in units:
+            for t in u.get('tileUnits', []):
+                t['slot'] = slot_of[t['id']]
+    for p, units in prepared:
         doc = {'province': p['abbrEn'], 'units': units}
         body = json.dumps(doc, ensure_ascii=False, separators=(',', ':'))
         with open(os.path.join(out_dir, f"{p['abbrEn']}.json"), 'w', encoding='utf-8') as fh:
@@ -194,7 +205,9 @@ def main():
             'partsOverride': 'inside a CityMETER unit the page keeps OpenStreetMap buildings mapped in parts (building:part, OpenMapTiles hide_3d outlines) and leaves out the CityMETER buildings standing in their outline',
             'unit': 'อปท. (CityMETER production municipalityInfos) holding at least one stay with a point; Bangkok: เขต (tiles per แขวง)',
             'cm': {'dataset': 'CityMETER Building V4', 'counts': 'production building/info/lv1/{province}?version=V4', 'tiles': 'production building/detailMvt/{z}/{x}/{y}?inTileType&inTileId&version=V4', 'heights': 'height_m, model estimate'},
-            'osm': {'dataset': 'OpenStreetMap', 'counts': 'Overpass API: ways tagged building=* inside the unit polygon (holes subtracted); bounding-box count as an upper bound where it already decides', 'osmBase': osm_bases},
+            'osm': {'dataset': 'OpenStreetMap', 'counts': 'Overpass API: ways tagged building=* inside the unit polygon (holes subtracted); bounding-box count as an upper bound where it already decides', 'osmBase': osm_bases,
+                    'osmBaseDays': dict(sorted(collections.Counter(r.get('osmBaseDay') or 'unknown' for r in rows.values()).items()))},
+            'ids': 'a CityMETER tile unit carries a national slot; building id = 2^52 + (z14 tile, slot, ordinal) (js/massing.js#cmFeatureId)',
             'countsBuiltAt': counts_doc.get('builtAt', ''), 'countsSha256': hashlib.sha256(open(a.counts, 'rb').read()).hexdigest(),
             'missingGeometry': missing_geom, 'totals': dict(totals),
         },

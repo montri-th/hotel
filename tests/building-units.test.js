@@ -98,6 +98,14 @@ test('CityMETER requests: one per tile and tile unit meeting it, nearest the cam
   assert.equal(capped.requests.length, 0); assert.equal(capped.truncated, true); assert.equal(capped.zonesByTile.size, 0);
   assert.equal(planCmRequests([T], []).requests.length, 0);
   assert.ok(MAX_CM_REQUESTS >= 16);
+  // With national slots (data/building-units) a tile unit keeps its slot whatever else the focus holds: the same
+  // building keeps its id from the district view to the square round a stay.
+  const slotted = {...khet, tileUnits: khet.tileUnits.map((tu, i) => ({...tu, slot: 4000 + i}))};
+  const alone = {...slotted, tileUnits: [slotted.tileUnits[1]]};
+  assert.deepEqual(planCmRequests([T], [slotted]).requests.map(q => q.slot), [4000, 4001]);
+  assert.deepEqual(planCmRequests([T], [alone]).requests.map(q => q.slot), [4001]);
+  assert.equal(cmFeatureId(T, 4001, 7), cmFeatureId(T, 4001, 7));
+  assert.notEqual(cmFeatureId(T, 4001, 7), cmFeatureId(T, 4000, 7));
 });
 
 test('the production tile URL names the tile, the tile unit and V4; zones are found by box, then by outline (holes out)', () => {
@@ -252,6 +260,13 @@ test('building units: every unit follows the 15 % rule from its own recorded cou
     assert.equal(row.cm, doc.units.filter(u => u.source === 'cm').length);
   }
   assert.deepEqual(totals, index.meta.totals);
+  // National slots: one per CityMETER tile unit, unique across the country (stable building ids).
+  const slots = new Map();
+  for (const f of files) for (const u of readUnits(f).units) for (const t of u.tileUnits || []) {
+    assert.ok(Number.isInteger(t.slot) && t.slot >= 0 && t.slot < CM_SLOTS, `${t.id} slot`);
+    assert.ok(!slots.has(t.slot) || slots.get(t.slot) === t.id, `slot ${t.slot} unique`);
+    slots.set(t.slot, t.id);
+  }
   const bkk = readUnits('BKK.json');
   assert.ok(bkk.units.every(u => /^10\d\d$/.test(u.code)), 'Bangkok units are เขต codes');
   // Publication hygiene: no links (production API, private documents) and no source-record fields in the files.

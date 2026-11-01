@@ -183,22 +183,21 @@ export function stillScheduler(map, {defer = fn => setTimeout(fn, 0)} = {}) {
   return {run, cancel: key => pending.delete(key), clear: () => pending.clear(), get pending() { return [...pending.keys()]; }};
 }
 
-const reliefCache = new Map();
-/** Relief (m) round a point — the point and 24 points on rings of 250 m and 500 m (DEM z13), as in the terrain facts. */
-export async function reliefAround(lon, lat) {
-  const key = `${lon.toFixed(4)},${lat.toFixed(4)}`;
-  if (reliefCache.has(key)) return reliefCache.get(key);
-  const [at, ring500, ring250] = await Promise.all([elevationAt(lon, lat), Promise.all(ring(lon, lat, RELIEF_RADIUS_M, 16).map(([x, y]) => elevationAt(x, y))), Promise.all(ring(lon, lat, 250, 8).map(([x, y]) => elevationAt(x, y)))]);
-  const relief = factsFrom({at, ring500, ring250})?.relief ?? null;
-  if (relief !== null) reliefCache.set(key, relief);
-  return relief;
+/**
+ * Relief (m) of the land round a point: p95 − p5 of a 12 × 12 sample of the DEM at the probe zoom over a box of
+ * ±1 km — the view's own reading, at the scale of a site. (The 500 m rings of the terrain facts read SRTM's urban
+ * surface as relief: 47 m round a Bangkok tower block, 18 m here; 31 m round Sri Panwa's hill, 154 m above Patong.)
+ */
+export function siteRelief(lon, lat, {halfM = 1000} = {}) {
+  const dLat = halfM / 110574, dLon = halfM / (111320 * Math.cos((lat * Math.PI) / 180));
+  return reliefOf([lon - dLon, lat - dLat, lon + dLon, lat + dLat], {n: 12});
 }
 
 /**
  * Mount terrain mode on a map (after style.load). options.colors: {shadow, highlight, accent}; options.onChange(active);
  * options.onLoaded() once the DEM under the view has loaded; options.site() → [lon, lat] of a building or stay being
  * looked at, or null: at building scale the view is too small to read the land, so the relief round that point
- * (reliefAround, 500 m) also counts (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”).
+ * (siteRelief, ±1 km) also counts (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”).
  * Returns {setEnabled(on3d), evaluate(), active(), retheme(colors), dispose()}.
  */
 export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, onLoaded = null, site = null, exaggeration = TERRAIN.exaggeration} = {}) {
@@ -250,7 +249,7 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
     if (zoom < TERRAIN.minZoom && !mode) return;
     const b = map.getBounds(), at = typeof site === 'function' ? site() : null;
     const [visible, near] = await Promise.all([reliefOf([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]),
-      Array.isArray(at) && at.every(Number.isFinite) ? reliefAround(at[0], at[1]).catch(() => null) : null]);
+      Array.isArray(at) && at.every(Number.isFinite) ? siteRelief(at[0], at[1]).catch(() => null) : null]);
     const relief = Math.max(visible ?? -Infinity, near ?? -Infinity);
     if (my !== token || !Number.isFinite(relief)) return;
     setMode(relief >= TERRAIN.reliefOn || (mode && relief >= TERRAIN.reliefOff));
