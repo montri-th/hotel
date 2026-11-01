@@ -47,16 +47,15 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
     if (!(z > 1)) return {x: NaN, y: NaN};
     return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
   };
-  // MapLibre 5.6.2 Map#_elevateCameraIfInsideTerrain, run on every camera change: a camera below the ground under it is
+  // MapLibre 5.6.2 Map#_elevateCameraIfInsideTerrain, run by every camera change: a camera below the ground under it is
   // raised to that ground over the same spot, still looking at the centre — a lower pitch and a lower zoom.
-  const liftOutOfTerrain = () => {
+  const elevateCameraIfInsideTerrain = () => {
     const {f, D, p, b, kx} = geometry();
     const back = D * Math.sin(p);
     const ground = terrain(cam.center.lng - (back * Math.sin(b)) / kx, cam.center.lat - (back * Math.cos(b)) / KY);
-    if (cam.elevation + D * Math.cos(p) >= ground) return;
+    if (cam.elevation + D * Math.cos(p) >= ground) return {};
     const up = ground - cam.elevation;
-    cam.pitch = Math.atan2(back, up) / RAD;
-    cam.zoom = Math.log2(((f / Math.hypot(back, up)) * 40075016.686 * Math.cos(cam.center.lat * RAD)) / 512);
+    return {pitch: Math.atan2(back, up) / RAD, zoom: Math.log2(((f / Math.hypot(back, up)) * 40075016.686 * Math.cos(cam.center.lat * RAD)) / 512)};
   };
   const map = {
     width, height, moves,
@@ -66,7 +65,10 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
       if (o.center) cam.center = Array.isArray(o.center) ? {lng: o.center[0], lat: o.center[1]} : {lng: o.center.lng, lat: o.center.lat};
       for (const k of ['zoom', 'pitch', 'bearing', 'elevation']) if (o[k] != null) cam[k] = o[k];
       if (o.padding) cam.padding = {...o.padding};
-      if (lift) liftOutOfTerrain();
+      if (lift) {
+        const raised = map._elevateCameraIfInsideTerrain(cam);
+        if (raised.pitch != null) { cam.pitch = raised.pitch; cam.zoom = raised.zoom; }
+      }
     },
     easeTo(o) { moves.push(['ease', o]); map.jumpTo(o); },
     flyTo(o) { moves.push(['fly', o]); map.jumpTo(o); },
@@ -80,6 +82,7 @@ function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {})
       return {lng: cam.center.lng + e / kx, lat: cam.center.lat + n / KY};
     },
   };
+  if (lift) map._elevateCameraIfInsideTerrain = elevateCameraIfInsideTerrain;
   if (terrain) {
     map.terrain = {};
     map.queryTerrainElevation = ([lng, lat]) => terrain(lng, lat);
@@ -204,7 +207,9 @@ test('fit on terrain (0.3.2): a camera lifted out of the hill behind it early in
   const points = block.flatMap(([a, b]) => [[a, b, 0, 40], [a, b, 15, 40]]);
   const drawn = block.flatMap(([a, b]) => [[a, b, 40], [a, b, 55]]);
   const box = {left: 12, top: 54, right: 343, bottom: 194};
+  const check = map._elevateCameraIfInsideTerrain;
   const target = fitBuilding(map, points, {box, bearing: 0, projectAbs, animate: false, maxZoom: 21});
+  assert.equal(map._elevateCameraIfInsideTerrain, check, 'MapLibre’s lift is back after the fit');
   assert.equal(target.pitch, CAMERA.eye.pitch, 'the eye pitch, as asked');
   map.jumpTo({...target}); map.land();
   assert.equal(map.getPitch(), CAMERA.eye.pitch, 'not lifted where it lands');

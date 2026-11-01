@@ -255,6 +255,24 @@ export function screenBounds(map, points, project = projectPoint) {
   return Number.isFinite(minX) ? {minX, minY, maxX, maxY} : null;
 }
 
+/**
+ * Run `fn` with MapLibre's lift of a camera inside the terrain switched off (Map#_elevateCameraIfInsideTerrain, run by
+ * every jump in 5.6.2), so instant jumps keep the camera asked for; `fn` gets MapLibre's check (transform →
+ * {pitch, zoom} of the lifted camera, or {}) to ask about the camera it found, or null without one. Restored after.
+ */
+function withoutLift(map, fn) {
+  const check = map._elevateCameraIfInsideTerrain;
+  if (typeof check !== 'function') return fn(null);
+  const own = Object.prototype.hasOwnProperty.call(map, '_elevateCameraIfInsideTerrain');
+  map._elevateCameraIfInsideTerrain = () => ({});
+  try {
+    return fn(tr => check.call(map, tr));
+  } finally {
+    if (own) map._elevateCameraIfInsideTerrain = check;
+    else delete map._elevateCameraIfInsideTerrain;
+  }
+}
+
 /** Ground metres per pixel at zoom z (512-px tiles). */
 const metresPerPixel = (lat, z) => (40075016.686 * Math.cos(lat * RAD)) / (512 * 2 ** z);
 
@@ -277,12 +295,13 @@ const metresPerPixel = (lat, z) => (40075016.686 * Math.cos(lat * RAD)) / (512 *
  * MapLibre clamps it to when the camera lands — so the computed frame is the landed one.
  *
  * MapLibre lifts a camera that would sit inside the terrain (Map#_applyUpdatedTransform →
- * _elevateCameraIfInsideTerrain: a lower pitch and another zoom, the camera kept over the same ground). Every jump of
- * the fit asks for the preset's pitch again, so a lift lasts only as long as the camera that caused it (0.3.2: on a
- * phone a far camera behind a hillside was lifted to 48° early in the fit, the fit went on at 48° and the 75° camera it
- * returned put the building under the sheet). The target carries the pitch MapLibre kept; when the camera at `bearing`
- * is still lifted, the `alternates` (other corners of the building) are tried and the first one clear of the ground
- * is taken, so the view stays two-point.
+ * _elevateCameraIfInsideTerrain: a lower pitch and another zoom over the same ground). The fit computes with the lift
+ * off (`withoutLift`), so every computed camera is the one asked for (0.3.2: on a phone a far camera behind a hillside
+ * was lifted to 48° early in the fit, the fit went on at 48° and the 75° target put the building under the sheet), then
+ * asks MapLibre's own check whether the found camera would be lifted: if so, the `alternates` (other corners of the
+ * building) are tried and the first one clear of the ground is taken, so the view stays two-point; if every corner is
+ * lifted, the asked corner is fitted again at the pitch MapLibre allows there. The target carries the pitch and the
+ * centre's elevation it was computed with.
  */
 export function fitBuilding(map, points, {box, bearing = 0, alternates = [], preset = 'eye', minZoom = 14, maxZoom = 19.5, fill = 0.94, animate = true, duration = 900, apply = true, project = projectPoint, projectAbs = projectAltitude} = {}) {
   if (!points?.length || !box) return null;
@@ -315,8 +334,7 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
     }
     return {minX, minY, maxX, maxY};
   };
-  // One instant jump at the asked pitch (the preset's, or the one MapLibre allows there); the zoom read back (a lift
-  // changes it).
+  // One instant jump at the asked pitch (the preset's, or the one MapLibre allows there).
   let asked = p.pitch;
   const jump = options => { map.jumpTo({...options, pitch: asked}); zoom = map.getZoom(); };
   const pan = b => {
@@ -352,16 +370,15 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
     const last = bounds();
     if (last) pan(last);
   };
-  const solve = b => {
-    asked = p.pitch;
+  const solve = (b, pitch) => {
+    asked = pitch;
     jump({center: anchor, zoom: firstZoom, bearing: b, padding: zero, ...(onTerrain ? {elevation: G} : {})});
-    for (let pass = 0; pass < 4; pass++) {
-      converge();
-      if (!onTerrain) break;
+    converge();
+    if (onTerrain) {
       // The landed camera orbits the ground under its centre: hold the centre there and converge again — until the
       // held ground is the ground under the found centre. A close camera on a steep slope swings between two centres
       // (0.3.2: ±0.5 m each round on a 30 % slope), so after the first round the held ground moves halfway (≤ 10 rounds).
-      let held = map.transform?.elevation ?? G;
+      let held = G;
       for (let round = 0; round < 10; round++) {
         const c = map.getCenter(), e = groundAt(map, [c.lng, c.lat]);
         if (Math.abs(e - held) < 0.1) break;
@@ -369,21 +386,30 @@ export function fitBuilding(map, points, {box, bearing = 0, alternates = [], pre
         jump({elevation: held});
         converge();
       }
-      // Still lifted where the fit ends: fit again at the pitch MapLibre allows there, so the frame is the one it draws.
-      if (map.getPitch() >= asked - 0.5) break;
-      asked = map.getPitch();
     }
     // On terrain the target carries the centre's elevation it was computed with: an instant jump (reduced motion) then
     // checks the camera against the terrain from the right height (an ease interpolates to the same ground).
     const elevation = onTerrain ? map.transform?.elevation : undefined;
-    return {center: map.getCenter(), zoom: Math.round(map.getZoom() * 1000) / 1000, pitch: Math.round(map.getPitch() * 100) / 100, bearing: b, padding: zero, ...(Number.isFinite(elevation) ? {elevation} : {})};
+    return {center: map.getCenter(), zoom: Math.round(map.getZoom() * 1000) / 1000, pitch: Math.round(asked * 100) / 100, bearing: b, padding: zero, ...(Number.isFinite(elevation) ? {elevation} : {})};
   };
-  let target = solve(norm180(bearing));
-  for (const b of alternates) {
-    if (target.pitch >= p.pitch - 0.5) break;
-    const other = solve(norm180(b));
-    if (other.pitch > target.pitch + 0.5) target = other;
-  }
+  const target = withoutLift(map, lifted => {
+    // The pitch MapLibre would lift the found camera to (null: clear of the ground, or no terrain check).
+    const liftTo = () => { const l = onTerrain && lifted ? lifted(map.transform) : null; return Number.isFinite(l?.pitch) && l.pitch < asked - 0.5 ? l.pitch : null; };
+    const first = solve(norm180(bearing), p.pitch);
+    let lift = liftTo();
+    if (lift == null) return first;
+    for (const b of alternates) {
+      const other = solve(norm180(b), p.pitch);
+      if (liftTo() == null) return other;
+    }
+    // Every corner is lifted: the asked one, at the pitch MapLibre allows there (≤ 3 passes, the frame moves with it).
+    let best = first;
+    for (let pass = 0; pass < 3 && lift != null; pass++) {
+      best = solve(norm180(bearing), lift);
+      lift = liftTo();
+    }
+    return best;
+  });
   map.jumpTo(start);
   if (!apply) return target;
   if (!animate) { map.jumpTo(target); return target; }
