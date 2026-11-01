@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {terrarium, factsFrom, terrainChips, TERRAIN, hillshadePaint, POSITION_STEP_M, SEA_RINGS} from '../js/terrain.js';
+import {terrarium, factsFrom, terrainChips, TERRAIN, hillshadePaint, POSITION_STEP_M, SEA_RINGS, stillScheduler} from '../js/terrain.js';
 import {gateExpression, FILL_MAX_ZOOM} from '../js/map-layers.js';
 
 // Owner 2026-11-01 (point 2): show whether a stay sits by the sea, on a hill, in a valley or among trees — facts of
@@ -35,4 +35,27 @@ test('terrain mode: site scale only, exaggeration disclosed, hard switch of the 
   assert.equal(gateExpression(1, FILL_MAX_ZOOM).length, 5, 'off: the original gate');
   const p = hillshadePaint({shadow: '#5F635A', highlight: '#F6F7F3', accent: '#7B877D'});
   assert.equal(p['hillshade-shadow-color'], '#5F635A');
+});
+
+test('terrain changes wait for a still camera (MapLibre 5.6.2 stops rendering when a terrain is set during an ease)', () => {
+  const handlers = [];
+  const map = {moving: true, isMoving() { return this.moving; }, once(e, h) { if (e === 'moveend') handlers.push(h); }};
+  const ticks = [];
+  const s = stillScheduler(map, {defer: fn => ticks.push(fn)});
+  const ran = [];
+  s.run('mode', () => ran.push('on'));
+  s.run('refresh', () => ran.push('refresh'));
+  s.run('mode', () => ran.push('off'));
+  assert.deepEqual(ran, [], 'nothing while the camera moves');
+  assert.deepEqual(s.pending, ['mode', 'refresh']);
+  assert.equal(handlers.length, 1, 'one wait per move');
+  handlers.shift()();
+  assert.deepEqual(ran, [], 'a tick after moveend (the instant jumps of a fit end first)');
+  map.moving = false; ticks.shift()();
+  assert.deepEqual(ran, ['off', 'refresh'], 'the last job per key wins');
+  s.run('mode', () => ran.push('now'));
+  assert.deepEqual(ran.at(-1), 'now', 'a still camera runs at once');
+  map.moving = true; s.run('mode', () => ran.push('later')); s.cancel('mode');
+  handlers.shift()(); map.moving = false; ticks.shift()();
+  assert.equal(ran.at(-1), 'now', 'a cancelled job never runs');
 });

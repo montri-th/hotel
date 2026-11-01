@@ -159,6 +159,30 @@ export async function terrainFacts(map, row) {
   return facts;
 }
 
+/**
+ * Keyed jobs that run when the camera is still. MapLibre 5.6.2 reads the elevation centre of a running ease on every
+ * frame once a terrain is set (Map._updateElevation); a terrain set during an ease that started without one has none,
+ * so the frame throws (“reading 'wrap'”) and the render loop stops for good — seen live 2026-11-01 when a stay's
+ * building camera was flying while terrain mode switched on. Terrain changes therefore wait for the move to end, a
+ * tick later (the instant jumps of a camera fit end first); the last job per key wins.
+ */
+export function stillScheduler(map, {defer = fn => setTimeout(fn, 0)} = {}) {
+  const pending = new Map();
+  let waiting = false;
+  function run(key, fn) {
+    if (typeof map.isMoving !== 'function' || !map.isMoving()) { pending.delete(key); fn(); return; }
+    pending.set(key, fn);
+    if (waiting) return;
+    waiting = true;
+    map.once('moveend', () => defer(() => {
+      waiting = false;
+      const jobs = [...pending]; pending.clear();
+      for (const [k, f] of jobs) run(k, f);
+    }));
+  }
+  return {run, cancel: key => pending.delete(key), clear: () => pending.clear(), get pending() { return [...pending.keys()]; }};
+}
+
 const reliefCache = new Map();
 /** Relief (m) round a point — the point and 24 points on rings of 250 m and 500 m (DEM z13), as in the terrain facts. */
 export async function reliefAround(lon, lat) {
@@ -188,7 +212,13 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
       map.addLayer({id: HILLSHADE_LAYER, type: 'hillshade', source: TERRAIN_SOURCES.hillshade, layout: {visibility: 'none'}, paint: hillshadePaint(palette)}, map.getLayer(beforeId) ? beforeId : undefined);
     }
   }
+  const still = stillScheduler(map);
+  const whenStill = still.run;
   function setMode(on) {
+    if (on === mode) { still.cancel('mode'); return; }
+    whenStill('mode', () => applyMode(on));
+  }
+  function applyMode(on) {
     if (on === mode) return;
     mode = on;
     if (on) {
@@ -200,9 +230,12 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
       const refresh = e => {
         if (e.sourceId !== TERRAIN_SOURCES.terrain || !e.isSourceLoaded) return;
         map.off('sourcedata', refresh);
-        if (mode) { map.setTerrain(null); map.setTerrain({source: TERRAIN_SOURCES.terrain, exaggeration}); }
-        // The ground under the view is known now: whatever stands on it (the building camera, the x-ray) can follow.
-        if (mode) onLoaded?.();
+        whenStill('refresh', () => {
+          if (!mode) return;
+          map.setTerrain(null); map.setTerrain({source: TERRAIN_SOURCES.terrain, exaggeration});
+          // The ground under the view is known now: whatever stands on it (the building camera, the x-ray) can follow.
+          onLoaded?.();
+        });
       };
       map.on('sourcedata', refresh);
     } else {
@@ -231,7 +264,7 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
     active: () => mode,
     retheme(next) { palette = next || palette; if (hasLayer(HILLSHADE_LAYER)) for (const [k, v] of Object.entries(hillshadePaint(palette))) map.setPaintProperty(HILLSHADE_LAYER, k, v); },
     dispose() {
-      clearTimeout(timer); token++;
+      clearTimeout(timer); token++; still.clear();
       map.off('moveend', schedule);
       try { if (mode) map.setTerrain(null); } catch { /* style already gone */ }
       if (hasLayer(HILLSHADE_LAYER)) map.removeLayer(HILLSHADE_LAYER);
