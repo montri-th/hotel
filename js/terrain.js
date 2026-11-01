@@ -2,7 +2,8 @@
  * Terrain context for stays where the land shapes the stay (owner 2026-11-01, point 2: “โรงแรมประเภทรีสอร์ท จะ
  * sensitive กับวิวสวยไม่สวย การอยู่ติดทะเล อยู่บนเนินเขา ที่สูง หุบเขา ในป่า … แค่พอดูออกว่าภูมิประเทศที่ตั้งอยู่เป็นอย่างไร”).
  *
- * Terrain mode switches on by itself at site scale only where the land has relief: 3D view on, zoom ≥ TERRAIN.minZoom
+ * Terrain mode switches on by itself at site scale only where the land has relief: 3D view on, not a building or a
+ * stay being looked at (the two-point camera frames flat ground: the panel carries the terrain facts), zoom ≥ TERRAIN.minZoom
  * and the visible ground spans at least TERRAIN.reliefOn metres (p95 − p5 of a DEM sample of the view; off again
  * below TERRAIN.reliefOff or below TERRAIN.offZoom). Flat cities (Bangkok) never load terrain. In terrain mode:
  *  - the ground is 3D (MapLibre terrain, heights exaggerated × TERRAIN.exaggeration — the legend says so);
@@ -123,7 +124,8 @@ export function terrainChips(f, {num = v => String(v)} = {}) {
   if (f.position !== 'level') chips.push({kind: 'relief', text: f.position === 'higher' ? `สูงกว่ารอบข้าง ${num(f.above)} ม.` : `ต่ำกว่ารอบข้าง ${num(-f.above)} ม.`,
     title: `เทียบกับค่าเฉลี่ยของวงรัศมี ${num(RELIEF_RADIUS_M)} ม.`});
   if (f.seaBand !== null) chips.push({kind: 'sea', text: f.seaBand === 0 ? 'จุดอยู่บนทะเล' : `ทะเล ≤ ${num(f.seaBand)} ม.`, title: f.seaBand === 0 ? 'จุดของที่พักอยู่บนพื้นน้ำทะเลในแผนที่' : `มีทะเลภายใน ${num(f.seaBand)} ม. (ระยะตรง)`});
-  if (f.treeShare !== null) chips.push({kind: 'forest', text: `ต้นไม้ ${Math.round(f.treeShare * 100)}%`, title: `สัดส่วนพื้นที่ป่าและต้นไม้ในรัศมี ${num(TREE_RADIUS_M)} ม. ตามแผนที่ OSM`});
+  // Tree cover is positive evidence only: OSM land cover missing around a stay is not 0 % trees.
+  if (f.treeShare > 0) chips.push({kind: 'forest', text: `ต้นไม้ ${Math.round(f.treeShare * 100)}%`, title: `สัดส่วนพื้นที่ป่าและต้นไม้ในรัศมี ${num(TREE_RADIUS_M)} ม. ตามแผนที่ OSM`});
   return chips;
 }
 
@@ -205,7 +207,8 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
   const schedule = () => { clearTimeout(timer); timer = setTimeout(evaluate, 120); };
   map.on('moveend', schedule);
   return {
-    setEnabled(on) { enabled = Boolean(on); schedule(); },
+    /** Off at once (before a camera move: the building camera frames flat ground); on is decided at the next move end. */
+    setEnabled(on) { enabled = Boolean(on); if (!enabled) { clearTimeout(timer); token++; setMode(false); } else schedule(); },
     evaluate,
     active: () => mode,
     retheme(next) { palette = next || palette; if (hasLayer(HILLSHADE_LAYER)) for (const [k, v] of Object.entries(hillshadePaint(palette))) map.setPaintProperty(HILLSHADE_LAYER, k, v); },

@@ -1144,6 +1144,8 @@ function massingRegions() {
 
 function updateSpatialLayers() {
   if (!state.loaded) return;
+  // Terrain mode reads the land at hilly sites; a building or stay being looked at is framed on flat ground.
+  state.terrain?.setEnabled(state.view3d && !twoPoint());
   const code = $('province').value, u = unit();
   const pm = state.provinceLayers?.update({rows: provinceScopeRows(), selectedCode: code, visible: true, metric: state.metric}) || null;
   state.provinceModel = pm;
@@ -1285,7 +1287,7 @@ function installSpatialLayers() {
       renderLegend();
       state.labels?.layout();
     }});
-    state.terrain.setEnabled(state.view3d);
+    state.terrain.setEnabled(state.view3d && !twoPoint());
   } catch (e) { state.terrain = null; console.warn('Terrain unavailable', e); }
   state.hotelLabels = installHotelLabels(map, $('map'), {
     onSelect: r => selectHotel(r.id, {fly: false, showPopup: true, fromPin: true}),
@@ -1390,7 +1392,6 @@ async function startMap() {
 function toggle3d() {
   state.view3d = !state.view3d;
   $('toggle-3d').setAttribute('aria-pressed', String(state.view3d));
-  state.terrain?.setEnabled(state.view3d);
   renderLegend();
   updateSpatialLayers();
   if (state.map) {

@@ -18,6 +18,8 @@ test('terrarium decoding and the facts of the ground', () => {
 test('terrain chips: icon + short text; unknown sea or tree cover is left out, never 0', () => {
   const chips = terrainChips(factsFrom({at: 3, ring500: Array(16).fill(2), ring250: Array(8).fill(3)}, {seaBand: null, treeShare: null}));
   assert.deepEqual(chips.map(c => c.kind), ['elevation']);
+  const noWood = terrainChips(factsFrom({at: 3, ring500: Array(16).fill(2), ring250: Array(8).fill(3)}, {seaBand: null, treeShare: 0}));
+  assert.ok(!noWood.some(c => c.kind === 'forest'), 'no OSM wood around a stay is not 0 % trees: no chip');
   const all = terrainChips(factsFrom({at: 520, ring500: Array(16).fill(560), ring250: Array(8).fill(540)}, {seaBand: 150, treeShare: 0.3}));
   assert.deepEqual(all.map(c => c.kind), ['elevation', 'relief', 'relief', 'sea', 'forest']);
   assert.ok(all.every(c => c.text.length <= 22 && c.title.length > c.text.length), 'short on the chip, the sentence in the title');

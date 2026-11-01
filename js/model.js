@@ -49,7 +49,7 @@ export const sizeOf = rooms => (Number.isFinite(rooms) && rooms > 0 ? SIZE_BANDS
  * below PIN_MIN_RADIUS. A record with unknown rooms is drawn hollow at the 50-room size (EVID-05: never a measured 0).
  * PIN_SCALE gives k (px of radius for 100 rooms) by zoom; the legend and the HTML pins use the same numbers.
  */
-export const PIN_SCALE = Object.freeze([[6, 0.9], [8, 1.3], [10, 2.0], [12, 3.0], [14, 4.2], [16, 5.0], [18, 5.6]]);
+export const PIN_SCALE = Object.freeze([[6, 0.9], [8, 1.3], [10, 2.0], [12, 3.2], [14, 4.8], [16, 5.8], [18, 6.4]]);
 export const ROOMS_SIZE_CAP = 1500;
 export const PIN_MIN_RADIUS = 1.6;
 export const UNKNOWN_ROOMS_SIZE = 50;
