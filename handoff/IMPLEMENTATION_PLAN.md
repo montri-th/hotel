@@ -1,4 +1,4 @@
-# CityMETER Hotel — Implementation Plan (0.1.0)
+# CityMETER Hotel — Implementation Plan (0.2.0)
 
 คู่กับ `implementation-plan.json`
 

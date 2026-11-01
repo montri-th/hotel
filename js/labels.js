@@ -44,11 +44,13 @@ const escapeRe = v => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  */
 export function shortName(row, {hasLogo = false, places = []} = {}) {
   const th = row.name || '', en = row.nameEn || '';
-  let name = hasLogo && en ? en : th || en;
+  // A chain hotel with a logo reads its English name (the Thai field sometimes holds it); wrapping brackets go.
+  let name = (hasLogo ? en || th : th || en).replace(/^[\s(（[]+|[\s)）\]]+$/g, '');
   const original = name;
-  if (hasLogo && en) {
-    const brand = String(row.brand?.name || '').trim();
-    if (brand && name.toLowerCase().startsWith(brand.toLowerCase())) name = name.slice(brand.length).replace(/^[\s\-–—:,·&]+/, '');
+  if (hasLogo) {
+    const brands = [row.brand?.name, ...(row.brand?.labels || [])].map(b => String(b || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+    const hit = brands.find(b => name.toLowerCase().startsWith(b.toLowerCase()));
+    if (hit) name = name.slice(hit.length).replace(/^[\s\-–—:,·&]+/, '');
   }
   const placeList = places.filter(Boolean).sort((a, b) => b.length - a.length);
   // Leading place or type word, then trailing place, then a generic ending (twice: "… Resort & Spa Phuket").

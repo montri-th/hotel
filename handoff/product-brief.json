@@ -5,7 +5,7 @@
   "productId": "citymeter-hotel",
   "productVersion": "0.2.0",
   "updatedOn": "2026-11-01",
-  "datasetCheckedOn": "2026-10-25",
+  "datasetCheckedOn": "2026-11-01",
   "language": "th",
   "productName": "CityMETER · Hotel",
   "repository": "https://github.com/montri-th/hotel",
@@ -28,7 +28,7 @@
     "charts / table",
     "CityMETER production"
   ],
-  "changesSince": "first release; code base carried over from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6)",
+  "changesSince": "0.2.0 (2026-11-01, owner consult points 2, 4, 5 and icon-first map text): symbol area by recorded rooms (hollow = unknown); names near the middle of the view ranked by recorded rooms and price, with chain-brand logos (107 of 112 brands, SHA-256 checked); hover card and panel icon chips incl. terrain facts; terrain mode at hilly sites (3D ground × 1.5, hillshade, district fill hard-switch at 12.5); legend, status and district chips use symbols; data refreshed with 47_ROOM_RESOLUTION (rooms 1,033,157; unknown 79) and 48_LOGO_LIBRARY brand identities. 0.1.0: first release from the CityMETER Fitness demo 0.3.1 (montri-th/fitness @50ec2b6). Point 3 (buildings per อปท., source per area by the 15 % rule) is approved for the next release.",
   "rowScopes": {
     "scopeRows": "rows after search · group · size · province · chain, before any district selection or focus: the comparison base of the Aha, the choropleth, the charts and every rank",
     "baseRows": "scopeRows narrowed by the selected เขต/อำเภอ",
@@ -226,7 +226,7 @@
       }
     },
     "noStar": true,
-    "sizeCue": "pin size by recorded rooms (< 50 or unknown · 50–199 · 200+), colour stays the group’s"
+    "sizeCue": "symbol area ∝ recorded rooms (radius = k(zoom)·√(rooms/100), cap 1,500, min 1.6 px; js/model.js#pinRadius); unknown rooms = open outline at the 50-room size; colour stays the group’s; quiet context ≤ 6 px radius"
   },
   "framesContract": {
     "index": "data/area-index.json — 928 districts and 77 provinces, no geometry (codes, names, production areaSqm, label, bbox)",
@@ -388,7 +388,7 @@
   },
   "pictogramContract": {
     "file": "assets/icons/material-pictogram-300.woff2",
-    "sha256": "2b59e62a84b9d3435c682b1995d4f5b55d1f0dc3188e1a0450e120da4fa8b5e7",
+    "sha256": "3121db921e00ecfbe686944045a65d61a7f24cd66a7ea7bdbbb823716a190df5",
     "glyphs": [
       "area",
       "province",
@@ -404,7 +404,11 @@
       "meeting",
       "price",
       "chain",
-      "compare"
+      "compare",
+      "sea",
+      "elevation",
+      "relief",
+      "forest"
     ],
     "rule": "decorative (aria-hidden); the text carries the meaning; no star"
   },
@@ -455,8 +459,8 @@
       "brand": 468,
       "points": 29149,
       "price.recorded": 28381,
-      "rooms.known": 30477,
-      "rooms.sum": 996784,
+      "rooms.known": 30650,
+      "rooms.sum": 1033157,
       "rows": 30729,
       "source.provinceDisagree": 1
     },

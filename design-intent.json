@@ -15,7 +15,7 @@
     "latinHeadings": "Arvo 700",
     "dataAndMetrics": "JetBrains Mono 400; tabular numerals",
     "navigation": "Material Symbols Rounded approved nav-7 subset; FILL 0 / wght 300 / GRAD 0 / opsz 24",
-    "pictograms": "Material Symbols Rounded 15-glyph pictogram subset built from the same source font (2512 B, sha256 2b59e62a84b9…): area, province, segment, venue, ai, streetview, maps, building + hotel, rooms (bed), rail (train), meeting (groups), price (payments), chain (account_tree), compare (compare_arrows); owner test exception 2026-10-22; no star glyph"
+    "pictograms": "Material Symbols Rounded 19-glyph pictogram subset built from the same source font (3004 B, sha256 3121db921e00…): area, province, segment, venue, ai, streetview, maps, building + hotel, rooms (bed), rail (train), meeting (groups), price (payments), chain (account_tree), compare (compare_arrows) + 0.2.0 terrain facts: sea (waves), elevation (landscape), relief (height), forest; owner test exception 2026-10-22, terrain glyphs 2026-11-01 (icons instead of long text on the map); no star glyph"
   },
   "colors": {
     "applied": "assets/theme.css — foundation pairs, semantic states, map roles, dataState (noData, zero), categorical series 1–10 (landometer-series-10-v8 soft fill + ink), count classes, basemap-only tokens",
@@ -59,12 +59,17 @@
   },
   "mapContract": {
     "basemap": "generated at runtime by js/map-style.js on https://tiles.openfreemap.org/planet with --basemap-* tokens",
-    "choropleth": "li.supply (rooms) or count (records), all 41 samples by rank over the measured nonzero values; beneath the basemap’s first line layer; zoom 8–14.5, the selected จังหวัด from zoom 4; EVID-05 measured / measured_zero (sample 0 + 2 px zero outline) / no_data (rooms unknown: hatch)",
+    "choropleth": "li.supply (rooms) or count (records), all 41 samples by rank over the measured nonzero values; beneath the basemap’s first line layer; zoom 8–14.5 (8–12.5 in terrain mode, hard switch), the selected จังหวัด from zoom 4; EVID-05 measured / measured_zero (sample 0 + 2 px zero outline) / no_data (rooms unknown: hatch)",
     "provinces": "the same measure per province frame below zoom 8 without a จังหวัด filter, outlines to zoom 12, ink-chip labels to zoom 9, panel list",
-    "symbols": "focus rows with a point as cue icons in three sizes by recorded rooms; context rows as grey circles; HTML pins from zoom 15.5; the pin label is hotel name · rooms; stations of CityMETER Transit as quiet clickable rings from zoom 10.5, names from 13.5",
+    "symbols": "focus rows with a point as cue icons whose area grows with the recorded rooms (hollow = unknown); context rows as grey circles by rooms, ≤ 6 px radius; HTML pins from zoom 15.5; the pin label is hotel name · rooms; stations of CityMETER Transit as quiet clickable rings from zoom 10.5, names from 13.5",
     "buildings": "hotel points × focus-tier OSM footprints (display-time join; tile-edge pieces, parts and podium + tower grouped as one building); the building being looked at in map.activeLayer, drawn over every other building and road name by the x-ray, focus buildings in front see-through",
     "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius",
-    "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel"
+    "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel",
+    "symbolSize": "area ∝ recorded rooms (js/model.js#pinRadius), hollow = unknown rooms, quiet context ≤ 6 px radius (owner 2026-11-01)",
+    "labels": "from zoom 12.5: ≤ 9 (phone 5) names in the central ellipse ranked by rooms + recorded price percentiles; chain logo or group cue, short name, bed pictogram + rooms; measured placement off the chrome and the district chips (js/labels.js)",
+    "logos": "chain-brand identity marks (data/brand-logos.json, SHA-256 checked, theme-invariant backing, never recoloured or redrawn)",
+    "terrain": "terrain mode at hilly sites only (zoom ≥ 12.5, 3D, relief ≥ 30 m in view): 3D ground × 1.5 + hillshade in basemap tones; the district fill switches off at 12.5 (hard switch, never a fade); off for the building camera (js/terrain.js)",
+    "iconFirstText": "district chips carry the measure pictogram, the status is a pin + number, legend items are a symbol + 1–2 words; sentences live in titles and accessible names (owner 2026-11-01)"
   },
   "outboundActions": "js/ask.js — Google AI Mode (hotel: still open, rates now, reviews, getting there · district/station: where to stay · group: brands and openings · overview: supply and occupancy news), Maps and Street View per view, pictograms ai/streetview/maps, one disclaimer line",
   "copy": "short natural Thai: ห้อง / แห่ง / ที่พัก / ประเภท / ขนาด / เครือ / แบรนด์ / สถานี / เขต·อำเภอ / ระยะตรง / ราคาที่บันทึก; units on every number; one provenance line per panel view"

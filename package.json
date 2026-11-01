@@ -17,6 +17,7 @@
     "check:lds": "node scripts/check-lds-parity.mjs",
     "handoff:manifest": "node scripts/build-handoff.mjs",
     "handoff:bundle": "node scripts/build-handoff.mjs --zip dist/CityMETER-Hotel-Developer-Handoff.zip",
-    "verify:live": "node scripts/verify-live.mjs"
+    "verify:live": "node scripts/verify-live.mjs",
+    "build:logos": "python3 -I scripts/build-logos.py --help"
   }
 }

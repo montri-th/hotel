@@ -1,14 +1,14 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.1.0 (built 2026-11-01 from the export of 2026-11-01); the page computes everything from the data
+a snapshot of release 0.2.0 (built 2026-11-01 from the export of 2026-11-01); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
 ## 1. Sources
 
 | Input | What it is | Published here? |
 |---|---|---|
-| Research master | Google Sheets “CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24” (registry id `research.TH.hotel`, internal). Tabs read: `01_VENUES`, `13_BUILDING_LINKS`, `16_BRANCH_SPATIAL_CANDIDATES`, `17_BRANDS`, `19_AFFILIATIONS`, `23_TYPE_ASSIGNMENTS`, `37_IDENTITY_ALIASES` | No. Only the SHA-256 of the .xlsx export (`meta.exportSha256`) and the derived columns in `data/hotels.json` |
+| Research master | Google Sheets “CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24” (registry id `research.TH.hotel`, internal). Tabs read: `01_VENUES`, `13_BUILDING_LINKS`, `16_BRANCH_SPATIAL_CANDIDATES`, `17_BRANDS`, `19_AFFILIATIONS`, `23_TYPE_ASSIGNMENTS`, `37_IDENTITY_ALIASES`, and (0.2.0) `47_ROOM_RESOLUTION` (dates of the room re-checks written back to `01_VENUES`) and `48_LOGO_LIBRARY` (brand identities and logo hashes) | No. Only the SHA-256 of the .xlsx export (`meta.exportSha256`) and the derived columns in `data/hotels.json` |
 | CityMETER production base info | `https://landometer.com/api/v2/citymeter-v3/base/info/lv0` and `…/lv1/{uuid}` (77 provinces, 928 districts, production codes, Thai names, areaSqm), fetched by `scripts/fetch-base.py` | Receipts only (`data/boundary-receipts.json`: url, status, bytes, sha256, retrievedAt for 78 responses) |
 | District outlines | Display geometry per province (`data/frames/{CODE}.json`) and province frames (`data/provinces.geojson`), built by `scripts/build-boundaries.py` | Yes |
 | CityMETER · Transit | `montri-th/transit` `data/transit.json`, commit and SHA-256 in `meta.context.rail` (release `transit-data-2026-10-31-r1`, as of 2026-10-31): 195 operating and 79 under-construction stations referenced | Station id, name, line labels, status and reference point of the referenced stations |
@@ -31,10 +31,10 @@ census of operating hotels (`operation_status = operation_not_revalidated` for 3
 | `rooms` (default) | Σ `rooms_selected` — the room count the sheet selected from its sources. Recorded stock, not rooms available per night, occupancy or demand | “ห้อง” | LI `li.supply` (capacity) |
 | `count` | accommodation records | “แห่ง” | LDS `count` |
 
-A record with unknown rooms (blank `rooms_selected`, **252 rows**; the 41 raw zeros the sheet left unselected stay
-unknown) adds nothing to a room total and is counted apart (“ไม่ทราบจำนวนห้อง”) — never as 0 rooms. A district whose
+A record with unknown rooms (blank `rooms_selected`, **79 rows** after the research team's room re-check of 1 Nov 2026 —
+`47_ROOM_RESOLUTION`, 258 tasks, 178 written back; raw zeros the sheet left unselected stay unknown) adds nothing to a room total and is counted apart (“ไม่ทราบจำนวนห้อง”) — never as 0 rooms. A district whose
 records all have unknown rooms is `no_data` under the rooms measure (hatch), never a measured 0. Known rooms:
-**996,784 rooms in 30,477 records**.
+**1,033,157 rooms in 30,650 records**.
 
 No ratio to area or population is drawn. Recorded rooms per km² or per person would read as a density or a market
 measure the data does not support.
@@ -98,8 +98,8 @@ walking route, a travel time or a catchment.
   Σ focus ÷ the province's placed total. Rail comparison: share of the measure within 500 m of an operating station
   among the focus rows with a point vs the rest of the province's placed rows with a point. Outside finding: the
   district(s) with the most of the measure outside that province.
-  Snapshot (rooms): Bangkok · คลองเตย 16,886 · ราชเทวี 14,146 · วัฒนา 13,865 = 44,897 / 130,608 (34%); rail 65%
-  (19,577/30,071) vs 38% (24,305/64,530); outside: บางละมุง ชลบุรี 61,480. Snapshot (records): Phuket · เมืองภูเก็ต
+  Snapshot (rooms): Bangkok · คลองเตย 20,679 · วัฒนา 17,774 · ราชเทวี 15,063 = 53,516 / 152,864 (35%); rail 67%
+  (25,768/38,690) vs 42% (32,732/77,957); outside: บางละมุง ชลบุรี 62,561. Snapshot (records): Phuket · เมืองภูเก็ต
   1,024 · กะทู้ 862 = 1,886 / 2,222 (85%).
 - **Station panel** (`buildStationProfile`): rows with a point within 500 m of the station's reference point (a row near
   two stations is listed at both). **Station ranking** (`stationsOf`): each row counted once, at its nearest operating
@@ -116,7 +116,40 @@ walking route, a travel time or a catchment.
   <profile>` compares every shipped value with both source files (124 checks).
 - Accommodation groups bind by stable id to `landometer-series-10-v8` with the series shape cue (`js/cues.js#GROUP_SERIES`):
   hotel 2 · resort 1 · apartment 3 · guesthouse 4 · bungalow 5 · homestay 10 · other 9 (no series 6 / star).
-- Pin size = a size cue by recorded rooms (< 50 or unknown · 50–199 · 200+); the colour stays the group's.
+- Symbol size (0.2.0, owner 2026-11-01): the symbol's area grows with the recorded rooms — radius = k(zoom) · √(rooms ÷ 100),
+  rooms capped at 1,500, never below 1.6 px (`js/model.js#pinRadius`, `PIN_SCALE`); the colour stays the group's. Unknown
+  rooms: the same shape as an open outline at the 50-room size (EVID-05 no_data — never a small filled mark). Quiet context
+  dots: grey, about half size, at most 6 px of radius.
+
+## 7a. Names, logos and terrain on the map (0.2.0)
+
+- **Which names show** (`js/labels.js`): from zoom 12.5, the focus rows whose point lies in the central ellipse of the
+  visible map (36 % of its half-width and half-height), ranked by an importance score = the mean of the record's
+  national percentile of recorded rooms and of recorded price (avg, else max, else min). A record without a recorded
+  price ranks on its rooms alone and one without rooms on its price alone; the price is never guessed and the score is
+  never shown. At most 9 labels on desktop and 5 on a phone, measured and placed so they never cover the map chrome,
+  the district chips, the popup or each other.
+- **Short names**: a leading type word (โรงแรม …), the province name (Thai or English, กรุงเทพฯ) and generic endings
+  (รีสอร์ท แอนด์ สปา, Hotel …) are dropped; a chain hotel with a logo reads in English without the brand words the logo
+  shows. Never shorter than 3 characters; the full name is the accessible name and heads the card.
+- **Chain logos** (`data/brand-logos.json`, `assets/brand-logos/`, `scripts/build-logos.py`): the research team's
+  chain-brand logo library (`Hotel_Chain_Logos_Web`, checked 2026-11-01) joined by `48_LOGO_LIBRARY`; 107 of 112 brands
+  of this release. Every file's SHA-256 matches the library manifest and the tab; SVGs are checked for scripts, handlers
+  and external references; rasters above 512 px or 64 KB are scaled uniformly to 384 px (WebP) after a transparent
+  margin is trimmed — never recoloured, cropped into the artwork, traced or upscaled. Each logo sits on the library's
+  recommended surface (theme-invariant backing). Rights stay with each owner; showing a mark to identify a brand is not
+  an endorsement or a licence.
+- **Terrain mode** (`js/terrain.js`): at site scale (zoom ≥ 12.5, 3D view, not a building or stay being looked at), when
+  the visible ground spans at least 30 m (p95 − p5 of a 14 × 14 sample of the DEM at zoom 11; off below 20 m or zoom
+  12.2), the map shows 3D ground exaggerated × 1.5 (said in the legend) and a hillshade in basemap tones; the district
+  fill switches off from zoom 12.5 (a hard switch). DEM: Terrain Tiles on AWS (Mapzen/Tilezen terrarium; SRTM 30 m,
+  acquired 2000, over Thailand).
+- **Terrain facts of a stay** (card and panel): ground elevation at the point (DEM zoom 13); relief = max − min of the
+  point and 24 points on rings of 250 m and 500 m; higher/lower than its surroundings when the point differs from the
+  mean of the 500 m ring by ≥ 15 m; the nearest of the rings 0 · 150 · 300 · 600 · 1,200 m (straight line) that reaches
+  an OSM ocean polygon of the loaded basemap tiles; tree cover = share of a 75 m grid within 300 m under OSM `wood`
+  land cover, shown only when above 0 (absent land cover is not 0 % trees). Facts of the ground only — never a view,
+  a price or a risk; unknown is left out.
 
 ## 8. Not published
 
@@ -129,9 +162,12 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
 
 - 7 rows whose selected point lies in another district than the one CityMETER Hotel V3 lists (`meta.checks`), and 1 row
   whose listed district lies in another province than the row's own.
-- 20 brand names selected in `01_VENUES` with no group in `17_BRANDS` (e.g. Design Hotels, Banyan Tree, Homm,
-  Renaissance Hotels, Kempinski) — link them in the sheet, then rebuild.
-- 267 rows with `star6_semantics_unresolved`; 41 raw zero-room rows left unselected.
+- 14 brands with no group in `17_BRANDS` (Design Hotels, Banyan Tree, Homm, Garrya, Kempinski, Eastin Grand, Prince
+  Palace, LiT Bangkok, Cassia, YOTEL, GO Hotel, Kacha, Angsana, Meliá) — link them in the sheet, then rebuild. (0.2.0:
+  six brand names that differed from `17_BRANDS` — Curio, DoubleTree, Four Points, MGallery, Renaissance, W — now join
+  through the logo library identities of `48_LOGO_LIBRARY`.) Five brands have no accepted logo (Novotel Living, Eastin
+  Grand: not found; Prince Palace, LiT Bangkok, Kacha: no library identity).
+- 267 rows with `star6_semantics_unresolved`; 79 rows with unknown rooms after the 47_ROOM_RESOLUTION re-check (80 tasks held, `selection_status = hold_*`).
 - `46_PRICE_OBSERVATIONS` (dated price quotes) is not used in this release; it is the path to seasonality.
 - 642 research building masses (Drive bundle `hotel-building-mass.geojson`) are not drawn in this release; the map draws
   OpenStreetMap massing as context.
@@ -143,7 +179,10 @@ python3 -I scripts/fetch-base.py --out $BUILD/api
 python3 -I scripts/build-boundaries.py --pharmacy <montri-th/pharmacy> --api $BUILD/api --ogd <ogd dir> --out .
 python3 -I scripts/build-receipts.py --api $BUILD/api --out .
 python3 -I scripts/build-data.py --sheet <research master .xlsx> [--csv <tab csv dir>] --api $BUILD/api \
-    --index data/area-index.json --frames data/frames --transit <montri-th/transit> --shopping <montri-th/shoppingcenter> --out .
+    --index data/area-index.json --frames data/frames --transit <montri-th/transit> --shopping <montri-th/shoppingcenter> \
+    --logos <Hotel_Chain_Logos_Web> --out .
+python3 -I scripts/build-logos.py --package <Hotel_Chain_Logos_Web> --tab <48_LOGO_LIBRARY.csv> --data data/hotels.json --out .
+python3 scripts/build-pictogram-font.py <MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf>
 npm test
 ```
 

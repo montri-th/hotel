@@ -17,7 +17,8 @@
       "check:lds": "node scripts/check-lds-parity.mjs",
       "handoff:manifest": "node scripts/build-handoff.mjs",
       "handoff:bundle": "node scripts/build-handoff.mjs --zip dist/CityMETER-Hotel-Developer-Handoff.zip",
-      "verify:live": "node scripts/verify-live.mjs"
+      "verify:live": "node scripts/verify-live.mjs",
+      "build:logos": "python3 -I scripts/build-logos.py --help"
     },
     "libraries": {
       "maplibre": "MapLibre GL JS 5.6.2 (unpkg, pinned; js/maplibre-guard.js)",
@@ -52,7 +53,10 @@
       "js/geometry.js": "",
       "js/navigation.js": "",
       "js/vendors.js": "",
-      "js/launch.js": ""
+      "js/launch.js": "",
+      "js/labels.js": "names near the middle of the view (importance = rooms + recorded price percentiles), short names, hover card of icon chips",
+      "js/logos.js": "chain-brand logo registry (data/brand-logos.json): identity marks on their backing, cache-tagged by SHA-256",
+      "js/terrain.js": "terrain mode at hilly sites (3D ground, hillshade, relief probe) and the terrain facts of a stay"
     },
     "data": [
       "data/hotels.json",
@@ -261,7 +265,7 @@
     {
       "id": "A3",
       "scenario": "rooms measure",
-      "expected": "Σ rooms = 996784; unknown rooms never 0",
+      "expected": "Σ rooms = 1033157; unknown rooms never 0",
       "verificationType": "unit"
     },
     {
@@ -273,7 +277,7 @@
     {
       "id": "A5",
       "scenario": "first screen",
-      "expected": "34% (44897/130608) in คลองเตย · ราชเทวี · วัฒนา; rail 19577/30071 vs 24305/64530",
+      "expected": "35% (53516/152864) in คลองเตย · วัฒนา · ราชเทวี; rail 25768/38690 vs 32732/77957",
       "verificationType": "unit (tests/insight.test.js) + render"
     },
     {
@@ -354,7 +358,7 @@
     },
     {
       "id": "B3",
-      "item": "Link the 20 brands without a group in 17_BRANDS (research sheet)",
+      "item": "Link the 14 brands without a group in 17_BRANDS (research sheet)",
       "evidence": "research follow-up"
     },
     {
@@ -371,6 +375,11 @@
       "id": "B6",
       "item": "Operation re-validation round (open/closed) for the register",
       "evidence": "planned"
+    },
+    {
+      "id": "B7",
+      "item": "Point 3: buildings per อปท. (เขต in Bangkok) with the source chosen per area by the 15 % rule; OSM building parts kept inside CityMETER areas; research site boundaries for the top 300 resorts and pool villas",
+      "evidence": "approved by the owner 2026-11-01, next release"
     }
   ]
 }
