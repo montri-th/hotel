@@ -1513,6 +1513,27 @@ function trackLegend() {
   return observer;
 }
 
+/**
+ * The parts that bound the free box of the building view (js/app.js#visibleBox) can change size after a frame — the
+ * legend re-rendered for the new zoom, the trays, the phone sheet: once the camera is still, frame the building again
+ * in the box it now has (refitOnNewBox; never re-entered from a fit's own jumps, never after a user camera move).
+ */
+function watchFreeBox() {
+  if (typeof ResizeObserver !== 'function') return null;
+  let timer = 0;
+  const later = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (!state.loaded || !state.map) return;
+      if (state.map.isMoving()) { state.map.once('moveend', later); return; }
+      refitOnNewBox();
+    }, 150);
+  };
+  const observer = new ResizeObserver(later);
+  for (const el of [$('map'), $('map-legend'), $('insights'), $('results'), $('map-aha'), $('panel')]) if (el) observer.observe(el);
+  return observer;
+}
+
 /** Thai labels for the map's own controls. */
 const MAP_LOCALE = {
   'Map.Title': 'แผนที่ที่พักและห้องพัก', 'NavigationControl.ZoomIn': 'ซูมเข้า', 'NavigationControl.ZoomOut': 'ซูมออก',
@@ -1527,9 +1548,10 @@ function initMap() {
     state.map.addControl(new maplibregl.NavigationControl({showCompass: true, visualizePitch: true}), 'top-right');
     state.attribObserver = trackAttribution(state.map);
     state.legendObserver ||= trackLegend();
+    state.freeBoxObserver ||= watchFreeBox();
     state.labels = installAreaLabels(state.map, $('map'), {className: 'neighborhood-label', hostId: 'area-labels', hostLabel: 'เขต/อำเภอบนแผนที่', minZoom: PROVINCE_VIEW_MIN_ZOOM, verb: 'กดเพื่อสำรวจพื้นที่', onSelect: id => selectArea(id, {fromMap: true}), reservedBottom: labelBottomSpace, maxLabels: 40});
     state.provinceLabels = installAreaLabels(state.map, $('map'), {className: 'province-label', hostId: 'province-labels', hostLabel: 'จังหวัดบนแผนที่', minZoom: 0, maxZoom: PROVINCE_LABEL_MAX_ZOOM, verb: 'กดเพื่อดูจังหวัด', detailZoomClass: false, onSelect: code => selectProvince(code), reservedBottom: labelBottomSpace, maxLabels: 77, avoid: '.neighborhood-label:not([hidden])'});
-    state.map.on('zoomend', () => { if (state.loaded) { renderLegend(); refitOnNewBox(); } });
+    state.map.on('zoomend', () => { if (state.loaded) renderLegend(); });
     // Coalesced: a camera fit jumps the map many times in one task; labels and frame loading follow the last position.
     state.map.on('moveend', scheduleLabelView);
     // The open stay's terrain chips read the basemap tiles round it: read again once the map has settled there.
