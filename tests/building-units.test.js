@@ -198,7 +198,7 @@ test('installMassing draws a CityMETER unit from its tiles, hides the replaced c
   const key = j.byRow.get('h1');
   assert.ok(key.startsWith('cm:')); assert.equal(j.buildings.get(key).kind, 'cm'); assert.deepEqual(j.buildings.get(key).refs, [c1.id]);
   const html = renderBuilding({kind: 'cm', words: {area: 'อำเภอ'}, area: null, height: 12.5, rows: [], count: 1, rooms: 10, roomsUnknown: 0, areaCount: 1}, {unit: {id: 'rooms', one: 'ห้อง'}, meta: {checkedOn: '2026-11-01'}});
-  assert.match(html, /ค่าประมาณ CityMETER/); assert.match(html, /ขอบอาคาร CityMETER Building V4 หนึ่งหลัง/);
+  assert.match(html, /สูงราว 13 ม\./); assert.match(html, /title="ความสูงจาก CityMETER Building V4"/); assert.match(html, /หมุดในขอบอาคาร CityMETER Building V4/);
   assert.equal(BUILDING_SOURCE_TH.osm, 'OpenStreetMap');
   // A failing CityMETER tile: the unit stays on OSM in that tile (never an empty block), nothing hidden, no credit.
   // (A new tile unit: tiles already loaded are served from the cache.)

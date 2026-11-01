@@ -14,7 +14,7 @@ test('first Aha (snapshot fixture, rooms): the three เขต with the most rec
   assert.equal(a.metric, 'rooms');
   assert.equal(a.home, 'BKK');
   assert.deepEqual(a.areas.map(x => [x.id, x.name, x.value]), [['1033', 'คลองเตย', 20679], ['1039', 'วัฒนา', 17774], ['1037', 'ราชเทวี', 15063]]);
-  assert.deepEqual([a.value, a.homePlacedValue, Math.round(a.share)], [53516, 152864, 35]);
+  assert.deepEqual([a.value, a.homePlacedValue, a.homeValue, Math.round(a.share)], [53516, 152864, 153200, 35], 'the share is of the province\'s whole total (placed and province-only rows)');
   assert.deepEqual([a.count, a.homePlaced, a.homeUnplacedValue, a.homeRoomsUnknown], [490, 1581, 336, 9]);
   // Rail (CityMETER · Transit): within 500 m of an operating station, rows with a point only; both bases stated.
   assert.equal(RAIL_M, 500);
@@ -32,7 +32,7 @@ test('records Aha: the focus is never every district holding the measure (Phuket
   const c = summarizeAreaInsight(data.rows, index, {metric: 'count'});
   assert.equal(c.home, 'PKT');
   assert.deepEqual(c.areas.map(x => [x.name, x.value]), [['เมืองภูเก็ต', 1024], ['กะทู้', 862]]);
-  assert.deepEqual([c.value, c.homePlacedValue], [1886, 2222]);
+  assert.deepEqual([c.value, c.homePlacedValue, c.homeValue], [1886, 2222, 2223]);
   assert.equal(c.homeAreaIds.length, 3);
   assert.deepEqual([c.outside.name, c.outside.value], ['เมืองเชียงใหม่', 870]);
   assert.deepEqual([c.rail.focus.within, c.rail.rest.within], [0, 0], 'no operating station in Phuket: the panel hides the rail line');

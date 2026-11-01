@@ -93,10 +93,11 @@ export function buildAreaProfile(scopeRows, areaId, index, groups, {metric = 'ro
   const ranking = rankAreas(scopeRows, index, {metric});
   const inProvince = ranking.filter(a => a.province === area.province);
   const mine = scopeRows.filter(r => r.area === areaId);
-  const provincePlaced = scopeRows.filter(r => r.province === area.province && r.area);
+  // Share of the province's whole total in the scope (placed rows and rows placed only at province level).
+  const provinceRows = scopeRows.filter(r => r.province === area.province);
   const pos = ranking.findIndex(a => a.id === areaId);
   const posProvince = inProvince.findIndex(a => a.id === areaId);
-  const value = sum(mine, metric), provinceValue = sum(provincePlaced, metric);
+  const value = sum(mine, metric), provinceValue = sum(provinceRows, metric);
   return {
     area, words: levelWords(area.province), metric, value, count: mine.length, rooms: sum(mine, 'rooms'), roomsUnknown: mine.filter(r => !r.rooms).length,
     km2: area.km2, coverageState: selectionState(mine.length), scopeCount: scopeRows.length,

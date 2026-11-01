@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Hotel · CityMETER</title>
-  <meta name="description" content="ห้องพักกระจุกอยู่ตรงไหน และใกล้รถไฟฟ้าแค่ไหน — แผนที่ 3 มิติของที่พักทั่วประเทศระดับเขต/อำเภอ จำนวนห้องที่แหล่งบันทึก เครือโรงแรม ที่พักใกล้เคียงขนาดใกล้กัน และที่มาของทุกตัวเลข">
+  <meta name="description" content="ห้องพักกระจุกอยู่ตรงไหน และใกล้รถไฟฟ้าแค่ไหน — แผนที่ 3 มิติของห้องพักทั่วประเทศ รายเขต/อำเภอ เครือโรงแรม และคู่เทียบรอบ 2 กม.">
   <meta name="theme-color" content="#F6F7F3" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#11191D" media="(prefers-color-scheme: dark)">
   <meta property="og:title" content="Hotel · CityMETER">
@@ -99,7 +99,7 @@
   <div class="launch-card">
     <p class="eyebrow">CITYMETER HOTEL</p>
     <h1 id="launch-title">กำลังโหลดข้อมูล</h1>
-    <p id="launch-message">กำลังอ่านข้อมูลที่พักและขอบเขตเขต/อำเภอ หากรอนาน เปิดเว็บสาธารณะได้จากลิงก์นี้</p>
+    <p id="launch-message">กำลังอ่านข้อมูลที่พักและขอบเขตเขต/อำเภอ</p>
     <p><a id="launch-public" href="https://montri-th.github.io/hotel/">https://montri-th.github.io/hotel/</a></p>
     <div class="launch-actions"><button id="launch-retry" type="button" hidden>ลองโหลดใหม่</button><a href="https://github.com/montri-th/hotel" target="_blank" rel="noopener">ดูที่มาใน GitHub</a></div>
     <details id="launch-debug" hidden><summary>รายละเอียดเพื่อแจ้งปัญหา</summary><pre id="launch-diagnostics"></pre></details>
@@ -130,12 +130,12 @@
           <span class="legend-steps" id="legend-steps"></span>
         </div>
         <div class="legend-block legend-marks">
-          <span id="legend-pin" class="legend-size" title="1 สัญลักษณ์ = 1 ที่พักที่มีพิกัดตามแหล่งข้อมูล พื้นที่ของสัญลักษณ์เพิ่มตามจำนวนห้องที่บันทึก (ขนาดเทียบกัน 50 · 200 · 800 ห้อง) วงโปร่ง = ไม่ทราบจำนวนห้อง ไม่นับเป็น 0 · ที่พักที่ไม่มีพิกัดยังนับอยู่ในสีของเขต/อำเภอ"><span id="legend-pin-label" class="size-key"></span></span>
-          <span class="legend-station-item" title="สถานีรถไฟฟ้าที่เปิดให้บริการ จาก CityMETER Transit กดเพื่อดูที่พักรอบสถานี 500 ม. (ระยะตรง)"><i class="legend-station" aria-hidden="true"></i>สถานี</span>
-          <span class="legend-context-item" title="ที่พักนอกพื้นที่ที่โฟกัส แสดงเป็นจุดสีเทาเพื่อบอกบริบท กดตรงนั้นเพื่อย้ายไปพื้นที่นั้น"><i class="legend-context" aria-hidden="true"></i>นอกโฟกัส</span>
-          <span class="legend-massing-item" title="รูปทรงอาคารจาก OpenStreetMap ผ่าน OpenFreeMap: โทนเข้มมุมโค้ง = อาคารในพื้นที่ที่โฟกัส · โทนจาง = อาคารอื่นทั่วเมือง ความสูงเป็นบริบท ไม่ใช่ผลรังวัด"><i class="legend-massing is-focus" aria-hidden="true"></i><i class="legend-massing is-quiet" aria-hidden="true"></i>อาคาร</span>
-          <span class="legend-building-item" title="อาคารที่เปิดดูอยู่ หรืออาคารที่จุดของที่พักที่เลือกตกอยู่ (ขอบอาคาร OpenStreetMap)"><i class="legend-building" aria-hidden="true"></i><span id="legend-building-label">อาคารที่เปิด</span></span>
-          <span id="legend-terrain" class="legend-terrain-item" hidden title="ภูมิประเทศ 3D และเงาเนินเขา ความสูงขยาย 1.5 เท่าเพื่อให้เห็นเนินและหุบ · ความสูงพื้นดินจาก SRTM 30 ม. ผ่าน Terrain Tiles on AWS · แสดงเองเมื่อซูมถึงระดับไซต์ในพื้นที่ที่มีความต่างระดับ"><i class="pictogram pic-elevation" aria-hidden="true"></i>ภูมิประเทศ ×1.5</span>
+          <span id="legend-pin" class="legend-size" title="1 สัญลักษณ์ = 1 ที่พัก · ขนาดตามจำนวนห้อง (50 · 200 · 800 ห้อง) · วงโปร่ง = ไม่ทราบจำนวนห้อง"><span id="legend-pin-label" class="size-key"></span></span>
+          <span class="legend-station-item" title="สถานีรถไฟฟ้าที่เปิดแล้ว · กดเพื่อดูที่พักรอบ 500 ม."><i class="legend-station" aria-hidden="true"></i>สถานี</span>
+          <span class="legend-context-item" title="ที่พักนอกโฟกัส · กดเพื่อไปพื้นที่นั้น"><i class="legend-context" aria-hidden="true"></i>นอกโฟกัส</span>
+          <span class="legend-massing-item" title="อาคาร 3 มิติ: เข้ม = ในโฟกัส · จาง = ทั่วเมือง"><i class="legend-massing is-focus" aria-hidden="true"></i><i class="legend-massing is-quiet" aria-hidden="true"></i>อาคาร</span>
+          <span class="legend-building-item" title="อาคารที่เปิดดูอยู่"><i class="legend-building" aria-hidden="true"></i><span id="legend-building-label">อาคารที่เปิด</span></span>
+          <span id="legend-terrain" class="legend-terrain-item" hidden title="ภูมิประเทศ 3 มิติ ขยายความสูง 1.5 เท่า · SRTM 30 ม. · แสดงเองในพื้นที่ที่มีเนินเขา"><i class="pictogram pic-elevation" aria-hidden="true"></i>ภูมิประเทศ ×1.5</span>
           <details id="category-key"><summary title="ประเภทที่พัก: สีและรูปทรงของสัญลักษณ์"><span id="category-cues" class="category-cues" aria-hidden="true"></span>ประเภท</summary><div id="category-items"></div></details>
         </div>
       </div>
@@ -165,7 +165,7 @@
         <button id="toggle-table" type="button" aria-expanded="true" aria-controls="table-wrap">ปิดตาราง</button>
       </div>
       <div id="table-wrap">
-        <p class="hint" id="table-hint">เรียงตามจำนวนห้อง · ราคา = ที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา · ระยะ = ระยะตรง · กดชื่อเพื่อดูรายละเอียดและที่มา</p>
+        <p class="hint" id="table-hint">เรียงตามจำนวนห้อง · กดชื่อเพื่อดูรายละเอียด</p>
         <div class="table-scroll">
           <table>
             <thead><tr><th scope="col">ที่พัก / ประเภท</th><th scope="col" class="num">ห้อง</th><th scope="col">แบรนด์ / เครือ</th><th scope="col">พื้นที่</th><th scope="col">รถไฟฟ้าใกล้สุด</th><th scope="col">ราคาที่บันทึก</th></tr></thead>
@@ -214,17 +214,16 @@
     <div><p class="eyebrow">CITYMETER HOTEL</p><h2 id="usage-help-title">วิธีใช้</h2></div>
     <button id="close-help" type="button">ปิดวิธีใช้</button>
   </div>
-  <p id="usage-help-intro" class="help-intro">หน้าแรกคือเมือง 3 มิติที่โฟกัสเขตที่มีห้องพักมากที่สุด — เลือกพื้นที่ สถานี เครือ หรือที่พัก แล้วเจาะลงถึงอาคาร</p>
+  <p id="usage-help-intro" class="help-intro">เมือง 3 มิติ โฟกัสเขตที่มีห้องพักมากที่สุด — กดพื้นที่ สถานี เครือ หรือที่พัก เพื่อดูลึกถึงอาคาร</p>
   <ol class="help-steps">
-    <li><strong>ข้อค้นพบแรก</strong><p>แผงขวาบอกว่าห้องพักที่ระบุเขตได้ของจังหวัดที่มีมากที่สุด อยู่ในเขต/อำเภอที่มีมากที่สุด (ไม่เกิน 3) กี่เปอร์เซ็นต์ — ตัวตั้งและตัวหารอยู่ใต้ตัวเลข · เทียบสัดส่วนห้องพักที่อยู่ห่างสถานีรถไฟฟ้าไม่เกิน 500 ม. ในเขตเหล่านั้นกับเขตอื่นของจังหวัด และบอกพื้นที่ที่มีมากที่สุดนอกจังหวัดนั้น · ถ้าเขตถัดไปมีค่าเท่ากันจะแสดงเฉพาะเขตที่มากกว่า</p></li>
-    <li><strong>วัดด้วยอะไร</strong><p>“ห้องพัก” (ค่าเริ่มต้น) = จำนวนห้องที่แหล่งบันทึก รวมต่อพื้นที่ ไม่ใช่ห้องว่างต่อคืนหรืออัตราการเข้าพัก · “ที่พัก” = จำนวนรายการที่พัก · ที่พักที่ไม่ทราบจำนวนห้องนับเป็นแห่งแต่ไม่นับเป็น 0 ห้อง · ชุดข้อมูลรวบรวมจาก CityMETER Hotel V3 ทะเบียนที่พัก ททท. และหน้าทางการ ยังไม่ได้ตรวจว่าทุกแห่งยังเปิดอยู่</p></li>
-    <li><strong>พื้นที่ของที่พัก</strong><p>เขต/อำเภอมาจากพื้นที่ที่ CityMETER Hotel V3 จัดที่พักไว้ ชื่อเขต/อำเภอในข้อมูล หรือจุดของที่พัก · ที่พักที่ระบุได้แค่จังหวัดยังนับในยอดรวม แต่ไม่อยู่ในสีของเขต/อำเภอใด</p></li>
-    <li><strong>สีพื้นที่และกรอบจังหวัด</strong><p>สีเข้ม = มาก ใช้ครบ 41 ระดับสีของ LDS ตามลำดับค่า (ตัวเลขอ้างอิงอยู่ใต้แถบสี) · สีอ่อนที่สุดพร้อมเส้นขอบ = 0 ในชุดข้อมูลนี้ · ลายเส้นทแยง = มีที่พักแต่ไม่ทราบจำนวนห้อง · ปุ่ม “ทั้งประเทศ” แสดงกรอบจังหวัด กดจังหวัดเพื่อเจาะลง</p></li>
-    <li><strong>สถานีรถไฟฟ้า</strong><p>วงกลมเล็กคือสถานีที่เปิดให้บริการจาก CityMETER Transit · กดสถานีเพื่อดูที่พักที่อยู่ห่างไม่เกิน 500 ม. (ระยะตรง ไม่ใช่ระยะเดิน) · สถานีที่กำลังก่อสร้างไม่แสดงบนแผนที่ แต่บอกในหน้าที่พัก</p></li>
-    <li><strong>ที่พักหนึ่งแห่ง</strong><p>บอกจำนวนห้อง เครือ ราคาที่บันทึก (ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้) ห้องประชุมตามทะเบียน ททท. สถานีและศูนย์การค้าที่ใกล้ที่สุด · “ที่พักใกล้เคียงขนาดใกล้กัน” คือประเภทเดียวกัน จำนวนห้องครึ่งเท่าถึงสองเท่า ในระยะตรง 2 กม. เป็นรายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่คู่แข่งที่ยืนยันแล้ว</p></li>
-    <li><strong>สัญลักษณ์และอาคาร</strong><p>1 สัญลักษณ์ = 1 ที่พักที่มีพิกัด สีและรูปทรง = ประเภท ขนาด = จำนวนห้อง · เลือกที่พักหรืออาคาร แผนที่หันมุมให้เห็นอาคารสองด้านและซูมให้พอดีจอ อาคารที่ดูอยู่แสดงเหนืออาคารอื่นเสมอ · จุดสีเทาคือที่พักนอกพื้นที่ที่โฟกัส</p></li>
-    <li><strong>เครือโรงแรม</strong><p>เครือมาจากชื่อแบรนด์ที่ชุดข้อมูลบันทึกพร้อมหลักฐาน · ที่พักที่ไม่ระบุแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ</p></li>
-    <li><strong>เส้นทาง กราฟ และตาราง</strong><p>ประเทศไทย › จังหวัด › เขต/อำเภอ — กดระดับใดก็ได้เพื่อย้อนกลับ · “ดูใน CityMETER” เปิดพื้นที่เดียวกันในระบบจริง · “เปิดกราฟ” เทียบพื้นที่ ประเภท และเครือ · “รายชื่อ” เปิดตาราง</p></li>
+    <li><strong>ข้อค้นพบ</strong><p>ห้องพักของจังหวัดอยู่ในเขตอันดับต้น (ไม่เกิน 3) กี่เปอร์เซ็นต์ · เทียบสัดส่วนใกล้รถไฟฟ้า ≤ 500 ม. กับเขตอื่น · พื้นที่อันดับ 1 นอกจังหวัด</p></li>
+    <li><strong>ห้องพัก | ที่พัก</strong><p>ห้องพัก = จำนวนห้องที่บันทึก · ที่พัก = จำนวนแห่ง · สลับได้ที่คำอธิบายแผนที่</p></li>
+    <li><strong>สีพื้นที่</strong><p>สีเข้ม = มาก (41 ระดับ) · กรอบไม่มีสี = 0 · ลายทแยง = ไม่ทราบจำนวนห้อง · “ทั้งประเทศ” แสดงรายจังหวัด</p></li>
+    <li><strong>สถานีรถไฟฟ้า</strong><p>วงกลมเล็ก = สถานีที่เปิดแล้ว · กดเพื่อดูที่พักรอบ 500 ม.</p></li>
+    <li><strong>ที่พัก</strong><p>ห้อง เครือ ราคาที่บันทึก ห้องประชุม สถานีและศูนย์การค้าใกล้สุด ภูมิประเทศ และคู่เทียบ (ประเภทเดียวกัน ห้อง ½–2 เท่า รอบ 2 กม.)</p></li>
+    <li><strong>สัญลักษณ์และอาคาร</strong><p>1 สัญลักษณ์ = 1 ที่พัก · สีและรูปทรง = ประเภท · ขนาด = จำนวนห้อง · เลือกที่พักเพื่อดูอาคาร · จุดสีเทา = นอกโฟกัส</p></li>
+    <li><strong>เครือโรงแรม</strong><p>เครือจากแบรนด์ที่บันทึก · กดเครือเพื่อดูทุกแห่ง</p></li>
+    <li><strong>เส้นทาง กราฟ ตาราง</strong><p>ประเทศไทย › จังหวัด › เขต/อำเภอ · “ดูใน CityMETER” เปิดพื้นที่เดียวกันในระบบจริง · “เปิดกราฟ” เทียบพื้นที่ · “รายชื่อ” เปิดตาราง</p></li>
   </ol>
   <p class="help-keyboard"><strong>คีย์บอร์ด:</strong> Tab ไปยังปุ่ม · ลูกศรเลื่อนระหว่างที่พักบนแผนที่ (เมื่อซูมใกล้) และสลับห้องพัก/ที่พัก · Enter เลือก · Escape ปิด</p>
   <p class="help-links"><a href="https://montri-th.github.io/hotel/" id="help-public-site">เว็บ Hotel</a> · <a href="https://github.com/montri-th/hotel" target="_blank" rel="noopener">ที่มาใน GitHub</a> · <a href="DATA_METHOD.md" target="_blank" rel="noopener">วิธีจัดทำข้อมูล</a></p>

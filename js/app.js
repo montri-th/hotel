@@ -400,8 +400,8 @@ function renderMapAha(insight) {
   const w = words(insight.areas);
   const names = insight.areas.map(a => esc(a.name)).join(' · ');
   el.innerHTML = mode === 'explicit'
-    ? `<div>${crumb}<h2>กำลังสำรวจ ${num(insight.areas.length)} ${esc(w)}</h2><p>${num(insight.value)} ${esc(u.one)} · ${num(insight.count)} แห่ง</p></div><button type="button" class="btn" data-action="clear-focus">ดูทุกพื้นที่</button>`
-    : `<div>${crumb}<h2><span class="nowrap">${pct(insight.value, insight.homePlacedValue)}</span> ของ${esc(u.subject)}ที่ระบุ${esc(w)}ได้ อยู่ใน ${num(insight.areas.length)} ${esc(w)}นี้</h2><p>${names}</p></div>${mode === 'auto'
+    ? `<div>${crumb}<h2>โฟกัส ${num(insight.areas.length)} ${esc(w)}</h2><p>${num(insight.value)} ${esc(u.one)} · ${num(insight.count)} แห่ง</p></div><button type="button" class="btn" data-action="clear-focus">ดูทุกพื้นที่</button>`
+    : `<div>${crumb}<h2><span class="nowrap">${pct(insight.value, insight.homeValue ?? insight.homePlacedValue)}</span> ของ${esc(u.subject)}${esc(provinceByCode(insight.home)?.th || '')} อยู่ใน ${num(insight.areas.length)} ${esc(w)}นี้</h2><p>${names}</p></div>${mode === 'auto'
       ? '<button type="button" class="btn" data-action="clear-focus">ดูทุกพื้นที่</button>'
       : '<button type="button" class="btn primary" data-action="explore-top">โฟกัส</button>'}`;
 }
@@ -475,7 +475,7 @@ function hotelPopup(r) {
   const wrap = document.createElement('div');
   wrap.className = 'popup-card';
   const meta = [state.data.groups[r.group]?.th, r.rooms ? `${num(r.rooms)} ห้อง` : 'ไม่ทราบจำนวนห้อง', r.brand?.name].filter(Boolean).join(' · ');
-  wrap.innerHTML = `<div class="popup-identity">${cueMarkup(r.series)}<div><h3>${esc(r.name || r.nameEn || 'ไม่มีชื่อในแหล่งข้อมูล')}</h3>${r.nameEn && r.nameEn !== r.name ? `<p class="popup-branch">${esc(r.nameEn)}</p>` : ''}</div></div>
+  wrap.innerHTML = `<div class="popup-identity">${cueMarkup(r.series)}<div><h3>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</h3>${r.nameEn && r.nameEn !== r.name ? `<p class="popup-branch">${esc(r.nameEn)}</p>` : ''}</div></div>
     <p class="popup-meta">${esc(meta)}</p>`;
   return wrap;
 }
@@ -871,7 +871,7 @@ function sizeKeyHTML() {
 /** Map status: pin + number in view (owner 2026-11-01: icons instead of long text); the sentence is the title. */
 function renderMapStatus(stats) {
   const el = $('map-status');
-  const text = `${num(stats.focusInView)} แห่งที่มีพิกัดในจอ${stats.contextRows ? ` · จุดนอกโฟกัสทั้งหมด ${num(stats.contextRows)}` : ''}`;
+  const text = `ที่พักในจอ ${num(stats.focusInView)} แห่ง${stats.contextRows ? ` · นอกโฟกัส ${num(stats.contextRows)} แห่ง` : ''}`;
   el.innerHTML = `<i class="pictogram pic-maps" aria-hidden="true"></i><span class="data-number">${num(stats.focusInView)}</span> ในจอ`;
   el.title = text;
   el.setAttribute('aria-label', text);
@@ -886,17 +886,17 @@ function renderLegend() {
   $('legend-title').textContent = atProvince ? `จังหวัด · ${u.label}` : `เขต/อำเภอ · ${u.label}`;
   // All 41 LDS samples with value ticks (owner standing rule), plus the measured-zero swatch when zero occurs.
   steps.innerHTML = m?.ramp?.levels.length
-    ? rampLegendHTML(m.ramp, {zero: m.zeroCount > 0, zeroTitle: `ไม่มี${u.subject}ในชุดข้อมูลตามตัวกรองนี้ — 0 ของชุดข้อมูลนี้ ไม่ใช่การสำรวจทุกที่พัก`})
+    ? rampLegendHTML(m.ramp, {zero: m.zeroCount > 0, zeroTitle: `0 ${u.one} ในตัวกรองนี้`})
     : `<span class="hint">ไม่มี${esc(u.subject)}ในตัวกรองนี้</span>`;
   $('legend-areas').title = atProvince
-    ? `${u.label}ต่อจังหวัด (ผลรวม) · 41 ระดับสีตามลำดับค่า · สีเดียวกันทั้งสองธีม · ซูมเข้าเพื่อดูรายเขต/อำเภอ`
-    : `${u.label}ต่อเขต/อำเภอ (ผลรวม ไม่ใช่ความหนาแน่น) · 41 ระดับสีตามลำดับค่า ค่าสูงสุดอยู่ที่ระดับสุดท้าย · สีเดียวกันทั้งสองธีม`;
+    ? `${u.label}รวมต่อจังหวัด · สีเข้ม = มาก · ซูมเข้าเพื่อดูรายเขต/อำเภอ`
+    : `${u.label}รวมต่อเขต/อำเภอ · สีเข้ม = มาก`;
   $('legend-pin-label').innerHTML = sizeKeyHTML();
   const terrainItem = $('legend-terrain');
   if (terrainItem) terrainItem.hidden = !state.terrainActive;
   // Which outlines the focus buildings come from (owner 2026-11-01, point 3): CityMETER Building V4 inside CityMETER units.
   const buildingItem = document.querySelector('.legend-building-item'), src = state.buildingSources || {};
-  if (buildingItem) buildingItem.title = `อาคารที่เปิดดูอยู่ หรืออาคารที่จุดของที่พักที่เลือกตกอยู่ (ขอบอาคาร ${src.cm && src.osm ? 'CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่' : src.cm ? 'CityMETER Building V4 · ความสูงเป็นค่าประมาณ' : 'OpenStreetMap'})`;
+  if (buildingItem) buildingItem.title = `อาคารที่เปิดดูอยู่ · ขอบอาคาร ${src.cm && src.osm ? 'CityMETER Building V4 และ OpenStreetMap' : src.cm ? 'CityMETER Building V4' : 'OpenStreetMap'}`;
   const panel = document.querySelector('.map-panel');
   panel.dataset.metric = state.metric;
   panel.classList.toggle('is-3d', state.view3d);
@@ -941,7 +941,7 @@ function areaCell(r) {
   const a = r.area ? areaById(r.area) : null;
   const province = provinceByCode(r.province)?.th || '';
   if (a) return `${esc(areaWord(a.province))}${esc(a.name)}<small>${esc(province)}</small>`;
-  return province ? `<span class="hint">ระบุได้แค่จังหวัด</span><small>${esc(province)}</small>` : '<span class="hint">ไม่ระบุ</span>';
+  return province ? esc(province) : '<span class="hint">ไม่ระบุ</span>';
 }
 
 function renderTable() {
@@ -952,7 +952,7 @@ function renderTable() {
   if (!renderTable.sorted || renderTable.source !== list) { renderTable.sorted = [...list].sort(listOrder); renderTable.source = list; }
   const rs = renderTable.sorted.slice(start, start + pageSize);
   $('result-rows').innerHTML = rs.map(r => `<tr>
-      <td><button type="button" class="row-name brand-row" data-id="${esc(r.id)}">${cueMarkup(r.series, {className: 'row-cue'})}<span>${esc(r.name || r.nameEn || 'ไม่มีชื่อในแหล่งข้อมูล')}</span></button><small>${esc(state.data.groups[r.group]?.th || '')}</small></td>
+      <td><button type="button" class="row-name brand-row" data-id="${esc(r.id)}">${cueMarkup(r.series, {className: 'row-cue'})}<span>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</span></button><small>${esc(state.data.groups[r.group]?.th || '')}</small></td>
       <td class="num">${r.rooms ? `<span class="data-number">${num(r.rooms)}</span>` : '<span class="hint">ไม่ทราบ</span>'}</td>
       <td>${r.brand ? esc(r.brand.name) : '<span class="hint">—</span>'}${r.chain && r.chain.name !== r.brand?.name ? `<small>${esc(r.chain.name)}</small>` : ''}</td>
       <td>${areaCell(r)}</td>

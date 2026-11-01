@@ -24,14 +24,15 @@ export const NAV_GLYPHS = Object.freeze({
  */
 export const PICTOGRAM_CONTRACT = Object.freeze({
   family: 'LDS Material Symbols Rounded Pictogram',
-  file: 'assets/icons/material-pictogram-300.woff2', bytes: 3004,
-  sha256: '3121db921e00ecfbe686944045a65d61a7f24cd66a7ea7bdbbb823716a190df5',
+  file: 'assets/icons/material-pictogram-300.woff2', bytes: 3540,
+  sha256: '0e68b6b0207bf62a5c592dba7dfb5149dceb951e5548c931289192cb1244f52b',
   manifest: 'assets/icons/material-pictogram-300.json',
   axes: Object.freeze({FILL: 0, wght: 300, GRAD: 0, opsz: 24}),
   glyphs: Object.freeze({area: '\uE55B', province: '\uE7F1', segment: '\uE72C', venue: '\uE54C', ai: '\uE65F', streetview: '\uE56E', maps: '\uE0C8', building: '\uEA40',
     hotel: '\uE53A', rooms: '\uEFDF', rail: '\uE570', meeting: '\uF233', price: '\uEF63', chain: '\uE97A', compare: '\uE915',
-    sea: '\uE176', elevation: '\uE564', relief: '\uEA16', forest: '\uEA99'}),
-  status: 'test exception to LDS nav-7 (owner 2026-10-22; action and building glyphs 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01)',
+    sea: '\uE176', elevation: '\uE564', relief: '\uEA16', forest: '\uEA99',
+    rank: '\uF20C', date: '\uE878', distance: '\uE41C', construction: '\uEA3C', dataset: '\uF20E'}),
+  status: 'test exception to LDS nav-7 (owner 2026-10-22; action and building glyphs 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01; rank, date, distance, construction and dataset glyphs 2026-11-01 for short copy)',
   fallback: 'Text labels carry the meaning; pictograms stay hidden until the font has loaded.',
 });
 export const NAV_ICON_CONTRACT = Object.freeze({
@@ -61,8 +62,8 @@ function decorate(element, name) {
 
 const TITLES = {
   'fit-map': 'ปรับแผนที่ให้เห็นพื้นที่ที่โฟกัสหรือพื้นที่ที่เลือก',
-  'country-map': 'ดูทั้งประเทศ: กรอบจังหวัดแสดงห้องพักหรือที่พัก ทุกพื้นที่มีสี (ล้างตัวกรองจังหวัดและโฟกัส)',
-  'toggle-3d': 'สลับมุมมอง 3 มิติ (อาคารทั้งเมือง) กับแผนผัง 2 มิติ',
+  'country-map': 'ดูทั้งประเทศรายจังหวัด',
+  'toggle-3d': 'สลับ 3 มิติ / 2 มิติ',
   'toggle-neighborhoods': 'แสดงหรือซ่อนสีและขอบเขตเขต/อำเภอ',
   'mobile-panel': 'เปิดแผงข้อมูลและตัวกรอง',
   'open-help': 'เปิดวิธีใช้',
@@ -71,10 +72,10 @@ const TITLES = {
   'open-table': 'เปิดตารางที่พักตามตัวกรอง',
   'toggle-table': 'ปิดตารางและกลับไปแผนที่',
   'search': 'ค้นหาชื่อที่พัก แบรนด์ เครือ เขต/อำเภอ หรือจังหวัด',
-  'group': 'กรองตามประเภทที่พัก (จัดกลุ่มจากประเภทในชีตวิจัย)',
-  'size': 'กรองตามขนาด (จำนวนห้องที่แหล่งบันทึก)',
+  'group': 'กรองตามประเภทที่พัก',
+  'size': 'กรองตามขนาด (จำนวนห้อง)',
   'province': 'กรองตามจังหวัด',
-  'chain': 'กรองตามเครือโรงแรม (จากแบรนด์ที่ชุดข้อมูลบันทึก) หรือที่พักที่ไม่ระบุเครือ',
+  'chain': 'กรองตามเครือโรงแรม',
   'prev-page': 'ดูหน้าก่อนหน้าของตาราง',
   'next-page': 'ดูหน้าถัดไปของตาราง',
   'tab-areas': 'เปรียบเทียบห้องพักหรือที่พักของแต่ละเขต/อำเภอ',

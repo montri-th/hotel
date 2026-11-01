@@ -8,7 +8,9 @@
  *
  * One 3D frame: the leading province is the province holding the most of the measure among rows placed at district
  * level; the Aha shows up to three districts of that province with the most of it (one coherent city scene) and
- * their share of the province's placed total — numerator and denominator stated. The focus is never every district
+ * their share of the province's whole total in the selection (`homeValue`: placed rows and rows the sources place
+ * only at province level — owner 2026-11-01, natural copy: “35% ของห้องพักกรุงเทพมหานคร”) — numerator and
+ * denominator stated. The focus is never every district
  * that holds the measure (a province with N ≤ 3 such districts shows its top N − 1; “100% in all of them” says
  * nothing). The district with the most of the measure outside that province is the third finding.
  *
@@ -49,16 +51,16 @@ export function summarizeAreaInsight(rows = [], index, {limit = 3, metric = 'roo
   const focusRows = homePlaced.filter(r => ids.has(r.area));
   const rest = homePlaced.filter(r => !ids.has(r.area));
   const sum = list => list.reduce((s, r) => s + rowValue(r, metric), 0);
-  const homePlacedValue = sum(homePlaced);
+  const homePlacedValue = sum(homePlaced), homeValue = sum(homeRows);
   const outsideRanked = ranked.filter(a => a.province !== home);
   const outsideTop = outsideRanked.filter(a => a.value === outsideRanked[0]?.value);
   return {
     mode: metric, metric, areas, areaIds: areas.map(a => a.id), home, value, count: focusRows.length, spread, homeAreaIds: homeRanked.map(a => a.id),
-    homeRows: homeRows.length, homePlaced: homePlaced.length, homePlacedValue, homeUnplaced: homeRows.length - homePlaced.length,
+    homeRows: homeRows.length, homeValue, homePlaced: homePlaced.length, homePlacedValue, homeUnplaced: homeRows.length - homePlaced.length,
     homeUnplacedValue: sum(homeRows.filter(r => !r.area)),
     roomsUnknown: metric === 'rooms' ? focusRows.filter(r => !r.rooms).length : 0,
     homeRoomsUnknown: metric === 'rooms' ? homePlaced.filter(r => !r.rooms).length : 0,
-    share: homePlacedValue ? (value / homePlacedValue) * 100 : 0,
+    share: homeValue ? (value / homeValue) * 100 : 0,
     rail: {m: RAIL_M, focus: railShare(focusRows, metric, RAIL_M), rest: railShare(rest, metric, RAIL_M)},
     totalRows: selected.length, placedRows: selected.filter(r => r.area).length, areaCount: summaries.length,
     outside: outsideTop.length ? {id: outsideTop[0].id, name: outsideTop[0].name, province: outsideTop[0].province, value: outsideTop[0].value,

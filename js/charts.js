@@ -42,7 +42,7 @@ function areas(element, model, select, selectedId, unit, national) {
     </button></li>`;
   }).join('');
   const w = national ? 'เขต/อำเภอ' : areaWord(model.areas[0]?.province);
-  element.innerHTML = `<p class="chart-caption">${esc(unit.subject)}ต่อ${esc(w)} · ${num(model.areas.length)} จาก ${num(model.totalAreas)} ${esc(w)}ที่พบ · สีเดียวกับแผนที่${model.unplacedValue ? ` · ${num(model.unplacedValue)} ${esc(unit.one)}ที่ระบุได้แค่จังหวัดหรือไม่ระบุไม่อยู่ในกราฟนี้` : ''}</p><ol class="chart-bars">${rows}</ol>`;
+  element.innerHTML = `<p class="chart-caption">${esc(unit.subject)}ต่อ${esc(w)} · ${num(model.areas.length)} จาก ${num(model.totalAreas)} ${esc(w)} · สีเดียวกับแผนที่</p><ol class="chart-bars">${rows}</ol>`;
   element.querySelectorAll('[data-area]').forEach(b => b.addEventListener('click', () => select({type: 'area', id: b.dataset.area})));
 }
 
@@ -67,15 +67,15 @@ function matrix(element, model, select, selectedId, unit) {
     return `<tr${pressed ? ' class="is-selected"' : ''}><th scope="row"><button type="button" class="matrix-row" data-area="${esc(a.id)}" aria-pressed="${pressed}">${esc(a.name)}<small class="data-number">${num(a.value)}</small></button></th>${cells}</tr>`;
   }).join('');
   const columns = `<colgroup><col class="matrix-head-col">${m.groups.map(() => '<col class="matrix-cell-col">').join('')}</colgroup>`;
-  element.innerHTML = `<p class="chart-caption">${num(m.areas.length)} เขต/อำเภอที่มี${esc(unit.subject)}มากที่สุด × ${num(m.groups.length)} ประเภท · ตัวเลข = ${esc(unit.one)} · ทุกช่องขนาดเท่ากัน</p>
+  element.innerHTML = `<p class="chart-caption">${num(m.areas.length)} เขต/อำเภอที่มี${esc(unit.subject)}มากที่สุด × ${num(m.groups.length)} ประเภท · ตัวเลข = ${esc(unit.one)}</p>
     <div class="matrix-scroll"><table class="matrix" style="--matrix-columns:${m.groups.length}">${columns}<thead><tr><th scope="col" class="matrix-corner">พื้นที่ · ${esc(unit.one)}</th>${head}</tr></thead><tbody>${body}</tbody></table></div>
-    <p class="chart-legend"><span class="legend-title">${esc(unit.one)}ในช่อง · ${ramp.steps} ระดับสีตามลำดับค่า</span>${rampLegendHTML(ramp)}<span class="legend-step"><i class="legend-zero" aria-hidden="true"></i>0 = ไม่พบในตัวกรองนี้</span>${m.cells.some(c => c.unknown) ? '<span class="legend-step">— = มีที่พักแต่ไม่ทราบจำนวนห้อง</span>' : ''}</p>`;
+    <p class="chart-legend"><span class="legend-title">${esc(unit.one)}ในช่อง · สีเข้ม = มาก</span>${rampLegendHTML(ramp)}<span class="legend-step"><i class="legend-zero" aria-hidden="true"></i>0 = ไม่พบในตัวกรองนี้</span>${m.cells.some(c => c.unknown) ? '<span class="legend-step">— = ไม่ทราบจำนวนห้อง</span>' : ''}</p>`;
   element.querySelectorAll('[data-area]').forEach(b => b.addEventListener('click', () => select({type: 'area', id: b.dataset.area})));
 }
 
 function chains(element, rows, select, selectedChain, unit) {
   const r = chainRanking(rows, {limit: 20, metric: unit.id});
-  if (!r.chains.length) { empty(element, 'ไม่มีที่พักที่ชุดข้อมูลระบุเครือในตัวกรองนี้'); return; }
+  if (!r.chains.length) { empty(element, 'ไม่มีเครือในตัวกรองนี้'); return; }
   const max = Math.max(1, ...r.chains.map(c => c.value));
   const other = c => (unit.id === 'count' ? `${num(c.rooms)} ห้อง` : `${num(c.count)} แห่ง`);
   const list = r.chains.map((c, i) => {
@@ -88,7 +88,7 @@ function chains(element, rows, select, selectedChain, unit) {
       <span class="bar-value" aria-hidden="true"><b class="data-number">${num(c.value)}</b><small>${esc(unit.one)}</small></span>
     </button></li>`;
   }).join('');
-  element.innerHTML = `<p class="chart-caption">${esc(unit.subject)}ต่อเครือ · ${num(r.chains.length)} จาก ${num(r.total)} เครือที่พบ · นับเฉพาะที่พักที่ชุดข้อมูลระบุแบรนด์ · รวมที่พักที่ระบุได้แค่จังหวัด</p><ol class="chart-bars">${list}</ol>`;
+  element.innerHTML = `<p class="chart-caption">${esc(unit.subject)}ต่อเครือ · ${num(r.chains.length)} จาก ${num(r.total)} เครือ</p><ol class="chart-bars">${list}</ol>`;
   element.querySelectorAll('[data-chain]').forEach(b => b.addEventListener('click', () => select({type: 'chain', id: b.dataset.chain})));
 }
 
@@ -106,13 +106,13 @@ export function renderInsightChart({elementId, view = 'areas', rows = [], index,
     if (view === 'chains') chains(element, rows, select, selectedChain, unit);
     else {
       const model = buildChartModel(rows, index, groups, {metric: unit.id});
-      if (!model.areas.length) { empty(element, 'ยังไม่มีเขต/อำเภอที่ระบุได้ในตัวกรองนี้'); return () => element.replaceChildren(); }
+      if (!model.areas.length) { empty(element, 'ไม่มีเขต/อำเภอในตัวกรองนี้'); return () => element.replaceChildren(); }
       if (view === 'mix') matrix(element, model, select, selectedAreaId, unit);
       else areas(element, model, select, selectedAreaId, unit, national);
     }
   } catch (error) {
     console.error('CityMETER chart could not render:', error);
-    empty(element, 'แสดงกราฟไม่ได้ในขณะนี้ โปรดดูข้อมูลเดียวกันในตาราง');
+    empty(element, 'แสดงกราฟไม่ได้ · ดูในตารางแทน');
   }
   return () => element.replaceChildren();
 }

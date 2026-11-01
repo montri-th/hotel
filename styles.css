@@ -129,6 +129,12 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .aha-personality { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-hairline); font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
 .aha-personality strong { color: var(--text-primary); }
 .aha-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+/* Rail comparison as two bars (focus vs the rest of the province). */
+.aha-rail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-hairline); }
+.aha-rail-title { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.aha-rail-title .pictogram, .aha-secondary .pictogram, .rank-line .pictogram, .eyebrow .pictogram { width: 16px; height: 16px; font-size: 16px; vertical-align: -3px; margin-right: 2px; }
+.rail-compare li { grid-template-columns: minmax(0, 120px) minmax(0, 1fr) 44px; }
+.rank-line { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
 .aha-actions .btn { flex: 1 1 auto; white-space: normal; }
 .aha.is-focused { background: var(--state-info-surface); }
 .aha.is-focused .eyebrow { color: var(--state-info-content); }
@@ -145,9 +151,9 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
    The glyph is decorative (aria-hidden); the text label carries the meaning. Hidden until the font loads. */
 @font-face {
   font-family: "LDS Material Symbols Rounded Pictogram";
-  src: url("assets/icons/material-pictogram-300.woff2?v=3121db92") format("woff2");
+  src: url("assets/icons/material-pictogram-300.woff2?v=0e68b6b0") format("woff2");
   font-style: normal; font-weight: 300; font-display: block;
-  unicode-range: U+E55B, U+E7F1, U+E72C, U+E54C, U+E65F, U+E56E, U+E0C8, U+EA40, U+E53A, U+EFDF, U+E570, U+F233, U+EF63, U+E97A, U+E915, U+E176, U+E564, U+EA16, U+EA99;
+  unicode-range: U+E55B, U+E7F1, U+E72C, U+E54C, U+E65F, U+E56E, U+E0C8, U+EA40, U+E53A, U+EFDF, U+E570, U+F233, U+EF63, U+E97A, U+E915, U+E176, U+E564, U+EA16, U+EA99, U+F20C, U+E878, U+E41C, U+EA3C, U+F20E;
 }
 .pictogram { display: inline-block; width: 20px; height: 20px; font: 300 20px/1 "LDS Material Symbols Rounded Pictogram"; font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24; letter-spacing: normal; text-transform: none; font-synthesis: none; vertical-align: -4px; visibility: hidden; color: var(--text-secondary); }
 .pictograms-ready .pictogram { visibility: visible; }
@@ -171,6 +177,11 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .pic-elevation::before { content: "\E564"; }
 .pic-relief::before { content: "\EA16"; }
 .pic-forest::before { content: "\EA99"; }
+.pic-rank::before { content: "\F20C"; }
+.pic-date::before { content: "\E878"; }
+.pic-distance::before { content: "\E41C"; }
+.pic-construction::before { content: "\EA3C"; }
+.pic-dataset::before { content: "\F20E"; }
 .pic-plain { display: none; }
 .section-heading h3 .pictogram { width: 18px; height: 18px; font-size: 18px; margin-right: 6px; vertical-align: -3px; }
 .metric { position: relative; padding-left: 26px; }
@@ -194,6 +205,10 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .panel-foot { padding-top: 8px; border-top: 1px solid var(--border-hairline); }
 .provenance span { white-space: normal; }
 .provenance a { color: inherit; }
+/* Provenance (owner 2026-11-01, short copy): dataset · source · date · boundary as pictogram-led parts, then the method. */
+.provenance .pictogram { width: 14px; height: 14px; font-size: 14px; vertical-align: -2px; margin-right: 3px; }
+.provenance [data-prov="date"]::before, .provenance [data-prov="boundary"]::before, .provenance .prov-method::before { content: "·"; margin: 0 6px; color: var(--text-metadata); }
+.provenance .prov-method { text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 
 /* Ranking list (panel) */
 .rank-list { list-style: none; padding: 0; display: grid; gap: 4px; }
@@ -586,13 +601,17 @@ button.fact-chip { cursor: pointer; }
 button.fact-chip:hover { background: var(--surface-alt); }
 .fact-chip.is-quiet { color: var(--text-metadata); background: transparent; border-style: dashed; }
 .fact-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 8px; font-size: 13px; color: var(--text-secondary); }
+/* Comparison-set rule as chips (type · rooms · radius) and the list's “ดูทั้งหมด” link. */
+.rule-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.rule-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border: 1px solid var(--border-hairline); border-radius: 999px; font-size: 12px; color: var(--text-secondary); }
+.rule-chip .pictogram, .hint-pic { width: 14px; height: 14px; font-size: 14px; vertical-align: -2px; }
+.list-more { margin-top: 8px; font-size: 12px; }
 .fact-icon { width: 16px; height: 16px; font-size: 16px; vertical-align: -3px; }
 .ask-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
 .ask-link { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px 4px 8px; border: 1px solid var(--border-default); border-radius: 999px; background: var(--surface-raised); color: var(--text-primary); font-size: 12px; font-weight: 600; text-decoration: none; }
 .ask-link:hover { background: var(--surface-alt); border-color: var(--border-emphasis); }
 .ask-link .pictogram { width: 18px; height: 18px; font-size: 18px; vertical-align: 0; color: var(--interaction-accent); }
 .pictograms-unavailable .ask-link { padding-left: 12px; }
-.ask-note { flex-basis: 100%; font-size: 11px; color: var(--text-metadata); }
 .source-details { margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--border-hairline); }
 .source-details summary { display: flex; align-items: center; min-height: 36px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-secondary); list-style: none; }
 .source-details summary::-webkit-details-marker { display: none; }

@@ -1,8 +1,8 @@
 {
   "family": "LDS Material Symbols Rounded Pictogram",
   "file": "material-pictogram-300.woff2",
-  "bytes": 3004,
-  "sha256": "3121db921e00ecfbe686944045a65d61a7f24cd66a7ea7bdbbb823716a190df5",
+  "bytes": 3540,
+  "sha256": "0e68b6b0207bf62a5c592dba7dfb5149dceb951e5548c931289192cb1244f52b",
   "source": "google/material-design-icons variablefont/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf",
   "sourceSha256": "7e74e36533ccee12c2b81e75bfcf3ccf123d3bb7e7e46d65d94445f23db0c97c",
   "license": "Apache-2.0 (assets/icons/material-symbols-Apache-2.0.txt)",
@@ -88,7 +88,27 @@
     "forest": {
       "name": "forest",
       "codepoint": "U+EA99"
+    },
+    "rank": {
+      "name": "leaderboard",
+      "codepoint": "U+F20C"
+    },
+    "date": {
+      "name": "event",
+      "codepoint": "U+E878"
+    },
+    "distance": {
+      "name": "straighten",
+      "codepoint": "U+E41C"
+    },
+    "construction": {
+      "name": "construction",
+      "codepoint": "U+EA3C"
+    },
+    "dataset": {
+      "name": "database",
+      "codepoint": "U+F20E"
     }
   },
-  "status": "test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01 for the map labels); nav-7 subset unchanged"
+  "status": "test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01 for the map labels; rank, date, distance, construction and dataset 2026-11-01 for short copy); nav-7 subset unchanged"
 }

@@ -16,8 +16,11 @@ auto_awesome, streetview, maps = location_on, building = apartment (owner
 adds hotel (records), rooms = bed, rail = train, meeting = groups, price =
 payments, chain = account_tree and compare = compare_arrows. Hotel 0.2.0 adds
 sea = waves, elevation = landscape, relief = height and forest (owner 2026-11-01:
-icons instead of long text on the map). No star glyph: a star would read as a
-hotel rating. Outbound links keep the nav-7 open_in_new mark.
+icons instead of long text on the map). Hotel 0.3.1 adds rank = leaderboard,
+date = event, distance = straighten (straight line), construction and dataset =
+database (owner 2026-11-01, “เรื่องภาษา”: symbols, logos, icons and charts keep
+the text short). No star glyph: a star would read as a hotel rating. Outbound
+links keep the nav-7 open_in_new mark.
 """
 import hashlib, json, sys
 from pathlib import Path
@@ -49,6 +52,13 @@ GLYPHS = {
     'elevation': ('landscape', 0xE564),
     'relief': ('height', 0xEA16),
     'forest': ('forest', 0xEA99),
+    # Hotel 0.3.1 (owner 2026-11-01, “เรื่องภาษา … ใช้ symbol, logo, icon, charts มาช่วยทำให้ text กระชับ”): ranks,
+    # the date and the dataset of the provenance line, straight-line distances and stations under construction.
+    'rank': ('leaderboard', 0xF20C),
+    'date': ('event', 0xE878),
+    'distance': ('straighten', 0xE41C),
+    'construction': ('construction', 0xEA3C),
+    'dataset': ('database', 0xF20E),
 }
 AXES = {'FILL': 0, 'wght': 300, 'GRAD': 0, 'opsz': 24}
 ROOT = Path(__file__).resolve().parent.parent
@@ -84,7 +94,7 @@ def main(src):
         'license': 'Apache-2.0 (assets/icons/material-symbols-Apache-2.0.txt)',
         'axes': AXES,
         'glyphs': {role: {'name': name, 'codepoint': f'U+{cp:04X}'} for role, (name, cp) in GLYPHS.items()},
-        'status': 'test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01 for the map labels); nav-7 subset unchanged',
+        'status': 'test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01 for the map labels; rank, date, distance, construction and dataset 2026-11-01 for short copy); nav-7 subset unchanged',
     }
     MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     print(f'wrote {OUT} ({len(data)} bytes, sha256 {manifest["sha256"]}) and {MANIFEST.name}')

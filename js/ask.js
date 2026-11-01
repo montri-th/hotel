@@ -8,8 +8,8 @@
  *    is not an entrance: the label says "ใกล้");
  *  - Google Maps — a search by hotel name + district + province (or "โรงแรม" + place).
  *
- * Pure: builds labels and https URLs from public names only (no user data, no internal ids). The results are
- * Google's, not CityMETER data — the bar says so once.
+ * Pure: builds labels and https URLs from public names only (no user data, no internal ids). The Google names on the
+ * buttons say where the answers come from (owner 2026-11-01: no caveat lines).
  */
 const enc = encodeURIComponent;
 export const aiModeURL = q => `https://www.google.com/search?udm=50&q=${enc(q)}`;
@@ -49,17 +49,16 @@ export function contextActions(ctx = {}) {
   }
   const p = ctx.point;
   if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) {
-    add('streetview', p.role === 'station' ? 'Street View ใกล้สถานี' : 'Street View', streetViewURL(p.lat, p.lon),
-      p.role === 'station' ? 'จุดอ้างอิงของสถานี ไม่ใช่ทางเข้า' : '');
+    add('streetview', p.role === 'station' ? 'Street View ใกล้สถานี' : 'Street View', streetViewURL(p.lat, p.lon));
   }
   return out;
 }
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
-/** The action bar (icon + short label; one note that the answers come from Google). '' when nothing applies. */
+/** The action bar (icon + short label). '' when nothing applies. */
 export function actionBar(ctx) {
   const list = contextActions(ctx);
   if (!list.length) return '';
-  return `<div class="ask-bar" role="group" aria-label="ค้นต่อใน Google">${list.map(a => `<a class="ask-link ask-${esc(a.id)}" href="${esc(a.href)}" target="_blank" rel="noopener noreferrer"${a.note ? ` title="${esc(a.note)}"` : ''}><i class="pictogram pic-${a.id === 'ai' ? 'ai' : a.id === 'streetview' ? 'streetview' : 'maps'}" aria-hidden="true"></i><span>${esc(a.label)}</span></a>`).join('')}<span class="ask-note">เปิดใน Google · ผลลัพธ์ไม่ใช่ข้อมูล CityMETER</span></div>`;
+  return `<div class="ask-bar" role="group" aria-label="ค้นต่อใน Google">${list.map(a => `<a class="ask-link ask-${esc(a.id)}" href="${esc(a.href)}" target="_blank" rel="noopener noreferrer"${a.note ? ` title="${esc(a.note)}"` : ''}><i class="pictogram pic-${a.id === 'ai' ? 'ai' : a.id === 'streetview' ? 'streetview' : 'maps'}" aria-hidden="true"></i><span>${esc(a.label)}</span></a>`).join('')}</div>`;
 }

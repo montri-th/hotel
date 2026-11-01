@@ -34,53 +34,58 @@ function views(metric = 'rooms') {
   };
 }
 
-test('every panel view ends with dataset · source · date · boundary and says what one counted unit is', () => {
+test('every panel view ends with one provenance line — dataset · source · date · boundary, then the method — and carries no caveat on screen', () => {
   for (const metric of ['rooms', 'count']) {
     for (const [name, html] of Object.entries(views(metric))) {
       const t = text(html);
+      for (const k of ['dataset', 'source', 'date', 'boundary']) assert.equal((html.match(new RegExp(`data-prov="${k}"`, 'g')) || []).length, 1, `${name}: ${k}`);
       assert.ok(t.includes('ชุดข้อมูล CityMETER Hotel'), `${name}: dataset`);
-      assert.ok(t.includes('แหล่ง CityMETER Hotel V3 ทะเบียนที่พัก ททท. และหน้าทางการ'), `${name}: source`);
+      assert.ok(/แหล่ง\s*จาก Hotel V3 · ทะเบียน ททท\. · เว็บทางการ/.test(t), `${name}: source`);
       assert.ok(t.includes('ตรวจ 1 พ.ย. 2569'), `${name}: date`);
       assert.ok(/ขอบเขต \S/.test(t), `${name}: boundary`);
-      assert.ok(t.includes(metric === 'rooms' ? 'ห้อง = จำนวนห้องที่แหล่งบันทึก ไม่ใช่ห้องว่างต่อคืน' : 'แห่ง = ที่พักหนึ่งรายการตามแหล่ง ยังไม่ได้ตรวจว่ายังเปิดอยู่'), `${name}: unit (${metric})`);
+      assert.ok(html.includes('<a class="prov-method" href="DATA_METHOD.md"'), `${name}: the method link`);
       assert.equal((html.match(/class="hint panel-foot provenance"/g) || []).length, 1, `${name}: exactly one provenance line`);
-      assert.ok(!/ตั้งอยู่ใน|ยอดขาย|ส่วนแบ่งตลาด|อัตราการเข้าพัก|ADR [0-9]|รายได้ [0-9]|ความหนาแน่น/.test(t.replace('ไม่ใช่ราคาวันนี้ ADR หรือรายได้', '')), `${name}: no located-inside, sales, share, occupancy, ADR, revenue or density claim`);
+      // Owner 2026-11-01: “ไม่มี caveats เลย” — exactness comes from names, numerators and denominators, and the provenance.
+      assert.ok(!/ไม่ใช่|ยังไม่ได้ตรวจ|อาจเป็น|ไม่ได้แปลว่า|ไม่ทราบช่วงเวลา|ยืนยันแล้ว|ค่าประมาณ|นับในยอดรวม/.test(t), `${name}: no caveat on screen — ${(t.match(/.{0,40}(ไม่ใช่|ยังไม่ได้ตรวจ|อาจเป็น|ไม่ได้แปลว่า|ไม่ทราบช่วงเวลา|ยืนยันแล้ว|ค่าประมาณ|นับในยอดรวม).{0,40}/) || [''])[0]}`);
+      assert.ok(!/ตั้งอยู่ใน|ยอดขาย|ส่วนแบ่งตลาด|อัตราการเข้าพัก|ADR|RevPAR|รายได้|ความหนาแน่น/.test(t), `${name}: no located-inside, sales, share, occupancy, ADR, revenue or density claim`);
     }
   }
 });
 
-test('first screen (rooms): the Aha with numerator and denominator, the rail comparison with both bases, the outside finding', () => {
+test('first screen (rooms): the Aha with numerator and denominator, the rail comparison as two bars with both bases, the outside finding', () => {
   const o = text(views().overview);
-  assert.ok(o.includes('35% ของห้องพักในกรุงเทพมหานครที่ระบุเขตได้ อยู่ใน 3 เขตนี้'), o.slice(0, 300));
-  assert.ok(o.includes('คลองเตย · วัฒนา · ราชเทวี') && o.includes('53,516 จาก 152,864 ห้อง') && o.includes('อีก 336 ห้อง ในกรุงเทพมหานครระบุได้แค่จังหวัด'));
-  assert.ok(o.includes('ห่างสถานีรถไฟฟ้าที่เปิดแล้วไม่เกิน 500 ม.: 67% ของห้องพักใน 3 เขตนี้ (25,768/38,690) · เขตอื่นของกรุงเทพมหานคร 42% (32,732/77,957)'));
-  assert.ok(o.includes('นอกกรุงเทพมหานครมากที่สุด: อำเภอบางละมุง ชลบุรี 62,561 ห้อง — มากกว่าเขตใดในกรุงเทพมหานคร'));
-  assert.ok(o.includes('9 แห่งไม่ทราบจำนวนห้อง') && o.includes('สัดส่วนใกล้รถไฟฟ้านับเฉพาะที่พักที่มีพิกัด'));
-  assert.ok(o.includes('ไม่อยู่ในอันดับ ระบุได้แค่จังหวัด 35 แห่ง (1,234 ห้อง) — นับในยอดรวม'));
-  assert.ok(o.includes('สถานีรถไฟฟ้าที่มีห้องพักรอบ 500 ม. มากที่สุด') && o.includes('สถานีนานา (สุขุมวิท) 76 แห่ง · 7,709 ห้อง'));
-  assert.ok(o.includes('ที่พักที่ไม่ระบุแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ'));
+  assert.ok(o.includes('35% ของห้องพักกรุงเทพมหานคร อยู่ใน 3 เขตนี้'), o.slice(0, 300));
+  assert.ok(o.includes('คลองเตย · วัฒนา · ราชเทวี') && o.includes('53,516 จาก 153,200 ห้อง'), 'the share of the province\'s whole total');
+  assert.ok(o.includes('ใกล้รถไฟฟ้า ≤ 500 ม. 3 เขตนี้ 67% 25,768 จาก 38,690 ห้อง') && o.includes('เขตอื่น 42% 32,732 จาก 77,957 ห้อง'), 'both bases in the accessible text');
+  assert.ok(o.includes('อันดับ 1 นอกกรุงเทพมหานคร: อำเภอบางละมุง ชลบุรี 62,561 ห้อง · มากกว่าทุกเขตของกรุงเทพมหานคร'));
+  assert.ok(o.includes('สถานีที่มีห้องพักรอบ ๆ มากที่สุด') && o.includes('นานา (สุขุมวิท) 76 แห่ง · 7,709 ห้อง'));
+  assert.ok(o.includes('มีแบรนด์ 468 แห่ง · 84,469 ห้อง'));
+  assert.ok(o.includes('ไม่ทราบ 79'), 'unknown rooms are their own (hatched) size bar, never a 0-room band');
   const c = text(views('count').overview);
-  assert.ok(c.includes('85% ของที่พักในภูเก็ตที่ระบุอำเภอได้ อยู่ใน 2 อำเภอนี้') && c.includes('1,886 จาก 2,222 แห่ง'));
-  assert.ok(!c.includes('ห่างสถานีรถไฟฟ้าที่เปิดแล้วไม่เกิน 500 ม.:'), 'no rail line where nothing is near an operating station');
+  assert.ok(c.includes('85% ของที่พักภูเก็ต อยู่ใน 2 อำเภอนี้') && c.includes('1,886 จาก 2,223 แห่ง'));
+  assert.ok(!c.includes('ใกล้รถไฟฟ้า ≤ 500 ม.'), 'no rail comparison where nothing is near an operating station');
 });
 
 test('district, station, chain and hotel panels: ranks, shares, straight-line context and the comparison set', () => {
   const v = views();
   const a = text(v.area);
   assert.ok(a.includes('เขตวัฒนา') && a.includes('อันดับ 9 จาก 860 ทั่วประเทศ · 2 จาก 50 ในกรุงเทพมหานคร'), a.slice(0, 240));
-  assert.ok(a.includes('12% = 17,774 จาก 152,864 ห้อง ในกรุงเทพมหานครที่ระบุเขตได้'));
-  assert.ok(a.includes('ทะเบียน ททท. ระบุห้องประชุมใน 7 แห่ง'));
+  assert.ok(a.includes('12% ของกรุงเทพมหานคร 17,774 จาก 153,200 ห้องของกรุงเทพมหานคร'), 'the share tile carries numerator and denominator');
+  assert.ok(a.includes('67% ใกล้รถไฟฟ้า 9,692 จาก 14,378 ห้อง'));
+  assert.ok(a.includes('มีห้องประชุม 7 แห่ง') && a.includes('ดูทั้งหมด 193 แห่ง'));
   assert.ok(!/ BWH Hotels 0 |The Ascott Limited \/ ASR 0 /.test(a), 'a group whose rooms are unknown never reads 0 rooms');
   const s = text(v.station);
-  assert.ok(s.includes('สถานีอโศก') && s.includes('4,089 ห้อง') && s.includes('48 แห่ง') && s.includes('(ระยะตรง ไม่ใช่ระยะเดิน)'));
+  assert.ok(s.includes('สถานีอโศก') && s.includes('4,089 ห้อง') && s.includes('48 แห่ง') && s.includes('500 ม. รอบสถานี'));
+  assert.ok(v.station.includes('pic-distance'), 'the straight-line radius carries the distance pictogram');
   const h = text(v.hotel);
-  assert.ok(h.includes('378 ห้อง · 300+') && h.includes('Mercure · Accor') && h.includes('สถานีสนามกีฬาแห่งชาติ (สีลม) · 80 ม.'));
-  assert.ok(h.includes('฿1,980–2,500 ที่บันทึก') && h.includes('ไม่ทราบช่วงเวลาของราคา ไม่ใช่ราคาวันนี้ ADR หรือรายได้'), 'a recorded price is labelled as recorded, period unknown');
-  assert.ok(h.includes('ที่พักใกล้เคียงขนาดใกล้กัน 20 แห่ง') && h.includes('ประเภทเดียวกัน 189–756 ห้อง ในระยะตรง 2 กม.') && h.includes('ไม่ใช่คู่แข่งที่ยืนยันแล้ว'));
-  assert.ok(h.includes('รอบ 2 กม. มีที่พักทุกประเภท 214 แห่ง 20,678 ห้อง · 1 แห่งไม่ทราบจำนวนห้อง'));
-  assert.ok(h.includes('อาคารเดียวกันตามงานวิจัย: ร้านค้าปลีกอาหาร 1'));
+  assert.ok(h.includes('378 ห้อง · 300+') && h.includes('Mercure · Accor') && h.includes('สนามกีฬาแห่งชาติ (สีลม) 80 ม.'));
+  assert.ok(h.includes('฿1,980–2,500 ที่บันทึก'), 'a recorded price is named as recorded');
+  assert.ok(h.includes('ราคาที่บันทึก ต่ำสุด ฿1,980 · สูงสุด ฿2,500 · เฉลี่ย ฿2,240 ต่อคืน · CityMETER Hotel V3 วันที่ราคา ไม่ระบุในแหล่ง'), 'the price date is a provenance field of the source details');
+  assert.ok(h.includes('คู่เทียบ 20 แห่ง โรงแรม 189–756 ห้อง ≤ 2 กม.'), 'the comparison rule as chips');
+  assert.ok(h.includes('ที่พักทุกประเภทรอบ 2 กม. 214 แห่ง · 20,678 ห้อง'));
+  assert.ok(h.includes('อาคารเดียวกัน (งานวิจัย): ร้านค้าปลีกอาหาร 1') && h.includes('Accor อีก 85 แห่ง · 17,760 ห้อง · 14 จังหวัด'));
   const ch = text(v.chain);
-  assert.ok(ch.includes('Accor') && ch.includes('18,138 ห้อง') && ch.includes('ที่พักที่ไม่ระบุแบรนด์อาจเป็นของเครือนี้ก็ได้'));
+  assert.ok(ch.includes('Accor') && ch.includes('18,138 ห้อง') && ch.includes('27% ใกล้รถไฟฟ้า'));
   assert.ok(!/MGallery 0 /.test(ch), 'a brand whose rooms are unknown reads in records');
   assert.equal(summarizeIndustries([['ร้านอาหาร', ''], ['ฟิตเนส', 'Jetts'], ['ร้านอาหาร', '']]), 'ร้านอาหาร 2 · ฟิตเนส 1');
   assert.deepEqual([meters(84), meters(1291), meters(2000)], ['80 ม.', '1.3 กม.', '2 กม.']);
@@ -102,7 +107,7 @@ test('missing stays missing: no point, province only, unknown rooms — each say
   const ctx = ctxFor(data, index);
   const noPoint = data.rows.find(r => !hasPoint(r) && r.area);
   const t = text(renderHotel(buildHotelDetail(noPoint, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx));
-  assert.ok(t.includes('ไม่มีพิกัด') && t.includes('ยังหาที่พักรอบ ๆ ไม่ได้'));
+  assert.ok(t.includes('ไม่มีพิกัด') && !t.includes('คู่เทียบ'), 'no point: no comparison set (the chip says why)');
   const provinceOnly = data.rows.find(r => r.admin === 'province');
   assert.ok(text(renderHotel(buildHotelDetail(provinceOnly, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx)).includes('ระบุได้แค่จังหวัด'));
   const unknown = data.rows.find(r => !r.rooms);
@@ -111,7 +116,7 @@ test('missing stays missing: no point, province only, unknown rooms — each say
   assert.deepEqual([u.noArea, u.noProvince, u.conflict], [35, 0, 0]);
   const empty = buildAreaProfile([], '1039', index, data.groups);
   assert.equal(empty.coverageState, 'measured_zero');
-  assert.ok(text(renderArea(empty, () => '#000', ctx)).includes('ชุดข้อมูลนี้ไม่มีที่พักที่แหล่งจัดไว้ในพื้นที่นี้'));
+  assert.ok(text(renderArea(empty, () => '#000', ctx)).includes('ไม่พบที่พักในเขตวัฒนา'));
 });
 
 test('charts: districts by the measure, district × group matrix with equal cells, hotel groups by the measure', () => {
@@ -196,5 +201,5 @@ test('shares print whole percentages; a non-zero part never prints as 0%', () =>
   assert.equal(pct(1, 352), '<1%');
   assert.equal(pct(0, 10), '0%');
   assert.equal(pct(3, 0), '—');
-  assert.ok(text(provenance({meta: {checkedOn: '2026-10-25', context: {rail: {asOf: '2026-10-31'}}}, unit: unitWords('rooms')}, 'x', {rail: true, roomsUnknown: 3})).includes('สถานีจาก CityMETER Transit ณ 31 ต.ค. 2569'));
+  assert.ok(text(provenance({meta: {checkedOn: '2026-10-25', context: {rail: {asOf: '2026-10-31'}}}, unit: unitWords('rooms')}, 'x', {rail: true})).includes('สถานี CityMETER Transit 31 ต.ค. 2569'));
 });

@@ -245,8 +245,8 @@ export function installHotelLabels(map, container, {onSelect, bounds, radius = (
     const logo = row.brand ? logoMarkup(row.brand.id, {className: 'brand-logo hc-logo'}) : '';  // readable size: the card, not the label
     const chips = [
       `<span class="hc-chip">${cueMarkup(row.series)}${esc(groupName(row))}</span>`,
-      known(row) ? chip('rooms', `${num(row.rooms)} ห้อง`) : chip('rooms', 'ไม่ทราบห้อง', 'แหล่งไม่ได้บันทึกจำนวนห้อง'),
-      row.price ? chip('price', `${priceText(row.price)} ที่บันทึก`, 'ราคาต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา') : '',
+      known(row) ? chip('rooms', `${num(row.rooms)} ห้อง`) : chip('rooms', 'ไม่ทราบห้อง', 'ไม่ทราบจำนวนห้อง'),
+      row.price ? chip('price', `${priceText(row.price)} ที่บันทึก`, 'ราคาต่อคืนที่บันทึก') : '',
       row.brand && !logo ? chip('chain', row.brand.name) : '',
     ].filter(Boolean).join('');
     card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${row.nameEn && row.nameEn !== row.name ? `<span class="hc-sub">${esc(row.nameEn)}</span>` : ''}</div></div>
