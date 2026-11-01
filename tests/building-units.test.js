@@ -205,3 +205,59 @@ test('installMassing draws a CityMETER unit from its tiles, hides the replaced c
   massing.dispose();
   assert.equal(map.getLayer(CONTEXT_LAYER), undefined); assert.equal(map.getSource('cm-buildings-credit'), undefined);
 });
+
+/* ---------- the shipped data (scripts/build-building-units.py) ---------- */
+import {readdirSync, readFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {ROOT} from './helpers.js';
+
+const unitFiles = () => readdirSync(join(ROOT, 'data/building-units')).filter(f => f.endsWith('.json') && f !== 'index.json').sort();
+const readUnits = f => JSON.parse(readFileSync(join(ROOT, 'data/building-units', f), 'utf8'));
+/** The owner's rule (2026-11-01), recomputed from the counts each unit records. */
+const ruleSource = u => {
+  if (u.osmMethod === 'bbox_upper_bound' && u.cm && u.osmUpper != null && u.osmUpper * 1.15 <= u.cm) return 'cm';
+  if (u.osm == null) return 'osm';
+  return u.cm && u.cm >= 1.15 * u.osm ? 'cm' : 'osm';
+};
+
+test('building units: every unit follows the 15 % rule from its own recorded counts; only CityMETER units carry outlines and tile units; Bangkok by เขต', () => {
+  const index = JSON.parse(readFileSync(join(ROOT, 'data/building-units/index.json'), 'utf8'));
+  assert.match(index.meta.rule, /1\.15/);
+  assert.match(index.meta.partsOverride, /building:part/);
+  assert.ok(index.meta.osm.osmBase.length >= 1);
+  const totals = {cm: 0, osm: 0, gap: 0};
+  const files = unitFiles();
+  assert.equal(files.length, index.provinces.length, 'one file per province with units');
+  for (const f of files) {
+    const doc = readUnits(f), code = f.replace('.json', '');
+    assert.equal(doc.province, code);
+    assert.ok(validUnitFile(doc), `${f} is a valid unit file`);
+    const row = index.provinces.find(p => p.province === code);
+    assert.equal(row.units, doc.units.length);
+    for (const u of doc.units) {
+      assert.equal(u.source, ruleSource(u), `${code} ${u.code}: source follows the rule (${u.basis})`);
+      assert.ok(['bbox_upper_bound', 'bbox_zero', 'polygon', 'poly_error', 'error'].includes(u.osmMethod), u.osmMethod);
+      assert.equal(u.gap, (u.cm || 0) < 10 && (u.osm ?? u.osmUpper) != null && (u.osm ?? u.osmUpper) < 10, `${u.code} gap flag`);
+      if (u.source === 'cm') {
+        assert.ok(u.outline.length > 0 && u.tileUnits.length > 0);
+        const [w, s, e, n] = u.bbox, slack = 0.01;
+        for (const poly of u.outline) for (const [x, y] of poly[0]) assert.ok(x >= w - slack && x <= e + slack && y >= s - slack && y <= n + slack, `${u.code} outline inside its box`);
+        if (code === 'BKK') { assert.equal(u.kind, 'district'); assert.equal(u.tileType, 'SUBDISTRICT'); assert.equal(u.area, u.code); }
+        else { assert.equal(u.tileType, 'MUNICIPALITY'); assert.deepEqual(u.tileUnits.map(t => t.id), [u.id]); }
+      } else {
+        assert.equal(u.outline, undefined, 'an OSM unit needs no outline');
+      }
+      totals[u.source]++; if (u.gap) totals.gap++;
+    }
+    assert.equal(row.cm, doc.units.filter(u => u.source === 'cm').length);
+  }
+  assert.deepEqual(totals, index.meta.totals);
+  const bkk = readUnits('BKK.json');
+  assert.ok(bkk.units.every(u => /^10\d\d$/.test(u.code)), 'Bangkok units are เขต codes');
+  // Publication hygiene: no links (production API, private documents) and no source-record fields in the files.
+  for (const f of ['index.json', ...files]) {
+    const text = readFileSync(join(ROOT, 'data/building-units', f), 'utf8');
+    assert.ok(!/drive\.google|docs\.google|spreadsheets/.test(text), `${f}: no private links`);
+    if (f !== 'index.json') assert.ok(!/https?:\/\//.test(text), `${f}: no URLs`);
+  }
+});
