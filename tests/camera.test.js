@@ -28,6 +28,16 @@ function fakeMap({width = 390, height = 640, terrain = null} = {}) {
     const ppm = (512 * 2 ** cam.zoom) / (40075016.686 * Math.cos(cam.center.lat * RAD));
     return {f, D: f / ppm, p: cam.pitch * RAD, b: cam.bearing * RAD, kx: 111320 * Math.cos(cam.center.lat * RAD)};
   };
+  // Altitude above sea level as drawn (no ground lookup); project3 adds the ground under the point.
+  const projectAbs3 = ([lng, lat, abs = 0]) => {
+    const {f, D, p, b, kx} = geometry();
+    const e = (lng - cam.center.lng) * kx, n = (lat - cam.center.lat) * KY;
+    const x = e * Math.cos(b) - n * Math.sin(b), y = e * Math.sin(b) + n * Math.cos(b);
+    const h = abs - cam.elevation; // above the centre the camera orbits
+    const z = y * Math.sin(p) - h * Math.cos(p) + D, v = y * Math.cos(p) + h * Math.sin(p);
+    if (!(z > 1)) return {x: NaN, y: NaN};
+    return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
+  };
   const project3 = ([lng, lat, alt = 0]) => {
     const {f, D, p, b, kx} = geometry();
     const e = (lng - cam.center.lng) * kx, n = (lat - cam.center.lat) * KY;
@@ -65,7 +75,7 @@ function fakeMap({width = 390, height = 640, terrain = null} = {}) {
     // MapLibre clamps the centre to the ground once the camera lands (centerClampedToGround).
     map.land = () => { cam.elevation = terrain(cam.center.lng, cam.center.lat); };
   }
-  return {map, project: (_, q) => project3(q)};
+  return {map, project: (_, q) => project3(q), projectAbs: (_, q) => projectAbs3(q)};
 }
 
 test('wall direction: a rectangle reads its long side, walls 90° apart count as one direction', () => {
@@ -121,19 +131,22 @@ test('fit: a tiny building stops at the zoom limit and stays centred; the start 
   assert.ok(Math.abs((b.minX + b.maxX) / 2 - (box.left + box.right) / 2) < 1.5);
 });
 
-test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed camera — centre clamped to the ground — frames the building on a hillside', () => {
+test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed camera — centre clamped to the ground — frames the building as drawn on a hillside', () => {
   // A resort on a 20 % slope 40–70 m up (as drawn, exaggerated): the ground rises to the north.
   const terrain = (lng, lat) => 55 + 0.2 * (lat - LAT) * KY;
-  const {map, project} = fakeMap({terrain});
+  const {map, project, projectAbs} = fakeMap({terrain});
   const podium = rect(70, 40, 20), tower = rect(24, 20, 20, [10, 5]);
   const points = [...podium.flatMap(([a, b]) => [[a, b, 0], [a, b, 12]]), ...tower.flatMap(([a, b]) => [[a, b, 0], [a, b, 30]])];
+  // MapLibre lifts each extrusion by the ground at its centroid: the building as drawn.
+  const anchor = [points.filter(q => !q[2]).reduce((s, q) => s + q[0], 0) / points.filter(q => !q[2]).length, points.filter(q => !q[2]).reduce((s, q) => s + q[1], 0) / points.filter(q => !q[2]).length];
+  const drawn = points.map(q => [q[0], q[1], q[2] + terrain(...anchor)]);
   const box = {left: 12, top: 70, right: 330, bottom: 470};
   const startElevation = map.transform.elevation;
-  const target = fitBuilding(map, points, {box, bearing: 45, project, animate: false});
+  const target = fitBuilding(map, points, {box, bearing: 45, project, projectAbs, animate: false});
   assert.equal(map.transform.elevation, startElevation, 'the start camera (with its elevation) is restored before the move');
   map.land();
   assert.ok(Math.abs(map.transform.elevation - terrain(target.center.lng, target.center.lat)) < 1e-9);
-  const b = screenBounds(map, points, project);
+  const b = screenBounds(map, drawn, (_, q) => projectAbs(map, q));
   const tw = (box.right - box.left) * 0.94, th = (box.bottom - box.top) * 0.94;
   assert.ok(Math.abs((b.minX + b.maxX) / 2 - (box.left + box.right) / 2) < 2, `centred across (${((b.minX + b.maxX) / 2).toFixed(1)})`);
   assert.ok(Math.abs((b.minY + b.maxY) / 2 - (box.top + box.bottom) / 2) < 2, `centred down (${((b.minY + b.maxY) / 2).toFixed(1)})`);
@@ -142,9 +155,9 @@ test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed cam
   // The same building fitted as if the ground were at sea level lands off the frame once the scene stands on the hill.
   const flat = fakeMap();
   const t2 = fitBuilding(flat.map, points, {box, bearing: 45, project: flat.project, animate: false});
-  const {map: hill, project: hp} = fakeMap({terrain});
-  hill.jumpTo({...t2}); hill.land();
-  const off = screenBounds(hill, points, hp);
+  const hill = fakeMap({terrain});
+  hill.map.jumpTo({...t2}); hill.map.land();
+  const off = screenBounds(hill.map, drawn, (_, q) => hill.projectAbs(hill.map, q));
   assert.ok(Math.abs((off.minY + off.maxY) / 2 - (box.top + box.bottom) / 2) > 2 || Math.abs((off.minX + off.maxX) / 2 - (box.left + box.right) / 2) > 2 || Math.abs(Math.max((off.maxX - off.minX) / tw, (off.maxY - off.minY) / th) - 1) > 0.02,
     'ignoring the ground would frame it differently');
 });

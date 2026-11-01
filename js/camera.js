@@ -101,10 +101,17 @@ export function groundAt(map, [lng, lat]) {
 export function projectPoint(map, point) {
   const [lng, lat, alt = 0] = point;
   const t = map.transform;
+  if (!alt || !t?.modelViewProjectionMatrix || !Number.isFinite(t.worldSize) || !globalThis.maplibregl?.MercatorCoordinate) return map.project([lng, lat]);
+  return projectAltitude(map, [lng, lat, alt + groundAt(map, [lng, lat])]);
+}
+
+/** Screen position of [lng, lat, z] with z in metres above sea level as drawn (no ground lookup): the view-projection matrix. */
+export function projectAltitude(map, [lng, lat, z = 0]) {
+  const t = map.transform;
   const M = t?.modelViewProjectionMatrix;
-  if (!alt || !M || !Number.isFinite(t.worldSize) || !globalThis.maplibregl?.MercatorCoordinate) return map.project([lng, lat]);
+  if (!M || !Number.isFinite(t.worldSize) || !globalThis.maplibregl?.MercatorCoordinate) return map.project([lng, lat]);
   const mc = globalThis.maplibregl.MercatorCoordinate.fromLngLat([lng, lat]);
-  const x = mc.x * t.worldSize, y = mc.y * t.worldSize, z = alt + groundAt(map, [lng, lat]);
+  const x = mc.x * t.worldSize, y = mc.y * t.worldSize;
   const w = M[3] * x + M[7] * y + M[11] * z + M[15];
   if (!(w > 0)) return {x: NaN, y: NaN};
   const cx = (M[0] * x + M[4] * y + M[8] * z + M[12]) / w, cy = (M[1] * x + M[5] * y + M[9] * z + M[13]) / w;
@@ -259,20 +266,21 @@ const metresPerPixel = (lat, z) => (40075016.686 * Math.cos(lat * RAD)) / (512 *
  * fills `fill` of the box. Computes with instant jumps, restores the start camera, then animates
  * (flyTo when the target is far). `project` is injectable for tests. Returns the target camera.
  *
- * On terrain (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building stands on the drawn ground:
- * points keep their altitude above the ground (projectPoint adds it), every jump carries the centre's ground
- * elevation — what MapLibre clamps the centre to when the camera lands, so the computed frame is the landed
- * one — and the pan solves on the local ground plane of the anchor (the projection's Jacobian) instead of
- * map.unproject, whose terrain ray reads the last rendered frame and is stale between instant jumps.
+ * On terrain (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building stands on the drawn ground — MapLibre
+ * lifts a fill-extrusion by the elevation at its centroid — so the fit works on a local plane at the anchor's ground G:
+ * every point at its altitude + G (`projectAbs`, no per-point terrain lookup: neighbouring DEM samples on a slope or a
+ * tile not loaded yet would tear the frame), the camera centre held at one elevation per round and the pan solved on
+ * that plane (the projection's Jacobian; map.unproject's terrain ray reads the last rendered frame and is stale between
+ * instant jumps). A second round holds the centre at the ground under the found centre — what MapLibre clamps it to
+ * when the camera lands — so the computed frame is the landed one.
  */
-export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZoom = 14, maxZoom = 19.5, fill = 0.94, animate = true, duration = 900, apply = true, project = projectPoint} = {}) {
+export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZoom = 14, maxZoom = 19.5, fill = 0.94, animate = true, duration = 900, apply = true, project = projectPoint, projectAbs = projectAltitude} = {}) {
   if (!points?.length || !box) return null;
   const p = CAMERA[preset] || CAMERA.eye;
   const onTerrain = Boolean(map.terrain) && typeof map.queryTerrainElevation === 'function';
   const start = {center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), padding: map.getPadding(),
     ...(onTerrain && Number.isFinite(map.transform?.elevation) ? {elevation: map.transform.elevation} : {})};
   setFov(map, p.fov);
-  const lift = center => (onTerrain ? {elevation: groundAt(map, Array.isArray(center) ? center : [center.lng, center.lat])} : {});
   const zero = {top: 0, bottom: 0, left: 0, right: 0};
   const ground = points.filter(q => !q[2]);
   const base = ground.length ? ground : points;
@@ -280,51 +288,74 @@ export function fitBuilding(map, points, {box, bearing = 0, preset = 'eye', minZ
   const tw = Math.max(40, (box.right - box.left) * fill), th = Math.max(40, (box.bottom - box.top) * fill);
   const tx = (box.left + box.right) / 2, ty = (box.top + box.bottom) / 2;
   // Start from the footprint's size: metres per pixel that would fit its larger side.
-  const kx = Math.cos(anchor[1] * RAD);
-  const span = Math.max(20, ...base.map(q => Math.hypot((q[0] - anchor[0]) * 111320 * kx, (q[1] - anchor[1]) * 110574) * 2));
+  const kx = Math.cos(anchor[1] * RAD), mx = 111320 * kx, ky = 110574;
+  const span = Math.max(20, ...base.map(q => Math.hypot((q[0] - anchor[0]) * mx, (q[1] - anchor[1]) * ky) * 2));
   const clampZ = z => Math.min(maxZoom, Math.max(minZoom, z));
   let zoom = clampZ(Math.log2((40075016.686 * kx * Math.min(tw, th)) / (512 * span)) - 0.4);
-  map.jumpTo({center: anchor, zoom, pitch: p.pitch, bearing, padding: zero, ...lift(anchor)});
-  const ky = 110574;
+  const G = onTerrain ? groundAt(map, anchor) : 0;
+  // Screen box of the points: on terrain at altitude + G on the anchor's plane, else as before.
+  const bounds = () => {
+    if (!onTerrain) return screenBounds(map, points, project);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const q of points) {
+      const s = projectAbs(map, [q[0], q[1], (q[2] || 0) + G]);
+      if (!Number.isFinite(s?.x) || !Number.isFinite(s?.y)) return null;
+      if (s.x < minX) minX = s.x; if (s.x > maxX) maxX = s.x; if (s.y < minY) minY = s.y; if (s.y > maxY) maxY = s.y;
+    }
+    return {minX, minY, maxX, maxY};
+  };
+  map.jumpTo({center: anchor, zoom, pitch: p.pitch, bearing, padding: zero, ...(onTerrain ? {elevation: G} : {})});
   const pan = b => {
     const dx = tx - (b.minX + b.maxX) / 2, dy = ty - (b.minY + b.maxY) / 2;
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return 0;
     const c = map.getCenter();
     if (onTerrain) {
-      // Moving the centre by Δ metres moves the anchor on screen by −J·Δ (J: screen per metre at the anchor).
-      const step = 5, mx = 111320 * kx;
-      const p0 = project(map, [anchor[0], anchor[1], 0]), pe = project(map, [anchor[0] + step / mx, anchor[1], 0]), pn = project(map, [anchor[0], anchor[1] + step / ky, 0]);
+      // Moving the centre by Δ metres on the plane moves the anchor on screen by −J·Δ (J: screen px per metre there).
+      const step = 5;
+      const p0 = projectAbs(map, [anchor[0], anchor[1], G]), pe = projectAbs(map, [anchor[0] + step / mx, anchor[1], G]), pn = projectAbs(map, [anchor[0], anchor[1] + step / ky, G]);
       const a = (pe.x - p0.x) / step, cc = (pe.y - p0.y) / step, bb = (pn.x - p0.x) / step, d = (pn.y - p0.y) / step, det = a * d - bb * cc;
       if (!Number.isFinite(det) || Math.abs(det) < 1e-9) return 0;
       const de = -(d * dx - bb * dy) / det, dn = -(-cc * dx + a * dy) / det;
-      const next = [c.lng + de / mx, c.lat + dn / ky];
-      map.jumpTo({center: next, ...lift(next)});
+      map.jumpTo({center: [c.lng + de / mx, c.lat + dn / ky]});
       return Math.hypot(dx, dy);
     }
     const pa = map.project(anchor), g = map.unproject([pa.x + dx, pa.y + dy]);
     map.jumpTo({center: [c.lng + anchor[0] - g.lng, c.lat + anchor[1] - g.lat]});
     return Math.hypot(dx, dy);
   };
-  for (let i = 0; i < 30; i++) {
-    let b = screenBounds(map, points, project);
-    if (!b) { zoom = clampZ(zoom - 0.5); map.jumpTo({zoom}); continue; }
-    const moved = pan(b);
-    b = screenBounds(map, points, project);
-    if (!b) { zoom = clampZ(zoom - 0.5); map.jumpTo({zoom}); continue; }
-    const scale = Math.min(tw / Math.max(1, b.maxX - b.minX), th / Math.max(1, b.maxY - b.minY));
-    const next = clampZ(zoom + Math.log2(scale));
-    const dz = next - zoom;
-    zoom = next; map.jumpTo({zoom});
-    if (Math.abs(dz) < 0.004 && moved < 1) break;
+  const converge = () => {
+    for (let i = 0; i < 30; i++) {
+      let b = bounds();
+      if (!b) { zoom = clampZ(zoom - 0.5); map.jumpTo({zoom}); continue; }
+      const moved = pan(b);
+      b = bounds();
+      if (!b) { zoom = clampZ(zoom - 0.5); map.jumpTo({zoom}); continue; }
+      const scale = Math.min(tw / Math.max(1, b.maxX - b.minX), th / Math.max(1, b.maxY - b.minY));
+      const next = clampZ(zoom + Math.log2(scale));
+      const dz = next - zoom;
+      zoom = next; map.jumpTo({zoom});
+      if (Math.abs(dz) < 0.004 && moved < 1) break;
+    }
+    const last = bounds();
+    if (last) pan(last);
+  };
+  converge();
+  if (onTerrain) {
+    // The landed camera orbits the ground under its centre: hold the centre there and converge again (≤ 3 rounds).
+    let held = G;
+    for (let round = 0; round < 3; round++) {
+      const c = map.getCenter(), e = groundAt(map, [c.lng, c.lat]);
+      if (Math.abs(e - held) < 0.5) break;
+      held = e; map.jumpTo({elevation: e});
+      converge();
+    }
   }
-  const last = screenBounds(map, points, project);
-  if (last) pan(last);
   const target = {center: map.getCenter(), zoom: Math.round(map.getZoom() * 1000) / 1000, pitch: p.pitch, bearing, padding: zero};
   map.jumpTo(start);
   if (!apply) return target;
   if (!animate) { map.jumpTo(target); return target; }
   // Far (another part of the city or a big zoom change): flyTo arcs out and back in; near: a plain ease.
-  const distance = Math.hypot((start.center.lng - target.center.lng) * kx * 111320, (start.center.lat - target.center.lat) * 110574);
+  const distance = Math.hypot((start.center.lng - target.center.lng) * mx, (start.center.lat - target.center.lat) * ky);
   const far = Math.abs(start.zoom - target.zoom) > 2.5 || distance > metresPerPixel(anchor[1], start.zoom) * 1500;
   if (far) map.flyTo({...target, duration: Math.max(duration, 1400), essential: false});
   else map.easeTo({...target, duration});
