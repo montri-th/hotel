@@ -13,16 +13,16 @@ test('first Aha (snapshot fixture, rooms): the three เขต with the most rec
   const a = summarizeAreaInsight(data.rows, index);
   assert.equal(a.metric, 'rooms');
   assert.equal(a.home, 'BKK');
-  assert.deepEqual(a.areas.map(x => [x.id, x.name, x.value]), [['1033', 'คลองเตย', 16886], ['1037', 'ราชเทวี', 14146], ['1039', 'วัฒนา', 13865]]);
-  assert.deepEqual([a.value, a.homePlacedValue, Math.round(a.share)], [44897, 130608, 34]);
-  assert.deepEqual([a.count, a.homePlaced, a.homeUnplacedValue, a.homeRoomsUnknown], [490, 1581, 0, 100]);
+  assert.deepEqual(a.areas.map(x => [x.id, x.name, x.value]), [['1033', 'คลองเตย', 20679], ['1039', 'วัฒนา', 17774], ['1037', 'ราชเทวี', 15063]]);
+  assert.deepEqual([a.value, a.homePlacedValue, Math.round(a.share)], [53516, 152864, 35]);
+  assert.deepEqual([a.count, a.homePlaced, a.homeUnplacedValue, a.homeRoomsUnknown], [490, 1581, 336, 9]);
   // Rail (CityMETER · Transit): within 500 m of an operating station, rows with a point only; both bases stated.
   assert.equal(RAIL_M, 500);
-  assert.deepEqual([a.rail.focus.within, a.rail.focus.base, a.rail.focus.noPoint], [19577, 30071, 14826]);
-  assert.deepEqual([a.rail.rest.within, a.rail.rest.base, a.rail.rest.noPoint], [24305, 64530, 21181]);
+  assert.deepEqual([a.rail.focus.within, a.rail.focus.base, a.rail.focus.noPoint], [25768, 38690, 14826]);
+  assert.deepEqual([a.rail.rest.within, a.rail.rest.base, a.rail.rest.noPoint], [32732, 77957, 21391]);
   assert.equal(a.rail.focus.base + a.rail.focus.noPoint, a.value, 'rooms with and without a point add up to the focus');
   // The district with the most rooms outside Bangkok holds more than any Bangkok district.
-  assert.deepEqual([a.outside.id, a.outside.name, a.outside.province, a.outside.value], ['2004', 'บางละมุง', 'CBI', 61480]);
+  assert.deepEqual([a.outside.id, a.outside.name, a.outside.province, a.outside.value], ['2004', 'บางละมุง', 'CBI', 62561]);
   assert.ok(a.outside.value > a.areas[0].value);
   assert.deepEqual(filterAreaRows(data.rows, new Set(a.areaIds)).length, a.count);
 });
@@ -70,7 +70,7 @@ test('district model: EVID-05 — an empty district is a measured zero; records 
   assert.equal(rooms.areas.length, 928);
   assert.equal(rooms.zeroCount, 68, '860 districts hold at least one record');
   assert.equal(rooms.ramp.scaleId, SUPPLY_SCALE.scaleId);
-  assert.deepEqual([rooms.ramp.min, rooms.ramp.max, rooms.ramp.steps], [4, 61480, 41]);
+  assert.deepEqual([rooms.ramp.min, rooms.ramp.max, rooms.ramp.steps], [4, 62561, 41]);
   assert.equal(rooms.byId.get('2004').fill, SUPPLY_SCALE.lut[40], 'บางละมุง (the national maximum) closes the ramp on sample 40');
   assert.ok(rooms.areas.filter(a => a.state === 'measured_zero').every(a => a.count === 0));
   const count = buildAreaModel(data.rows, index, {metric: 'count'});

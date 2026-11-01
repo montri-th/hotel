@@ -58,6 +58,9 @@ RAIL_MAX_M = 2000
 RETAIL_MAX_M = 1500
 ALIAS_TAB = '37_IDENTITY_ALIASES'
 TABS = ['01_VENUES', '13_BUILDING_LINKS', '16_BRANCH_SPATIAL_CANDIDATES', '17_BRANDS', '19_AFFILIATIONS', '23_TYPE_ASSIGNMENTS', ALIAS_TAB]
+LOGO_TAB = '48_LOGO_LIBRARY'  # optional: the research team's logo library tab (read for brand identity only)
+ROOM_TAB = '47_ROOM_RESOLUTION'  # optional: room-count re-checks; rows written back to 01_VENUES date the check
+OPTIONAL_TABS = (LOGO_TAB, ROOM_TAB)
 
 # Accommodation groups: venue_type of 01_VENUES (the sheet's 07_TAXONOMY mapping of the source type) → product group.
 GROUPS = [
@@ -116,14 +119,19 @@ def sha256_file(path):
 def read_tabs(sheet, csv_dir):
     if csv_dir:
         out = {}
-        for t in TABS:
-            with open(os.path.join(csv_dir, t + '.csv'), encoding='utf-8') as fh:
+        for t in TABS + list(OPTIONAL_TABS):
+            path = os.path.join(csv_dir, t + '.csv')
+            if t in OPTIONAL_TABS and not os.path.exists(path):
+                continue
+            with open(path, encoding='utf-8') as fh:
                 out[t] = list(csv.DictReader(fh))
         return out
     import openpyxl  # noqa: PLC0415 — only for the xlsx path
     wb = openpyxl.load_workbook(sheet, read_only=True, data_only=True)
     out = {}
-    for t in TABS:
+    for t in TABS + list(OPTIONAL_TABS):
+        if t in OPTIONAL_TABS and t not in wb.sheetnames:
+            continue
         it = wb[t].iter_rows(values_only=True)
         head = [str(h or '').strip() for h in next(it)]
         rows = []
@@ -231,6 +239,7 @@ def main():
     ap.add_argument('--transit', required=True)
     ap.add_argument('--shopping', required=True)
     ap.add_argument('--checked-on', default='2026-10-25', help='latest checked_on date of the sheet rows read')
+    ap.add_argument('--logos', default='', help="unzipped logo library of the research team (Hotel_Chain_Logos_Web: manifest.json) — brand identities")
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
 
@@ -310,6 +319,23 @@ def main():
                 group_names[gid] = b['brand_group']
     GROUP_FIX = {'HGRP-ihg': 'IHG Hotels & Resorts', 'HGRP-marriott': 'Marriott International', 'HGRP-accor': 'Accor'}
     group_names.update({k: v for k, v in GROUP_FIX.items() if k in group_names})
+    # Brand identities of the research team's logo library: one identity per brand, with every label the master uses
+    # for it (e.g. "MGallery" and "MGallery Collection", "Renaissance" and "Renaissance Hotels") and its 17_BRANDS ids.
+    # Used to read a label that has no exact 17_BRANDS name, and to count spelling variants as one brand.
+    brand_by_id = {b['brand_id']: b for b in tabs['17_BRANDS'] if b.get('brand_id')}
+    identity_by_label, logo_lib = {}, {'file': '', 'sha256': '', 'checkedOn': '', 'identities': 0}
+    if a.logos:
+        man_path = os.path.join(a.logos, 'manifest.json')
+        man = json.load(open(man_path, encoding='utf-8'))
+        tab_rows = {r.get('logo_mapping_id', ''): r for r in tabs.get(LOGO_TAB, [])}
+        for mp in man['mappings']:
+            if tab_rows and mp.get('mapping_id') not in tab_rows:
+                sys.exit(f"logo library mapping {mp.get('mapping_id')} is not in {LOGO_TAB}")
+            for lab in (mp.get('raw_master_labels') or []) + (mp.get('raw_registry_labels') or []):
+                identity_by_label.setdefault(lab.casefold().strip(), mp)
+        logo_lib = {'file': 'Hotel_Chain_Logos_Web/manifest.json', 'sha256': sha256_file(man_path), 'checkedOn': man.get('checked_on', ''),
+                    'identities': len(man['mappings']), 'tab': LOGO_TAB if tab_rows else ''}
+    brand_resolution = collections.Counter()
 
     # ---------- per-venue context from other tabs ----------
     mass = {}
@@ -430,18 +456,28 @@ def main():
         bname = (r.get('brand_name') or '').strip()
         if bname:
             br = brand_rows.get(bname.casefold())
-            gid = (br or {}).get('group_entity_id', '')
+            ident = identity_by_label.get(bname.casefold())
+            reg_ids = [x for x in (ident or {}).get('brand_ids') or [] if x in brand_by_id]
+            if br is None and reg_ids:
+                br = brand_by_id[reg_ids[0]]
+            brand_resolution['exact_name' if bname.casefold() in brand_rows else 'logo_identity' if reg_ids else 'label_only'] += 1
+            gid = (br or {}).get('group_entity_id', '') or next((brand_by_id[x]['group_entity_id'] for x in reg_ids if brand_by_id[x].get('group_entity_id')), '')
             ci = -1
             if gid:
                 if gid not in chain_index:
                     chain_index[gid] = len(chains)
                     chains.append({'id': gid, 'name': group_names.get(gid, gid)})
                 ci = chain_index[gid]
-            key = (br or {}).get('brand_id') or ('BR-' + hashlib.sha1(bname.casefold().encode()).hexdigest()[:10])
+            key = (reg_ids[0] if reg_ids else '') or (br or {}).get('brand_id') or ('BR-' + hashlib.sha1(bname.casefold().encode()).hexdigest()[:10])
             if key not in brand_index:
                 brand_index[key] = len(brands)
-                brands.append({'id': key, 'name': bname, 'chain': ci})
+                entry = {'id': key, 'name': ident['canonical_name'] if ident else bname, 'chain': ci, 'labels': []}
+                if ident:
+                    entry['identity'] = ident.get('mapping_id') or ident.get('scope_identity_id')
+                brands.append(entry)
             bi = brand_index[key]
+            if bname not in brands[bi]['labels']:
+                brands[bi]['labels'].append(bname)
         # Source + public link
         dsid = r.get('source_dataset_id', '')
         si = source_of(dsid)
@@ -510,13 +546,19 @@ def main():
     out_stations = [{k: stations[i][k] for k in ('id', 'name', 'nameEn', 'lat', 'lon', 'status', 'lines', 'lineIds')} for i in keep_st]
     out_retail = [{k: retail[i][k] for k in ('id', 'scId', 'name', 'nameEn', 'group', 'lat', 'lon')} for i in used_retail]
 
-    checked_dates = sorted({(r.get('checked_on') or '')[:10] for r in venues if r.get('checked_on')})
+    checked_dates = {(r.get('checked_on') or '')[:10] for r in venues if r.get('checked_on')}
+    # Room counts re-checked in 47_ROOM_RESOLUTION and written back to 01_VENUES (main_updated = yes) date that check.
+    room_res = [r for r in tabs.get(ROOM_TAB, []) if (r.get('main_updated') or '').strip().lower() == 'yes']
+    checked_dates |= {(r.get('retrieved_on') or '')[:10] for r in room_res if re.match(r'\d{4}-\d{2}-\d{2}', r.get('retrieved_on') or '')}
+    checked_dates = sorted(checked_dates)
     built_on = datetime.date.today().isoformat()
     meta = {
         'dataset': 'CityMETER Hotel', 'datasetTh': 'ที่พักและโรงแรมในประเทศไทย', 'registryId': 'research.TH.hotel', 'registryRole': 'Land · TH',
         'sheetTitle': 'CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24', 'exportSha256': export_sha,
         'sheetStatus': 'research_master', 'checkedOn': checked_dates[-1] if checked_dates else a.checked_on, 'checkedDates': checked_dates, 'builtOn': built_on,
         'rows': counts['rows'], 'counts': dict(sorted(counts.items())),
+        'roomResolution': {'tab': ROOM_TAB, 'rows': len(tabs.get(ROOM_TAB, [])), 'writtenBack': len(room_res),
+                           'retrievedOn': sorted({(r.get('retrieved_on') or '')[:10] for r in room_res if r.get('retrieved_on')})} if tabs.get(ROOM_TAB) else None,
         'unit': {
             'row': 'one row of 01_VENUES — a source-listed accommodation record (CityMETER Hotel V3, TAT accommodation register, official group and property pages, provincial lists); not a field-verified census of operating hotels',
             'rooms': 'rooms_selected — the room count the sheet selected from its sources; recorded stock, not rooms available per night; unknown stays unknown',
@@ -546,6 +588,9 @@ def main():
                            'source_quality_flags', 'record_review_status', 'building_source_id', 'star_raw', 'star_selected',
                            '16_BRANCH_SPATIAL_CANDIDATES.branch_name', 'README text'],
         'checks': {'sourcePointDisagree': len(disagree), 'sourcePointDisagreeSample': disagree[:20]},
+        'brandIdentity': {'rule': 'a 01_VENUES brand label is read by its exact 17_BRANDS name; a label without one, or a spelling variant, is read through the brand identity of the research team logo library (its 17_BRANDS ids); labels of one identity count as one brand',
+                          'library': logo_lib, 'rows': dict(brand_resolution),
+                          'merged': sorted([b['name'], b['labels']] for b in brands if len(b['labels']) > 1)},
         'limits': [
             'Records are source-listed accommodation records; operation is not revalidated (operation_not_revalidated) and the register is not a census.',
             'Rooms are recorded stock; unknown rooms stay out of room totals and are counted apart.',

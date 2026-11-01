@@ -25,6 +25,12 @@ import {buildMetricRamp, classify} from './scales.js';
 import {valueOf, metricOf} from './model.js';
 
 export const FILL_MAX_ZOOM = 14.5;
+let fillSwitch = FILL_MAX_ZOOM;
+/**
+ * The zoom where the choropleth switches off — a hard switch, never a fade (data colours keep their opacity):
+ * FILL_MAX_ZOOM, or TERRAIN.minZoom while terrain mode shows the relief of a hilly site (js/terrain.js).
+ */
+export const fillSwitchZoom = () => fillSwitch;
 /**
  * maxzoom of every GeoJSON source the page adds. MapLibre 5.6.2 throws in SourceCache._updateRetainedTiles
  * (“reading 'key'”) when a pitched camera sits between maxzoom − 1 and maxzoom of a GeoJSON source and a near
@@ -92,15 +98,30 @@ export function buildAreaModel(rows, index, {province = '', noDataIds = null, me
   return {metric, unit, areas, byId: new Map(areas.map(a => [a.id, a])), ramp, zeroCount: areas.filter(a => a.state === 'measured_zero').length, noDataCount: areas.filter(a => a.state === 'no_data').length};
 }
 
+const fs = (key, on, off = 0) => ['case', ['boolean', ['feature-state', key], false], on, off];
+/**
+ * Below AREA_MIN_ZOOM only the frames of the selected จังหวัด (feature-state `province`) are drawn; from the fill
+ * switch (terrain mode) nothing is filled. Pure: an expression for the given switch zoom.
+ */
+export const gateExpression = (expr, switchZoom = FILL_MAX_ZOOM) => (switchZoom < FILL_MAX_ZOOM
+  ? ['step', ['zoom'], fs('province', expr), AREA_MIN_ZOOM, expr, switchZoom, 0]
+  : ['step', ['zoom'], fs('province', expr), AREA_MIN_ZOOM, expr]);
+const FILL_PAINT = Object.freeze([[AREA_LAYERS.fill, 'fill-opacity', 'filled'], [AREA_LAYERS.hatch, 'fill-opacity', 'nodata'], [AREA_LAYERS.zero, 'line-opacity', 'zero']]);
+
+/** Move the hard switch of the choropleth (terrain mode on → TERRAIN.minZoom; off → FILL_MAX_ZOOM). */
+export function setFillSwitchZoom(map, zoom = FILL_MAX_ZOOM) {
+  fillSwitch = Math.min(FILL_MAX_ZOOM, zoom);
+  for (const [id, prop, key] of FILL_PAINT) if (map?.getLayer?.(id)) map.setPaintProperty(id, prop, gateExpression(fs(key, 1), fillSwitch));
+}
+
 export function installAreaLayers(map, {areas}) {
   const beforeId = firstLineLayerId(map);
   const ground = cssVar('--data-no-data', '#D5DAD6'), emphasis = cssVar('--border-emphasis', '#7D877F');
   if (!map.hasImage(HATCH)) map.addImage(HATCH, hatchImage(ground, emphasis));
   map.addSource(SOURCE, {type: 'geojson', data: areas, maxzoom: GEOJSON_MAXZOOM, promoteId: 'id',
     attribution: 'ขอบเขตปกครอง: <a href="https://landometer.com/v3/citymeter" target="_blank" rel="noopener">CityMETER</a>'});
-  const fs = (key, on, off = 0) => ['case', ['boolean', ['feature-state', key], false], on, off];
-  // Below AREA_MIN_ZOOM only the frames of the selected จังหวัด (feature-state `province`) are drawn.
-  const gate = expr => ['step', ['zoom'], fs('province', expr), AREA_MIN_ZOOM, expr];
+  fillSwitch = FILL_MAX_ZOOM;
+  const gate = expr => gateExpression(expr, fillSwitch);
   // Click target only (never drawn): every loaded frame from PROVINCE_VIEW_MIN_ZOOM; below AREA_MIN_ZOOM the
   // app accepts a hit only inside the selected จังหวัด (js/app.js#onMapClick).
   map.addLayer({id: AREA_LAYERS.hit, type: 'fill', source: SOURCE, minzoom: PROVINCE_VIEW_MIN_ZOOM,
@@ -212,7 +233,7 @@ export function installAreaLabels(map, container, {onSelect, reservedBottom = ()
       .map(e => { const b = e.getBoundingClientRect(); return {left: b.left - rect.left - 4, right: b.right - rect.left + 4, top: b.top - rect.top - 4, bottom: b.bottom - rect.top + 4}; });
     const placed = [];
     const zoom = map.getZoom();
-    if (detailZoomClass) panel.classList.toggle('is-detail-zoom', zoom >= FILL_MAX_ZOOM);
+    if (detailZoomClass) panel.classList.toggle('is-detail-zoom', zoom >= fillSwitch);
     const inWindow = zoom >= minZoom && zoom < maxZoom;
     let shown = 0;
     for (const e of labels) {

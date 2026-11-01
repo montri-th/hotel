@@ -18,18 +18,20 @@ export const NAV_GLYPHS = Object.freeze({
  * hotel = ที่พัก (records, แห่ง) · rooms (bed) = ห้องพัก · area (map) = เขต/อำเภอ · province (location_city) =
  * จังหวัด · segment (category) = ประเภทที่พัก · chain (account_tree) = เครือ/แบรนด์ · rail (train) = สถานีราง ·
  * venue (local_mall) = ศูนย์การค้า · meeting (groups) = ห้องประชุม · price (payments) = ราคาที่บันทึก ·
- * compare (compare_arrows) = ที่พักใกล้เคียงขนาดใกล้กัน · building (apartment) = อาคาร. No star glyph: it would read
- * as a hotel rating.
+ * compare (compare_arrows) = ที่พักใกล้เคียงขนาดใกล้กัน · building (apartment) = อาคาร · sea (waves) = ระยะถึงทะเล ·
+ * elevation (landscape) = ความสูงพื้นดิน · relief (height) = ต่างระดับรอบที่พัก · forest = ต้นไม้รอบที่พัก (0.2.0, owner
+ * 2026-11-01: icons instead of long text on the map). No star glyph: it would read as a hotel rating.
  */
 export const PICTOGRAM_CONTRACT = Object.freeze({
   family: 'LDS Material Symbols Rounded Pictogram',
-  file: 'assets/icons/material-pictogram-300.woff2', bytes: 2512,
-  sha256: '2b59e62a84b9d3435c682b1995d4f5b55d1f0dc3188e1a0450e120da4fa8b5e7',
+  file: 'assets/icons/material-pictogram-300.woff2', bytes: 3004,
+  sha256: '3121db921e00ecfbe686944045a65d61a7f24cd66a7ea7bdbbb823716a190df5',
   manifest: 'assets/icons/material-pictogram-300.json',
   axes: Object.freeze({FILL: 0, wght: 300, GRAD: 0, opsz: 24}),
   glyphs: Object.freeze({area: '\uE55B', province: '\uE7F1', segment: '\uE72C', venue: '\uE54C', ai: '\uE65F', streetview: '\uE56E', maps: '\uE0C8', building: '\uEA40',
-    hotel: '\uE53A', rooms: '\uEFDF', rail: '\uE570', meeting: '\uF233', price: '\uEF63', chain: '\uE97A', compare: '\uE915'}),
-  status: 'test exception to LDS nav-7 (owner 2026-10-22; action and building glyphs 2026-10-29; hotel glyphs 2026-11-01)',
+    hotel: '\uE53A', rooms: '\uEFDF', rail: '\uE570', meeting: '\uF233', price: '\uEF63', chain: '\uE97A', compare: '\uE915',
+    sea: '\uE176', elevation: '\uE564', relief: '\uEA16', forest: '\uEA99'}),
+  status: 'test exception to LDS nav-7 (owner 2026-10-22; action and building glyphs 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01)',
   fallback: 'Text labels carry the meaning; pictograms stay hidden until the font has loaded.',
 });
 export const NAV_ICON_CONTRACT = Object.freeze({

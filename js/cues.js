@@ -45,21 +45,33 @@ export function cueMarkup(series, {className = ''} = {}) {
  * Raster icon for a MapLibre symbol layer: the cue filled with `fill`, outlined
  * with `stroke`, on a transparent ground. Returns {width, height, data} at
  * `pixelRatio` (pass the same ratio to map.addImage). Browser only.
+ * `hollow`: the no-data variant (unknown rooms) — the same shape as an open outline in the series fill, edged with
+ * `stroke` on both sides, nothing inside; drawn a little inset so the wide outline stays inside the box.
  */
-export function cueImage(series, {size = 16, pixelRatio = 2, fill = '#8AA4AA', stroke = '#182327', strokeWidth = 1.1} = {}) {
+export function cueImage(series, {size = 16, pixelRatio = 2, fill = '#8AA4AA', stroke = '#182327', strokeWidth = 1.1, hollow = false} = {}) {
   const px = Math.round(size * pixelRatio);
   const canvas = typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(px, px) : Object.assign(document.createElement('canvas'), {width: px, height: px});
   const ctx = canvas.getContext('2d');
   // The paths keep ≥ 0.8 unit of margin inside the 12-unit box, enough for the outline at these sizes.
-  const scale = px / 12;
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const inset = hollow ? 0.8 : 1;
+  const scale = (px / 12) * inset;
+  ctx.setTransform(scale, 0, 0, scale, (px - 12 * scale) / 2, (px - 12 * scale) / 2);
   const path = new Path2D(CUE_PATHS[cueOf(series)]);
-  ctx.fillStyle = fill;
-  ctx.fill(path, 'evenodd');
   ctx.lineJoin = 'round';
-  ctx.lineWidth = (strokeWidth * pixelRatio) / scale;
-  ctx.strokeStyle = stroke;
-  ctx.stroke(path);
+  if (hollow) {
+    ctx.lineWidth = (4.4 * pixelRatio) / scale;
+    ctx.strokeStyle = stroke;
+    ctx.stroke(path);
+    ctx.lineWidth = (2.4 * pixelRatio) / scale;
+    ctx.strokeStyle = fill;
+    ctx.stroke(path);
+  } else {
+    ctx.fillStyle = fill;
+    ctx.fill(path, 'evenodd');
+    ctx.lineWidth = (strokeWidth * pixelRatio) / scale;
+    ctx.strokeStyle = stroke;
+    ctx.stroke(path);
+  }
   const image = ctx.getImageData(0, 0, px, px);
   return {width: px, height: px, data: new Uint8Array(image.data.buffer)};
 }

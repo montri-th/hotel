@@ -40,7 +40,7 @@ test('every panel view ends with dataset · source · date · boundary and says 
       const t = text(html);
       assert.ok(t.includes('ชุดข้อมูล CityMETER Hotel'), `${name}: dataset`);
       assert.ok(t.includes('แหล่ง CityMETER Hotel V3 ทะเบียนที่พัก ททท. และหน้าทางการ'), `${name}: source`);
-      assert.ok(t.includes('ตรวจ 25 ต.ค. 2569'), `${name}: date`);
+      assert.ok(t.includes('ตรวจ 1 พ.ย. 2569'), `${name}: date`);
       assert.ok(/ขอบเขต \S/.test(t), `${name}: boundary`);
       assert.ok(t.includes(metric === 'rooms' ? 'ห้อง = จำนวนห้องที่แหล่งบันทึก ไม่ใช่ห้องว่างต่อคืน' : 'แห่ง = ที่พักหนึ่งรายการตามแหล่ง ยังไม่ได้ตรวจว่ายังเปิดอยู่'), `${name}: unit (${metric})`);
       assert.equal((html.match(/class="hint panel-foot provenance"/g) || []).length, 1, `${name}: exactly one provenance line`);
@@ -51,13 +51,13 @@ test('every panel view ends with dataset · source · date · boundary and says 
 
 test('first screen (rooms): the Aha with numerator and denominator, the rail comparison with both bases, the outside finding', () => {
   const o = text(views().overview);
-  assert.ok(o.includes('34% ของห้องพักในกรุงเทพมหานครที่ระบุเขตได้ อยู่ใน 3 เขตนี้'), o.slice(0, 300));
-  assert.ok(o.includes('คลองเตย · ราชเทวี · วัฒนา') && o.includes('44,897 จาก 130,608 ห้อง'));
-  assert.ok(o.includes('ห่างสถานีรถไฟฟ้าที่เปิดแล้วไม่เกิน 500 ม.: 65% ของห้องพักใน 3 เขตนี้ (19,577/30,071) · เขตอื่นของกรุงเทพมหานคร 38% (24,305/64,530)'));
-  assert.ok(o.includes('นอกกรุงเทพมหานครมากที่สุด: อำเภอบางละมุง ชลบุรี 61,480 ห้อง — มากกว่าเขตใดในกรุงเทพมหานคร'));
-  assert.ok(o.includes('100 แห่งไม่ทราบจำนวนห้อง') && o.includes('สัดส่วนใกล้รถไฟฟ้านับเฉพาะที่พักที่มีพิกัด'));
-  assert.ok(o.includes('ไม่อยู่ในอันดับ ระบุได้แค่จังหวัด 35 แห่ง (380 ห้อง) — นับในยอดรวม'));
-  assert.ok(o.includes('สถานีรถไฟฟ้าที่มีห้องพักรอบ 500 ม. มากที่สุด') && o.includes('สถานีนานา (สุขุมวิท) 76 แห่ง · 6,193 ห้อง'));
+  assert.ok(o.includes('35% ของห้องพักในกรุงเทพมหานครที่ระบุเขตได้ อยู่ใน 3 เขตนี้'), o.slice(0, 300));
+  assert.ok(o.includes('คลองเตย · วัฒนา · ราชเทวี') && o.includes('53,516 จาก 152,864 ห้อง') && o.includes('อีก 336 ห้อง ในกรุงเทพมหานครระบุได้แค่จังหวัด'));
+  assert.ok(o.includes('ห่างสถานีรถไฟฟ้าที่เปิดแล้วไม่เกิน 500 ม.: 67% ของห้องพักใน 3 เขตนี้ (25,768/38,690) · เขตอื่นของกรุงเทพมหานคร 42% (32,732/77,957)'));
+  assert.ok(o.includes('นอกกรุงเทพมหานครมากที่สุด: อำเภอบางละมุง ชลบุรี 62,561 ห้อง — มากกว่าเขตใดในกรุงเทพมหานคร'));
+  assert.ok(o.includes('9 แห่งไม่ทราบจำนวนห้อง') && o.includes('สัดส่วนใกล้รถไฟฟ้านับเฉพาะที่พักที่มีพิกัด'));
+  assert.ok(o.includes('ไม่อยู่ในอันดับ ระบุได้แค่จังหวัด 35 แห่ง (1,234 ห้อง) — นับในยอดรวม'));
+  assert.ok(o.includes('สถานีรถไฟฟ้าที่มีห้องพักรอบ 500 ม. มากที่สุด') && o.includes('สถานีนานา (สุขุมวิท) 76 แห่ง · 7,709 ห้อง'));
   assert.ok(o.includes('ที่พักที่ไม่ระบุแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ'));
   const c = text(views('count').overview);
   assert.ok(c.includes('85% ของที่พักในภูเก็ตที่ระบุอำเภอได้ อยู่ใน 2 อำเภอนี้') && c.includes('1,886 จาก 2,222 แห่ง'));
@@ -67,20 +67,20 @@ test('first screen (rooms): the Aha with numerator and denominator, the rail com
 test('district, station, chain and hotel panels: ranks, shares, straight-line context and the comparison set', () => {
   const v = views();
   const a = text(v.area);
-  assert.ok(a.includes('เขตวัฒนา') && a.includes('อันดับ 10 จาก 860 ทั่วประเทศ · 3 จาก 50 ในกรุงเทพมหานคร'), a.slice(0, 240));
-  assert.ok(a.includes('11% = 13,865 จาก 130,608 ห้อง ในกรุงเทพมหานครที่ระบุเขตได้'));
+  assert.ok(a.includes('เขตวัฒนา') && a.includes('อันดับ 9 จาก 860 ทั่วประเทศ · 2 จาก 50 ในกรุงเทพมหานคร'), a.slice(0, 240));
+  assert.ok(a.includes('12% = 17,774 จาก 152,864 ห้อง ในกรุงเทพมหานครที่ระบุเขตได้'));
   assert.ok(a.includes('ทะเบียน ททท. ระบุห้องประชุมใน 7 แห่ง'));
   assert.ok(!/ BWH Hotels 0 |The Ascott Limited \/ ASR 0 /.test(a), 'a group whose rooms are unknown never reads 0 rooms');
   const s = text(v.station);
-  assert.ok(s.includes('สถานีอโศก') && s.includes('2,525 ห้อง') && s.includes('48 แห่ง') && s.includes('(ระยะตรง ไม่ใช่ระยะเดิน)'));
+  assert.ok(s.includes('สถานีอโศก') && s.includes('4,089 ห้อง') && s.includes('48 แห่ง') && s.includes('(ระยะตรง ไม่ใช่ระยะเดิน)'));
   const h = text(v.hotel);
   assert.ok(h.includes('378 ห้อง · 300+') && h.includes('Mercure · Accor') && h.includes('สถานีสนามกีฬาแห่งชาติ (สีลม) · 80 ม.'));
   assert.ok(h.includes('฿1,980–2,500 ที่บันทึก') && h.includes('ไม่ทราบช่วงเวลาของราคา ไม่ใช่ราคาวันนี้ ADR หรือรายได้'), 'a recorded price is labelled as recorded, period unknown');
-  assert.ok(h.includes('ที่พักใกล้เคียงขนาดใกล้กัน 8 แห่ง') && h.includes('ประเภทเดียวกัน 189–756 ห้อง ในระยะตรง 2 กม.') && h.includes('ไม่ใช่คู่แข่งที่ยืนยันแล้ว'));
-  assert.ok(h.includes('รอบ 2 กม. มีที่พักทุกประเภท 214 แห่ง 14,964 ห้อง · 21 แห่งไม่ทราบจำนวนห้อง'));
+  assert.ok(h.includes('ที่พักใกล้เคียงขนาดใกล้กัน 20 แห่ง') && h.includes('ประเภทเดียวกัน 189–756 ห้อง ในระยะตรง 2 กม.') && h.includes('ไม่ใช่คู่แข่งที่ยืนยันแล้ว'));
+  assert.ok(h.includes('รอบ 2 กม. มีที่พักทุกประเภท 214 แห่ง 20,678 ห้อง · 1 แห่งไม่ทราบจำนวนห้อง'));
   assert.ok(h.includes('อาคารเดียวกันตามงานวิจัย: ร้านค้าปลีกอาหาร 1'));
   const ch = text(v.chain);
-  assert.ok(ch.includes('Accor') && ch.includes('10,093 ห้อง') && ch.includes('ที่พักที่ไม่ระบุแบรนด์อาจเป็นของเครือนี้ก็ได้'));
+  assert.ok(ch.includes('Accor') && ch.includes('18,138 ห้อง') && ch.includes('ที่พักที่ไม่ระบุแบรนด์อาจเป็นของเครือนี้ก็ได้'));
   assert.ok(!/MGallery 0 /.test(ch), 'a brand whose rooms are unknown reads in records');
   assert.equal(summarizeIndustries([['ร้านอาหาร', ''], ['ฟิตเนส', 'Jetts'], ['ร้านอาหาร', '']]), 'ร้านอาหาร 2 · ฟิตเนส 1');
   assert.deepEqual([meters(84), meters(1291), meters(2000)], ['80 ม.', '1.3 กม.', '2 กม.']);
@@ -119,7 +119,7 @@ test('charts: districts by the measure, district × group matrix with equal cell
   const m = buildChartModel(data.rows, index, data.groups);
   assert.equal(m.areas.length, 20);
   assert.equal(m.totalAreas, 860);
-  assert.equal(m.unplacedValue, 380, 'rooms of rows placed only at province level stay out of the district chart');
+  assert.equal(m.unplacedValue, 1234, 'rooms of rows placed only at province level stay out of the district chart');
   for (let i = 1; i < m.areas.length; i++) assert.ok(m.areas[i - 1].value >= m.areas[i].value);
   const mx = areaMatrix(m);
   assert.equal(mx.cells.length, 12 * data.groups.length);
@@ -133,7 +133,7 @@ test('charts: districts by the measure, district × group matrix with equal cell
   assert.equal(areaMatrix({areas: [{id: '1001', name: 'พระนคร', province: 'BKK', value: 1, rows: [one]}], groups: data.groups, metric: 'count'}).cells.filter(c => c.unknown).length, 0);
   const ch = chainRanking(data.rows);
   assert.equal(ch.total, 18);
-  assert.deepEqual(ch.chains.slice(0, 3).map(c => [c.chain.name, c.rooms]), [['Accor', 10093], ['Marriott International', 8454], ['IHG Hotels & Resorts', 5989]]);
+  assert.deepEqual(ch.chains.slice(0, 3).map(c => [c.chain.name, c.rooms]), [['Accor', 18138], ['Marriott International', 16515], ['IHG Hotels & Resorts', 9468]]);
 });
 
 test('breadcrumb follows production: ประเทศไทย › จังหวัด › เขต/อำเภอ with /D/ deep links and the hotel dataset', () => {

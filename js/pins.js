@@ -5,20 +5,24 @@
  * the panels say so; a district total never depends on the pins.
  *  - focus: rows that carry detail (the focused districts, the selected district/station/building), one symbol per
  *    row in its accommodation-group series: theme fill + the LDS shape cue of that series (js/cues.js, DATAVIZ-05),
- *    outlined in the marker stroke, in three sizes by recorded rooms (js/model.js#pinSizeOf: < 50 or unknown,
- *    50–199, 200 or more) — a size cue, the colour stays the group's;
- *  - context: the whole filtered scope as small grey dots under the focus symbols, not focusable and not a click
+ *    outlined in the marker stroke; the symbol's area grows with the recorded rooms (js/model.js#pinRadius,
+ *    owner 2026-11-01) and a record with unknown rooms is drawn hollow at the 50-room size — the colour stays the
+ *    group's; larger symbols are drawn first so a small one is never hidden under a large one;
+ *  - context: the whole filtered scope as quiet grey dots under the focus symbols, sized by rooms the same way
+ *    (hollow = unknown) at about half the focus size and at most CONTEXT_MAX_RADIUS, not focusable and not a click
  *    target (a click there selects the district); re-sent only when the filters change.
  * From DETAIL_MIN_ZOOM the focus rows inside the viewport (≤ MAX_DETAIL_PINS, nearest the centre first) become HTML
  * buttons: keyboard-reachable (roving tabindex, arrow keys); co-located rows get bounded screen-space slots around
  * their own anchor (the point never moves; a leader line joins a hovered/selected pin to it). The accessible name is
  * the hotel name and its recorded rooms.
  */
-import {hasPoint, pinSizeOf} from './model.js';
+import {hasPoint, pinSizeOf, pinRadius, pinSizeExpression} from './model.js';
 import {cueImage, cueMarkup} from './cues.js';
 import {GEOJSON_MAXZOOM} from './map-layers.js';
 
 export const DETAIL_MIN_ZOOM = 15.5;
+/** Largest quiet context dot (px of radius): context stays quiet at every zoom. */
+export const CONTEXT_MAX_RADIUS = 6;
 export const MAX_DETAIL_PINS = 320;
 export const PIN_LAYERS = Object.freeze({context: 'hotel-context', focus: 'hotel-focus', selected: 'hotel-selected'});
 const SOURCES = {context: 'hotel-context', focus: 'hotel-focus', selected: 'hotel-selected'};
@@ -37,15 +41,23 @@ function cssVar(name, fallback) {
 export function seriesColors(count = 10) {
   return Array.from({length: count}, (_, i) => cssVar(`--series-${i + 1}-fill`, '#8AA4AA'));
 }
+const contextPaint = () => {
+  const muted = cssVar('--text-muted', '#7B877D');
+  return {'circle-color': ['case', ['>', ['get', 'r'], 0], muted, 'rgba(0,0,0,0)'], 'circle-stroke-color': muted};
+};
 const ICON = series => `hotel-cue-${series}`;
+const ICON_HOLLOW = series => `hotel-cue-${series}-hollow`;
+const ICON_PX = 16;
 
-/** Register (or refresh) the ten cue icons in the current theme colours. */
+/** Register (or refresh) the ten cue icons in the current theme colours, filled and hollow (unknown rooms). */
 function installCueIcons(map) {
   const fills = seriesColors(10), stroke = cssVar('--map-marker-stroke', '#182327');
   fills.forEach((fill, i) => {
-    const image = cueImage(i + 1, {size: 16, pixelRatio: 2, fill, stroke});
-    if (map.hasImage(ICON(i + 1))) map.updateImage(ICON(i + 1), image);
-    else map.addImage(ICON(i + 1), image, {pixelRatio: 2});
+    for (const [id, image] of [[ICON(i + 1), cueImage(i + 1, {size: ICON_PX, pixelRatio: 2, fill, stroke})],
+      [ICON_HOLLOW(i + 1), cueImage(i + 1, {size: ICON_PX, pixelRatio: 2, fill, stroke, hollow: true})]]) {
+      if (map.hasImage(id)) map.updateImage(id, image);
+      else map.addImage(id, image, {pixelRatio: 2});
+    }
   });
 }
 
@@ -54,7 +66,8 @@ export function pointCollection(rows) {
   const features = [];
   for (const r of rows) {
     if (!hasPoint(r)) continue;
-    features.push({type: 'Feature', geometry: {type: 'Point', coordinates: [r.longitude, r.latitude]}, properties: {k: r.id, s: r.series, z: pinSizeOf(r.rooms)}});
+    features.push({type: 'Feature', geometry: {type: 'Point', coordinates: [r.longitude, r.latitude]},
+      properties: {k: r.id, s: r.series, z: pinSizeOf(r.rooms), r: Number.isFinite(r.rooms) && r.rooms > 0 ? r.rooms : 0}});
   }
   return {type: 'FeatureCollection', features};
 }
@@ -117,7 +130,7 @@ export function detailCandidates(rows, project, bounds, limit = MAX_DETAIL_PINS)
  * detail overlay on its container. options.onSelect(row) on activation;
  * options.onLayout(stats) after each layout.
  */
-export function installBranchPins(map, container, {onSelect, onLayout, reservedBottom = () => 90} = {}) {
+export function installBranchPins(map, container, {onSelect, onLayout, onHover, reservedBottom = () => 90} = {}) {
   let focusRows = [], contextRows = [], focusById = new Map(), contextById = new Map(), selectedId = '', hoveredId = '', activeId = '', entries = [], frame = 0, detailKeys = [];
   const rowOf = id => focusById.get(id) || contextById.get(id);
 
@@ -125,20 +138,22 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
   map.addSource(SOURCES.focus, {type: 'geojson', data: {type: 'FeatureCollection', features: []}, maxzoom: GEOJSON_MAXZOOM});
   map.addSource(SOURCES.selected, {type: 'geojson', data: {type: 'FeatureCollection', features: []}, maxzoom: GEOJSON_MAXZOOM});
   installCueIcons(map);
+  // Quiet context: grey (a UI tone, not a data colour), area by rooms at about half the focus size and never above
+  // CONTEXT_MAX_RADIUS px (quiet), an open ring when the rooms are unknown; larger first.
   map.addLayer({id: PIN_LAYERS.context, type: 'circle', source: SOURCES.context,
-    paint: {'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 0.6, 11, 1.1, 14, 2, 17, 3.2],
-      'circle-color': cssVar('--text-muted', '#7B877D'), 'circle-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.35, 13, 0.55]}});
+    layout: {'circle-sort-key': ['-', 0, ['get', 'r']]},
+    paint: {'circle-radius': pinSizeExpression(0.55, 0, CONTEXT_MAX_RADIUS), ...contextPaint(),
+      'circle-stroke-width': ['case', ['>', ['get', 'r'], 0], 0, 1],
+      'circle-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.35, 13, 0.55], 'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.45, 13, 0.7]}});
   // One symbol per row: the series cue icon (fill + shape), never clustered; overlap allowed so no row is hidden.
+  // Its area grows with the rooms (icon px = 2 × radius); zoom stays the top-level input (MapLibre rule).
   map.addLayer({id: PIN_LAYERS.focus, type: 'symbol', source: SOURCES.focus,
-    layout: {'icon-image': ['concat', 'hotel-cue-', ['to-string', ['get', 's']]],
-      // Size cue by recorded rooms (z 0/1/2); zoom stays the top-level input (MapLibre rule).
-      'icon-size': ['interpolate', ['linear'], ['zoom'],
-        8, ['match', ['get', 'z'], 2, 0.3, 1, 0.24, 0.18], 11, ['match', ['get', 'z'], 2, 0.46, 1, 0.36, 0.28],
-        13, ['match', ['get', 'z'], 2, 0.64, 1, 0.5, 0.4], 15, ['match', ['get', 'z'], 2, 0.84, 1, 0.66, 0.54],
-        17, ['match', ['get', 'z'], 2, 1.04, 1, 0.84, 0.7]],
-      'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-padding': 0, 'symbol-sort-key': ['-', 2, ['get', 'z']], 'symbol-z-order': 'source'}});
+    layout: {'icon-image': ['case', ['>', ['get', 'r'], 0], ['concat', 'hotel-cue-', ['to-string', ['get', 's']]], ['concat', 'hotel-cue-', ['to-string', ['get', 's']], '-hollow']],
+      'icon-size': pinSizeExpression(2 / ICON_PX),
+      'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-padding': 0, 'symbol-sort-key': ['-', 0, ['get', 'r']], 'symbol-z-order': 'source'}});
+  // The selection ring sits 3.5 px outside the symbol at every size.
   map.addLayer({id: PIN_LAYERS.selected, type: 'circle', source: SOURCES.selected,
-    paint: {'circle-radius': 9, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': cssVar('--map-selected-stroke', '#176B82'), 'circle-stroke-width': 2.5}});
+    paint: {'circle-radius': pinSizeExpression(1, 3.5), 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': cssVar('--map-selected-stroke', '#176B82'), 'circle-stroke-width': 2.5}});
 
   const overlay = document.createElement('div');
   overlay.className = 'store-pin-overlay';
@@ -225,7 +240,9 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
       button.hidden = false;
       button.style.left = `${p.x}px`;
       button.style.top = `${p.y}px`;
-      button.style.setProperty('--pin-size', `${Math.max(6, Math.min(pitch, p.spacing))}px`);
+      // The HTML pin keeps the rooms size of its symbol (bounded so a co-located slot never overlaps its neighbour).
+      const own = Math.max(8, Math.min(40, 2 * pinRadius(p.entry.row.rooms, zoom)));
+      button.style.setProperty('--pin-size', `${p.spacing > 1 && p.spacing < own ? Math.max(6, p.spacing) : own}px`);
       button.tabIndex = p.id === activeId ? 0 : -1;
       button.dataset.displaced = String(Math.hypot(p.x - p.anchorX, p.y - p.anchorY) > 2);
     }
@@ -254,6 +271,7 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
     button.dataset.storeId = row.id;
     button.dataset.category = String(row.series);
     button.dataset.size = String(pinSizeOf(row.rooms));
+    if (!(Number.isFinite(row.rooms) && row.rooms > 0)) button.classList.add('is-unknown-rooms');
     const text = `${row.name || row.nameEn || ''} · ${row.rooms ? `${row.rooms.toLocaleString('th-TH')} ห้อง` : 'ไม่ทราบจำนวนห้อง'}`;
     button.setAttribute('aria-label', text);
     button.title = text;
@@ -263,10 +281,10 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
     button.append(dot);
     button.classList.toggle('is-selected', row.id === selectedId);
     button.onclick = () => { select(row.id); onSelect?.(row); };
-    button.onmouseenter = () => { hoveredId = row.id; schedule(); };
-    button.onmouseleave = () => { hoveredId = ''; schedule(); };
-    button.onfocus = () => { activeId = row.id; hoveredId = row.id; for (const e of entries) e.button.tabIndex = e.row.id === activeId ? 0 : -1; schedule(); };
-    button.onblur = () => { hoveredId = ''; schedule(); };
+    button.onmouseenter = () => { hoveredId = row.id; schedule(); onHover?.(row, button); };
+    button.onmouseleave = () => { hoveredId = ''; schedule(); onHover?.(null); };
+    button.onfocus = () => { activeId = row.id; hoveredId = row.id; for (const e of entries) e.button.tabIndex = e.row.id === activeId ? 0 : -1; schedule(); onHover?.(row, button); };
+    button.onblur = () => { hoveredId = ''; schedule(); onHover?.(null); };
     button.onkeydown = event => {
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
@@ -332,7 +350,7 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
 
   function retheme() {
     installCueIcons(map);
-    if (map.getLayer(PIN_LAYERS.context)) map.setPaintProperty(PIN_LAYERS.context, 'circle-color', cssVar('--text-muted', '#7B877D'));
+    if (map.getLayer(PIN_LAYERS.context)) for (const [k, v] of Object.entries(contextPaint())) map.setPaintProperty(PIN_LAYERS.context, k, v);
     if (map.getLayer(PIN_LAYERS.selected)) map.setPaintProperty(PIN_LAYERS.selected, 'circle-stroke-color', cssVar('--map-selected-stroke', '#176B82'));
   }
 
@@ -348,7 +366,7 @@ export function installBranchPins(map, container, {onSelect, onLayout, reservedB
     map.off('move', schedule); map.off('resize', schedule); map.off('movestart', onMoveStart); map.off('moveend', onMoveEnd); resize?.disconnect(); overlay.remove();
     for (const id of Object.values(PIN_LAYERS)) if (map.getLayer(id)) map.removeLayer(id);
     for (const id of Object.values(SOURCES)) if (map.getSource(id)) map.removeSource(id);
-    for (let i = 1; i <= 10; i++) if (map.hasImage(ICON(i))) map.removeImage(ICON(i));
+    for (let i = 1; i <= 10; i++) for (const id of [ICON(i), ICON_HOLLOW(i)]) if (map.hasImage(id)) map.removeImage(id);
   }
-  return {update, select, layout: schedule, hitTest, retheme, dispose, layerIds: PIN_LAYERS};
+  return {update, select, layout: schedule, hitTest, retheme, dispose, layerIds: PIN_LAYERS, bounds};
 }

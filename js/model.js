@@ -43,8 +43,62 @@ export const SIZE_BANDS = Object.freeze([
   Object.freeze({id: 's6', th: '300 ห้องขึ้นไป', short: '300+', min: 300, max: Infinity}),
 ]);
 export const sizeOf = rooms => (Number.isFinite(rooms) && rooms > 0 ? SIZE_BANDS.find(b => rooms >= b.min && rooms <= b.max)?.id || '' : '');
-/** Symbol size class on the map: 0 small (< 50 rooms or unknown), 1 medium (50–199), 2 large (≥ 200). */
+/**
+ * Symbol size on the map (owner 2026-11-01: “โรงแรมจำนวนห้องมากน้อย … เท่ากันหมด”): the symbol's AREA grows with the
+ * recorded rooms — radius = k(zoom) · √(rooms / 100), rooms capped at ROOMS_SIZE_CAP (above it the cap size), never
+ * below PIN_MIN_RADIUS. A record with unknown rooms is drawn hollow at the 50-room size (EVID-05: never a measured 0).
+ * PIN_SCALE gives k (px of radius for 100 rooms) by zoom; the legend and the HTML pins use the same numbers.
+ */
+export const PIN_SCALE = Object.freeze([[6, 0.9], [8, 1.3], [10, 2.0], [12, 3.0], [14, 4.2], [16, 5.0], [18, 5.6]]);
+export const ROOMS_SIZE_CAP = 1500;
+export const PIN_MIN_RADIUS = 1.6;
+export const UNKNOWN_ROOMS_SIZE = 50;
+export function pinK(zoom) {
+  const s = PIN_SCALE;
+  if (!(zoom > s[0][0])) return s[0][1];
+  for (let i = 1; i < s.length; i++) if (zoom <= s[i][0]) return s[i - 1][1] + (s[i][1] - s[i - 1][1]) * (zoom - s[i - 1][0]) / (s[i][0] - s[i - 1][0]);
+  return s.at(-1)[1];
+}
+/** Symbol radius in px for a row's rooms at a zoom (unknown rooms → the 50-room size, drawn hollow by the caller). */
+export const pinRadius = (rooms, zoom) => {
+  const n = Number.isFinite(rooms) && rooms > 0 ? Math.min(rooms, ROOMS_SIZE_CAP) : UNKNOWN_ROOMS_SIZE;
+  return Math.max(PIN_MIN_RADIUS, pinK(zoom) * Math.sqrt(n / 100));
+};
+/**
+ * The same size as a MapLibre expression of feature property `r` (rooms, 0 = unknown): min(cap, `factor` × radius)
+ * + `add` px (zoom stays the top-level input, as MapLibre requires).
+ */
+export function pinSizeExpression(factor = 1, add = 0, cap = 1e6) {
+  const at = k => ['+', add, ['min', cap, ['*', factor, ['max', PIN_MIN_RADIUS, ['*', k, ['sqrt', ['/', ['case', ['>', ['get', 'r'], 0], ['min', ['get', 'r'], ROOMS_SIZE_CAP], UNKNOWN_ROOMS_SIZE], 100]]]]]]];
+  return ['interpolate', ['linear'], ['zoom'], ...PIN_SCALE.flatMap(([z, k]) => [z, at(k)])];
+}
+/** Size class kept for HTML pins and lists: 0 small (< 50 rooms or unknown), 1 medium (50–199), 2 large (≥ 200). */
 export const pinSizeOf = rooms => (Number.isFinite(rooms) && rooms >= 200 ? 2 : Number.isFinite(rooms) && rooms >= 50 ? 1 : 0);
+
+/**
+ * Importance of a record for labels (owner 2026-11-01: “เน้นให้แสดงโรงแรมที่สำคัญก่อน คือราคาสูงและจำนวนห้องมากก่อน”):
+ * the mean of its percentile among all records by recorded rooms and by recorded price (avg, else max, else min).
+ * A record without a recorded price uses its rooms percentile only (a price is never guessed); without rooms, its
+ * price percentile only; with neither, 0. Ranking only — never shown as a figure.
+ */
+export function importanceScores(rows) {
+  const priceOf = r => r.price ? (r.price.avg || r.price.max || r.price.min || null) : null;
+  const pct = values => {
+    const sorted = values.filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+    const n = sorted.length;
+    return v => {
+      if (!Number.isFinite(v) || !n) return null;
+      let lo = 0, hi = n;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] <= v) lo = mid + 1; else hi = mid; }
+      return lo / n;  // share of records at or below v
+    };
+  };
+  const roomsPct = pct(rows.map(r => r.rooms)), pricePct = pct(rows.map(priceOf));
+  return rows.map(r => {
+    const parts = [roomsPct(r.rooms), pricePct(priceOf(r))].filter(v => v !== null);
+    return parts.length ? parts.reduce((a, b) => a + b, 0) / parts.length : 0;
+  });
+}
 
 /** The value a row adds to a measure: its rooms (known only) or 1 record. */
 export const rowValue = (r, metric = 'rooms') => (metric === 'count' ? 1 : (Number.isFinite(r?.rooms) && r.rooms > 0 ? r.rooms : 0));
@@ -115,6 +169,8 @@ export function decodeDataset(json, index) {
     row.haystack = lower([row.name, row.nameEn, brand?.name, row.chain?.name, a?.name, a?.nameEn, p?.th, p?.en, group.th, row.rawType].filter(Boolean).join(' '));
     rows.push(row);
   }
+  const scores = importanceScores(rows);
+  rows.forEach((r, i) => { r.importance = scores[i]; });
   return {meta: json.meta || {}, rows, groups, brands, chains, stations, retail, sources, dropped};
 }
 

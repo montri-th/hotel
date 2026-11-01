@@ -145,9 +145,9 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
    The glyph is decorative (aria-hidden); the text label carries the meaning. Hidden until the font loads. */
 @font-face {
   font-family: "LDS Material Symbols Rounded Pictogram";
-  src: url("assets/icons/material-pictogram-300.woff2?v=2b59e62a") format("woff2");
+  src: url("assets/icons/material-pictogram-300.woff2?v=3121db92") format("woff2");
   font-style: normal; font-weight: 300; font-display: block;
-  unicode-range: U+E55B, U+E7F1, U+E72C, U+E54C, U+E65F, U+E56E, U+E0C8, U+EA40, U+E53A, U+EFDF, U+E570, U+F233, U+EF63, U+E97A, U+E915;
+  unicode-range: U+E55B, U+E7F1, U+E72C, U+E54C, U+E65F, U+E56E, U+E0C8, U+EA40, U+E53A, U+EFDF, U+E570, U+F233, U+EF63, U+E97A, U+E915, U+E176, U+E564, U+EA16, U+EA99;
 }
 .pictogram { display: inline-block; width: 20px; height: 20px; font: 300 20px/1 "LDS Material Symbols Rounded Pictogram"; font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24; letter-spacing: normal; text-transform: none; font-synthesis: none; vertical-align: -4px; visibility: hidden; color: var(--text-secondary); }
 .pictograms-ready .pictogram { visibility: visible; }
@@ -167,6 +167,10 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .pic-price::before { content: "\EF63"; }
 .pic-chain::before { content: "\E97A"; }
 .pic-compare::before { content: "\E915"; }
+.pic-sea::before { content: "\E176"; }
+.pic-elevation::before { content: "\E564"; }
+.pic-relief::before { content: "\EA16"; }
+.pic-forest::before { content: "\EA99"; }
 .pic-plain { display: none; }
 .section-heading h3 .pictogram { width: 18px; height: 18px; font-size: 18px; margin-right: 6px; vertical-align: -3px; }
 .metric { position: relative; padding-left: 26px; }
@@ -335,6 +339,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .pin-dot { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--pin-fill); box-shadow: 0 0 0 1px var(--map-marker-stroke), 0 0 0 2px var(--map-marker-halo); }
 .store-pin .pin-dot { background: none; box-shadow: none; border-radius: 0; filter: drop-shadow(0 0 1px var(--map-marker-halo)); }
 .pin-dot .cue-shape { display: block; width: 100%; height: 100%; }
+/* Unknown rooms (EVID-05 no_data): the same shape as an open outline in the series fill, never a filled small mark. */
+.store-pin.is-unknown-rooms .cue-shape { fill: none; stroke: var(--pin-fill); stroke-width: 2.2; paint-order: normal; filter: drop-shadow(0 0 .6px var(--map-marker-stroke)); }
 .store-pin.is-selected, .store-pin:hover, .store-pin:focus-visible { z-index: 5; outline: 2px solid var(--interaction-focus-ring); outline-offset: 3px; }
 /* Quiet context: observations outside the focused part stay on the map as small
    neutral dots — one per record, no logo, no category colour, no keyboard stop. */
@@ -631,3 +637,55 @@ td.num, th.num { text-align: right; }
   .mix-row { grid-template-columns: minmax(0, 132px) minmax(0, 1fr) 40px; }
   .metric-switch button { min-height: 36px; }
 }
+
+/* 9. Hotel 0.2.0 — owner 2026-11-01: rooms-sized symbols, names near the middle of the view, chain logos, terrain
+   at hilly sites, and symbols/icons instead of long text on the map. ------------------------------------------- */
+.map-panel:not(.is-3d) .legend-massing.is-quiet { display: none; }
+.legend-massing-item .legend-massing + .legend-massing { margin-left: -3px; }
+/* Size key: the symbol sizes at the current zoom (area ∝ rooms); the hollow mark = unknown rooms. */
+.size-key { display: inline-flex; align-items: center; gap: 7px; }
+.size-step { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.size-dot { display: inline-block; flex: none; width: var(--d, 8px); height: var(--d, 8px); border-radius: 50%; background: var(--text-muted); border: 1px solid var(--map-marker-stroke); box-sizing: border-box; }
+.size-dot.is-hollow { background: transparent; border: 2px solid var(--text-muted); }
+.size-key .pictogram, .legend-terrain-item .pictogram, .map-status .pictogram { width: 15px; height: 15px; font-size: 15px; vertical-align: 0; }
+.size-key > .pictogram { margin-left: -4px; }
+.legend-terrain-item { gap: 4px; }
+.category-cues { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; }
+.category-cues .cue-shape { width: 10px; height: 10px; flex-basis: 10px; margin: 0; }
+.map-status { display: inline-flex; align-items: center; gap: 3px; }
+/* Area chips: the measure's pictogram stands for the unit (bed = ห้อง, hotel = แห่ง); the title says it in words. */
+.pictograms-ready .area-label .label-count::before { content: "\EFDF"; display: inline-block; margin-right: 3px; font: 300 12px/1 "LDS Material Symbols Rounded Pictogram"; font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20; vertical-align: -2px; }
+.pictograms-ready .map-panel[data-metric="count"] .area-label .label-count::before { content: "\E53A"; }
+/* Brand logos: identity marks on their theme-invariant backing; never recoloured or redrawn. */
+.brand-logo { display: inline-flex; align-items: center; justify-content: center; flex: none; box-sizing: content-box; height: var(--logo-h, 18px); aspect-ratio: var(--logo-ratio, 2); max-width: calc(var(--logo-h, 18px) * 4.5); padding: 2px 4px; background: var(--logo-backing, #FFFFFF); border: 1px solid var(--border-hairline); border-radius: 4px; }
+.brand-logo.is-opaque { padding: 0; }
+.brand-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.hl-logo { --logo-h: 15px; padding: 1px 3px; }
+.hc-logo { --logo-h: 26px; }
+.panel-logo { --logo-h: 30px; }
+.identity-logo { margin: 0 0 6px; line-height: 0; }
+/* Hotel names near the middle of the view (js/labels.js). */
+.hotel-labels { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.hotel-label { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 5px; max-width: 230px; min-height: 0; padding: 3px 7px 3px 4px; background: var(--surface-card); color: var(--text-primary); border: 1px solid var(--border-default); border-radius: 6px; font: 600 12px/1.25 var(--font-body); white-space: nowrap; pointer-events: auto; cursor: pointer; opacity: 0; transition: opacity .18s ease; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.hotel-label.is-on { opacity: 1; }
+.hotel-label::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; background: var(--surface-card); border-right: 1px solid var(--border-default); border-bottom: 1px solid var(--border-default); transform: translateX(-50%) rotate(45deg); }
+.hotel-label.is-below::after { bottom: auto; top: -5px; transform: translateX(-50%) rotate(225deg); }
+.hotel-label .hl-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hotel-label .hl-cue { display: inline-flex; padding-left: 3px; }
+.hotel-label .hl-cue .cue-shape { width: 11px; height: 11px; flex-basis: 11px; }
+.hotel-label .hl-rooms { display: inline-flex; align-items: center; gap: 1px; flex: none; font: 400 11px/1 var(--font-mono); color: var(--text-secondary); }
+.hotel-label .hl-rooms .pictogram { width: 14px; height: 14px; font-size: 14px; vertical-align: 0; }
+.hotel-label:hover { border-color: var(--map-hover-stroke); }
+.hotel-label:focus-visible { outline: 2px solid var(--interaction-focus-ring); outline-offset: 2px; opacity: 1; }
+@media (max-width: 760px) and (orientation: portrait) { .hotel-label { max-width: 160px; font-size: 11px; } }
+/* Hover card: icon chips; the sentences live in the chip titles. */
+.hotel-card { position: absolute; left: 0; top: 0; z-index: 6; width: max-content; max-width: 300px; padding: 10px 12px; background: var(--surface-card); color: var(--text-primary); border: 1px solid var(--border-default); border-radius: 6px; font: 400 12px/1.45 var(--font-body); pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); }
+.hotel-card .hc-head { display: flex; align-items: center; gap: 8px; }
+.hotel-card .hc-head strong { display: block; font: 700 14px/1.35 var(--font-display); }
+.hotel-card .hc-sub { display: block; color: var(--text-secondary); font-size: 11px; }
+.hotel-card .hc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.hotel-card .hc-chips:empty { display: none; }
+.hotel-card .hc-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px 2px 5px; border: 1px solid var(--border-default); border-radius: 999px; white-space: nowrap; font-size: 12px; }
+.hotel-card .hc-chip .pictogram { width: 15px; height: 15px; font-size: 15px; vertical-align: 0; }
+.hotel-card .hc-chip .cue-shape { width: 11px; height: 11px; flex-basis: 11px; margin-right: 3px; }
+.terrain-chips .fact-chip .pictogram { color: var(--text-secondary); }

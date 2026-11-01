@@ -17,6 +17,7 @@ import {productionLink, provinceByCode, hasPoint, stationLink, retailLink, SIZE_
 import {areaWord} from './areas.js';
 import {cueMarkup} from './cues.js';
 import {actionBar} from './ask.js';
+import {logoMarkup} from './logos.js';
 
 const NUMBER = new Intl.NumberFormat('th-TH', {maximumFractionDigits: 0});
 export const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -83,13 +84,14 @@ const MASS_TH = Object.freeze({
  * Every view that shows numbers ends with dataset · source · date · boundary, and what one counted unit is.
  * ctx = {meta, unit, roomsUnknown?, rail?, retail?}
  */
-export function provenance(ctx = {}, boundary = '', {rail = false, retail = false, roomsUnknown = 0} = {}) {
+export function provenance(ctx = {}, boundary = '', {rail = false, retail = false, roomsUnknown = 0, terrain = false} = {}) {
   const meta = ctx.meta || {}, unit = ctx.unit || metricOf('rooms');
-  const extra = [rail ? `สถานีจาก CityMETER Transit ณ ${thaiDate(meta.context?.rail?.asOf || '')}` : '', retail ? 'ศูนย์การค้าจาก CityMETER Shopping centers' : ''].filter(Boolean);
+  const extra = [rail ? `สถานีจาก CityMETER Transit ณ ${thaiDate(meta.context?.rail?.asOf || '')}` : '', retail ? 'ศูนย์การค้าจาก CityMETER Shopping centers' : '',
+    terrain ? `ภูมิประเทศจาก SRTM 30 ม. (สำรวจปี 2543) ผ่าน Terrain Tiles on AWS และแผนที่ OpenStreetMap${ctx.osmDate ? ` ณ ${thaiDate(ctx.osmDate)}` : ''}` : ''].filter(Boolean);
   const clause = unit.id === 'count'
     ? 'แห่ง = ที่พักหนึ่งรายการตามแหล่ง ยังไม่ได้ตรวจว่ายังเปิดอยู่ ไม่ใช่ทุกที่พักในประเทศ'
     : `ห้อง = จำนวนห้องที่แหล่งบันทึก ไม่ใช่ห้องว่างต่อคืน${roomsUnknown ? ` · ${num(roomsUnknown)} แห่งไม่ทราบจำนวนห้อง ไม่นับเป็น 0` : ''}`;
-  return `<p class="hint panel-foot provenance"><span>ชุดข้อมูล CityMETER Hotel</span> · <span>แหล่ง CityMETER Hotel V3 ทะเบียนที่พัก ททท. และหน้าทางการ${extra.length ? ` · ${esc(extra.join(' · '))}` : ''}</span> · <span>ตรวจ ${esc(thaiDate(meta.checkedOn || ''))}</span> · <span>ขอบเขต ${esc(boundary)}</span>${rail || retail ? '<br><span>ระยะ = ระยะตรงระหว่างจุดอ้างอิง ไม่ใช่ระยะเดิน</span>' : ''}<br>${esc(clause)}</p>`;
+  return `<p class="hint panel-foot provenance"><span>ชุดข้อมูล CityMETER Hotel</span> · <span>แหล่ง CityMETER Hotel V3 ทะเบียนที่พัก ททท. และหน้าทางการ${extra.length ? ` · ${esc(extra.join(' · '))}` : ''}</span> · <span>ตรวจ ${esc(thaiDate(meta.checkedOn || ''))}</span> · <span>ขอบเขต ${esc(boundary)}</span>${rail || retail || terrain ? '<br><span>ระยะ = ระยะตรงระหว่างจุดอ้างอิง ไม่ใช่ระยะเดิน</span>' : ''}${terrain ? '<br><span>ภูมิประเทศ = พื้นดินในรัศมี 500 ม. (ต้นไม้ 300 ม.) รอบจุดของที่พัก ไม่ใช่การยืนยันวิว</span>' : ''}<br>${esc(clause)}</p>`;
 }
 
 /* ---------- shared fragments ---------- */
@@ -399,7 +401,7 @@ export function renderBuilding(b, ctx = {}) {
 
 /* ---------- Hotel ---------- */
 
-function priceText(price) {
+export function priceText(price) {
   if (!price) return '';
   const lo = price.min || price.avg, hi = price.max || price.avg;
   return lo && hi && lo !== hi ? `${baht(lo)}–${num(hi)}` : baht(lo || hi);
@@ -444,6 +446,7 @@ export function renderHotel(d, ctx = {}) {
   return `<section class="detail-head store">
       <button type="button" class="btn quiet back" data-action="back">กลับ</button>
       <div class="identity"><span class="identity-cue">${cueMarkup(r.series)}</span><div>
+        ${r.brand && logoMarkup(r.brand.id) ? `<p class="identity-logo">${logoMarkup(r.brand.id, {className: 'brand-logo panel-logo'})}<span class="sr-only">${esc(r.brand.name)}</span></p>` : ''}
         <p class="eyebrow eyebrow-cue">${esc(d.group?.th || '')}${r.rawType && r.rawType !== d.group?.th ? ` · ${esc(r.rawType)}` : ''}</p>
         <h2>${esc(r.name || r.nameEn || 'ไม่มีชื่อในแหล่งข้อมูล')}</h2>
         ${r.nameEn && r.nameEn !== r.name ? `<p class="branch-name">${esc(r.nameEn)}</p>` : ''}</div></div>
@@ -464,8 +467,15 @@ export function renderHotel(d, ctx = {}) {
         <p class="links">${d.area ? link(productionLink({province: r.province, area: r.area}), 'ดูพื้นที่นี้ใน CityMETER') : ''}</p>
       </details>
     </section>
+    ${hasPoint(r) ? `<section class="panel-section terrain-section"><div class="section-heading">${heading('elevation', 'ภูมิประเทศรอบที่พัก')}</div>
+      <div class="fact-chips terrain-chips" data-terrain-for="${esc(r.id)}"><span class="hint">กำลังอ่านภูมิประเทศ</span></div></section>` : ''}
     ${compsetSection(d.compset, r)}
-    ${provenance(ctx, d.area ? `${w.area}${d.area.name} ${prov} (ขอบเขต CityMETER)` : prov || 'ไม่ระบุจังหวัด', {rail: Boolean(r.rail || r.railNext), retail: Boolean(r.shop)})}`;
+    ${provenance(ctx, d.area ? `${w.area}${d.area.name} ${prov} (ขอบเขต CityMETER)` : prov || 'ไม่ระบุจังหวัด', {rail: Boolean(r.rail || r.railNext), retail: Boolean(r.shop), terrain: hasPoint(r)})}`;
+}
+
+/** Terrain chips (js/terrain.js#terrainChips) as fact chips; '' when nothing is known. */
+export function terrainChipsHTML(chips) {
+  return chips.map(c => `<span class="fact-chip" title="${esc(c.title)}"><i class="pictogram pic-${esc(c.kind)}" aria-hidden="true"></i>${esc(c.text)}</span>`).join('');
 }
 
 /** "ร้านอาหาร 3 · ฟิตเนส 1" from 16_BRANCH_SPATIAL_CANDIDATES rows of the same building mass. */

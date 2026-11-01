@@ -1,8 +1,8 @@
 {
   "family": "LDS Material Symbols Rounded Pictogram",
   "file": "material-pictogram-300.woff2",
-  "bytes": 2512,
-  "sha256": "2b59e62a84b9d3435c682b1995d4f5b55d1f0dc3188e1a0450e120da4fa8b5e7",
+  "bytes": 3004,
+  "sha256": "3121db921e00ecfbe686944045a65d61a7f24cd66a7ea7bdbbb823716a190df5",
   "source": "google/material-design-icons variablefont/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf",
   "sourceSha256": "7e74e36533ccee12c2b81e75bfcf3ccf123d3bb7e7e46d65d94445f23db0c97c",
   "license": "Apache-2.0 (assets/icons/material-symbols-Apache-2.0.txt)",
@@ -72,7 +72,23 @@
     "compare": {
       "name": "compare_arrows",
       "codepoint": "U+E915"
+    },
+    "sea": {
+      "name": "waves",
+      "codepoint": "U+E176"
+    },
+    "elevation": {
+      "name": "landscape",
+      "codepoint": "U+E564"
+    },
+    "relief": {
+      "name": "height",
+      "codepoint": "U+EA16"
+    },
+    "forest": {
+      "name": "forest",
+      "codepoint": "U+EA99"
     }
   },
-  "status": "test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01); nav-7 subset unchanged"
+  "status": "test exception to LDS nav-7 (owner 2026-10-22; actions and building added 2026-10-29; hotel glyphs 2026-11-01; terrain glyphs 2026-11-01 for the map labels); nav-7 subset unchanged"
 }

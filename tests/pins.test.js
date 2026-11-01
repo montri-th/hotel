@@ -83,3 +83,34 @@ test('detail pins: nearest the centre first, inside the usable map only, bounded
  assert.ok(picked.every(p=>p.x>=0&&p.x<=1000));
  assert.equal(DETAIL_MIN_ZOOM,15.5);
 });
+
+// Owner 2026-11-01 (point 4): a symbol's AREA grows with the recorded rooms; unknown rooms are drawn hollow at the
+// 50-room size (EVID-05: never a measured 0); quiet context stays small at every zoom.
+import {pinRadius,pinSizeExpression,PIN_SCALE,ROOMS_SIZE_CAP,UNKNOWN_ROOMS_SIZE,PIN_MIN_RADIUS,importanceScores} from '../js/model.js';
+import {CONTEXT_MAX_RADIUS} from '../js/pins.js';
+test('symbol area grows in proportion to the recorded rooms; capped; unknown = the 50-room size, never 0',()=>{
+ for(const z of [10,12,14,16,18]){
+  const r100=pinRadius(100,z),r400=pinRadius(400,z);
+  assert.ok(Math.abs((r400/r100)**2-4)<1e-9,`area ∝ rooms at zoom ${z}`);
+  assert.equal(pinRadius(5000,z),pinRadius(ROOMS_SIZE_CAP,z),'above the cap the cap size');
+  assert.equal(pinRadius(null,z),pinRadius(UNKNOWN_ROOMS_SIZE,z));
+  assert.equal(pinRadius(0,z),pinRadius(UNKNOWN_ROOMS_SIZE,z),'0 is not a known room count');
+  assert.ok(pinRadius(1,z)>=PIN_MIN_RADIUS);
+ }
+ for(let i=1;i<PIN_SCALE.length;i++)assert.ok(PIN_SCALE[i][1]>PIN_SCALE[i-1][1]&&PIN_SCALE[i][0]>PIN_SCALE[i-1][0]);
+ const e=pinSizeExpression(0.55,0,CONTEXT_MAX_RADIUS);
+ assert.deepEqual(e.slice(0,3),['interpolate',['linear'],['zoom']],'zoom stays the top-level input (MapLibre rule)');
+ assert.equal(e.length,3+2*PIN_SCALE.length);
+ assert.ok(JSON.stringify(e).includes(`["min",${CONTEXT_MAX_RADIUS},`),'context radius is capped');
+ const rooms=pointCollection([{id:'a',latitude:13.7,longitude:100.5,series:2,rooms:300},{id:'b',latitude:13.7,longitude:100.5,series:2,rooms:null}]);
+ assert.deepEqual(rooms.features.map(f=>f.properties.r),[300,0],'r = rooms, 0 when unknown (drawn hollow)');
+});
+test('label importance: mean of the rooms and recorded-price percentiles; a missing price is never guessed',()=>{
+ const rows=[{rooms:10,price:{avg:500}},{rooms:400,price:{avg:9000}},{rooms:400,price:null},{rooms:null,price:{min:3000}},{rooms:null,price:null}];
+ const s=importanceScores(rows);
+ assert.ok(s[1]>s[0]&&s[2]>s[0],'big and pricey before small and cheap');
+ assert.equal(s[2],1,'a big stay without a recorded price ranks on its rooms alone (the price is never guessed)');
+ assert.ok(Math.abs(s[3]-2/3)<1e-9,'a stay without rooms ranks on its price alone');
+ assert.equal(s[4],0,'neither known → 0');
+ assert.ok(s.every(v=>v>=0&&v<=1));
+});

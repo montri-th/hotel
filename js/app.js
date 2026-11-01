@@ -43,17 +43,17 @@
  * Panel modes: overview (+ chain card with a chain filter) | area | station | building | hotel (with a back stack).
  * URL state: filters, metric, area, areas, view, hotel, station, view3d.
  */
-import {provinces as provinceList, provinceByCode, provinceCodeFrom, setProvinces, decodeDataset, filterRows, summarize, hasPoint, unitWords, rowValue, SIZE_BANDS} from './model.js';
+import {provinces as provinceList, provinceByCode, provinceCodeFrom, setProvinces, decodeDataset, filterRows, summarize, hasPoint, unitWords, rowValue, SIZE_BANDS, pinRadius, PIN_MIN_RADIUS} from './model.js';
 import {buildAreaIndex, areaWord, areaLocator, recordBounds} from './areas.js';
 import {summarizeAreaInsight, filterAreaRows} from './area-insight.js';
 import {renderInsightChart} from './charts.js';
 import {loadMapLibrary} from './vendors.js';
-import {installBranchPins} from './pins.js';
-import {installAreaLayers, installAreaLabels, buildAreaModel, AREA_MIN_ZOOM, PROVINCE_VIEW_MIN_ZOOM} from './map-layers.js';
+import {installBranchPins, DETAIL_MIN_ZOOM} from './pins.js';
+import {installAreaLayers, installAreaLabels, buildAreaModel, setFillSwitchZoom, AREA_MIN_ZOOM, PROVINCE_VIEW_MIN_ZOOM, FILL_MAX_ZOOM} from './map-layers.js';
 import {installProvinceLayers, buildProvinceModel, PROVINCE_FILL_MAX_ZOOM, PROVINCE_LABEL_MAX_ZOOM} from './provinces.js';
 import {createFrameStore, provinceLocator} from './frames.js';
 import {buildOverview, buildAreaProfile, buildHotelDetail, buildBuildingProfile, buildChainProfile, buildStationProfile, stationsOf, listOrder, STATION_RADIUS_M} from './profile-model.js';
-import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, esc, num, pct, words, meters} from './panel.js';
+import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, terrainChipsHTML, esc, num, pct, words, meters, priceText} from './panel.js';
 import {installStationLayer} from './stations.js';
 import {joinBuildings} from './building-join.js';
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
@@ -64,6 +64,9 @@ import {guardRetainedTiles} from './maplibre-guard.js';
 import {buildBreadcrumb, renderBreadcrumb, breadcrumbText} from './breadcrumb.js';
 import {rampLegendHTML} from './scales.js';
 import {cueMarkup} from './cues.js';
+import {loadLogos} from './logos.js';
+import {installHotelLabels} from './labels.js';
+import {installTerrain, terrainFacts, terrainChips, TERRAIN} from './terrain.js';
 
 const $ = id => document.getElementById(id);
 const FIELDS = ['search', 'group', 'size', 'province', 'chain'];
@@ -154,7 +157,7 @@ function applyTheme() {
 }
 
 function disposeSpatial() {
-  for (const k of ['xray', 'massing', 'pins', 'stations']) { try { state[k]?.dispose(); } catch (e) { console.warn('dispose', k, e); } state[k] = null; }
+  for (const k of ['hotelLabels', 'terrain', 'xray', 'massing', 'pins', 'stations']) { try { state[k]?.dispose(); } catch (e) { console.warn('dispose', k, e); } state[k] = null; }
   state.areaLayers = null; state.provinceLayers = null; state.join = null; refreshJoin.key = ''; syncFocusBuilding.key = '';
 }
 
@@ -247,6 +250,8 @@ function updatePins() {
   // Context = the whole scope (same array while the filters are unchanged → not re-sent); focus symbols cover their own dot.
   state.pins.update(list, {context: state.scopeRows});
   if (state.selectedId) state.pins.select(state.selectedId);
+  // Names near the middle of the view follow the same focus rows (the open stay has its popup instead).
+  state.hotelLabels?.update(list, {selectedId: state.selectedId});
 }
 
 /* ---------- province frames on demand ---------- */
@@ -312,7 +317,8 @@ const countClassOf = a => state.areaModel?.byId.get(a.id)?.fill || 'var(--scale-
 
 function panelCtx() {
   const f = values();
-  return {meta: state.data.meta || {}, unit: unit(), index: state.index, filtered: NARROWING.some(k => f[k])};
+  const osm = /planet\/(\d{4})(\d{2})(\d{2})_/.exec(state.tileTemplate || '');
+  return {meta: state.data.meta || {}, unit: unit(), index: state.index, filtered: NARROWING.some(k => f[k]), osmDate: osm ? `${osm[1]}-${osm[2]}-${osm[3]}` : ''};
 }
 
 /** Rows for the province frames: current filters WITHOUT the province filter, so every frame keeps its own count. */
@@ -362,10 +368,23 @@ function renderPanel(summary = summarize(state.rows)) {
   }
   view.innerHTML = html;
   view.dataset.mode = mode;
+  if (mode === 'hotel') fillTerrain(rowById(id));
   $('panel').dataset.mode = mode;
   const key = `${mode}:${id}:${$('province').value}:${$('chain').value}`;
   if (key !== renderPanel.lastKey) $('panel').scrollTop = 0;
   renderPanel.lastKey = key;
+}
+
+/** Terrain chips of the open stay (async; the DEM tiles and the basemap water/land cover are read in the browser). */
+async function fillTerrain(r) {
+  const box = document.querySelector(`[data-terrain-for="${CSS.escape(r?.id || '')}"]`);
+  if (!box) return;
+  const facts = state.map && state.loaded ? await terrainFacts(state.map, r).catch(() => null) : null;
+  const chips = terrainChips(facts, {num});
+  const now = document.querySelector(`[data-terrain-for="${CSS.escape(r.id)}"]`);
+  if (!now) return;
+  const html = chips.length ? terrainChipsHTML(chips) : '<span class="hint">อ่านภูมิประเทศไม่ได้ในตอนนี้</span>';
+  if (now.innerHTML !== html) now.innerHTML = html;
 }
 
 function renderMapAha(insight) {
@@ -688,7 +707,7 @@ function applyJoin() {
   state.blueBuildings = n > 0;
   document.querySelector('.map-panel')?.classList.toggle('has-open-building', state.blueBuildings);
   const label = $('legend-building-label');
-  if (label) label.textContent = currentBuilding() ? 'อาคารที่เปิดอยู่' : 'อาคารที่จุดของที่พักตก';
+  if (label) label.textContent = currentBuilding() ? 'อาคารที่เปิด' : 'อาคารของที่พัก';
   if (panelSpatialSig() !== state.renderedSig) renderPanel();
   syncFocusBuilding();
   refitOnNewBuilding();
@@ -797,6 +816,30 @@ function onPanelAction(event) {
 }
 
 /* ---------- legend ---------- */
+/** Hillshade in the theme's basemap tones (foundation colours, never data colours). */
+function terrainColors() {
+  const dark = theme() === 'dark';
+  return dark
+    ? {shadow: cssVar('--basemap-sky') || '#0D1418', highlight: cssVar('--basemap-label-quiet') || '#8D9D99', accent: cssVar('--basemap-sky') || '#0D1418', dark}
+    : {shadow: cssVar('--basemap-label') || '#5F635A', highlight: cssVar('--basemap-halo') || '#F6F7F3', accent: cssVar('--basemap-label-quiet') || '#7B877D', dark};
+}
+
+/** Size key of the hotel symbols (area ∝ rooms; hollow = unknown rooms), drawn at the SIZE_KEY_ZOOM sizes: the
+ *  proportions are the map's at every zoom. */
+const SIZE_KEY_ROOMS = [50, 200, 800], SIZE_KEY_ZOOM = 13;
+function sizeKeyHTML() {
+  const dot = (rooms, cls = '') => { const d = Math.max(4, Math.round(2 * pinRadius(rooms, SIZE_KEY_ZOOM))); return `<i class="size-dot${cls}" style="--d:${d}px" aria-hidden="true"></i>`; };
+  return `${SIZE_KEY_ROOMS.map(n => `<span class="size-step">${dot(n)}<span class="data-number">${num(n)}</span></span>`).join('')}<i class="pictogram pic-rooms" aria-hidden="true"></i><span class="size-step">${dot(0, ' is-hollow')}<span>ไม่ทราบ</span></span>`;
+}
+
+/** Map status: pin + number in view (owner 2026-11-01: icons instead of long text); the sentence is the title. */
+function renderMapStatus(stats) {
+  const el = $('map-status');
+  const text = `${num(stats.focusInView)} แห่งที่มีพิกัดในจอ${stats.contextRows ? ` · จุดนอกโฟกัสทั้งหมด ${num(stats.contextRows)}` : ''}`;
+  el.innerHTML = `<i class="pictogram pic-maps" aria-hidden="true"></i><span class="data-number">${num(stats.focusInView)}</span> ในจอ`;
+  el.title = text;
+  el.setAttribute('aria-label', text);
+}
 /** Below district zoom (the province frames' window), whether or not a จังหวัด is selected. */
 const belowAreaZoom = () => Boolean(state.provinceLayers) && (state.map?.getZoom?.() ?? 12) < PROVINCE_FILL_MAX_ZOOM;
 /** The province frames carry the reading: below district zoom with no จังหวัด filter (else: province view). */
@@ -812,8 +855,11 @@ function renderLegend() {
   $('legend-areas').title = atProvince
     ? `${u.label}ต่อจังหวัด (ผลรวม) · 41 ระดับสีตามลำดับค่า · สีเดียวกันทั้งสองธีม · ซูมเข้าเพื่อดูรายเขต/อำเภอ`
     : `${u.label}ต่อเขต/อำเภอ (ผลรวม ไม่ใช่ความหนาแน่น) · 41 ระดับสีตามลำดับค่า ค่าสูงสุดอยู่ที่ระดับสุดท้าย · สีเดียวกันทั้งสองธีม`;
-  $('legend-pin-label').textContent = '1 สัญลักษณ์ = 1 ที่พักที่มีพิกัด · ขนาดตามจำนวนห้อง';
+  $('legend-pin-label').innerHTML = sizeKeyHTML();
+  const terrainItem = $('legend-terrain');
+  if (terrainItem) terrainItem.hidden = !state.terrainActive;
   const panel = document.querySelector('.map-panel');
+  panel.dataset.metric = state.metric;
   panel.classList.toggle('is-3d', state.view3d);
   panel.classList.toggle('has-open-building', Boolean(state.blueBuildings));
   panel.classList.toggle('is-province-zoom', atProvince);
@@ -1184,7 +1230,10 @@ function onMapMove(e) {
     onMapMove.frame = 0;
     const map = state.map, p = onMapMove.point;
     if (!map || !state.loaded || !p) return;
-    let over = Boolean(state.pins?.hitTest(p)) || Boolean(state.xray?.hitTest([p.x, p.y])) || Boolean(buildingTarget(p)) || Boolean(state.stations?.hitTest(p));
+    const pinRow = state.pins?.hitTest(p) || null;
+    // A stay under a fine pointer opens its card (icon chips); leaving it closes the card.
+    state.hotelLabels?.hover(pinRow);
+    let over = Boolean(pinRow) || Boolean(state.xray?.hitTest([p.x, p.y])) || Boolean(buildingTarget(p)) || Boolean(state.stations?.hitTest(p));
     let area = '';
     if (!over && belowAreaZoom()) {
       const inProvince = provinceViewArea(p);
@@ -1224,8 +1273,30 @@ function installSpatialLayers() {
   state.pins = installBranchPins(map, $('map'), {
     reservedBottom: bottomSpace,
     onSelect: r => selectHotel(r.id, {fly: false, showPopup: true, fromPin: true}),
-    // The context figure is every grey point of the selection outside the focus, not only those on screen.
-    onLayout: stats => { $('map-status').textContent = `${num(stats.focusInView)} แห่งที่มีพิกัดในจอ${stats.contextRows ? ` · จุดนอกโฟกัสทั้งหมด ${num(stats.contextRows)}` : ''}`; },
+    onHover: (r, el) => state.hotelLabels?.hover(r, el),
+    // Icon + number (owner 2026-11-01: icons instead of long text); the sentence stays in the title.
+    onLayout: stats => renderMapStatus(stats),
+  });
+  // Terrain mode at hilly sites (js/terrain.js): 3D ground + hillshade; the district fill switches off at site scale.
+  try {
+    state.terrain = installTerrain(map, {beforeId: 'water', colors: terrainColors(), onChange: active => {
+      setFillSwitchZoom(map, active ? TERRAIN.minZoom : FILL_MAX_ZOOM);
+      state.terrainActive = active;
+      renderLegend();
+      state.labels?.layout();
+    }});
+    state.terrain.setEnabled(state.view3d);
+  } catch (e) { state.terrain = null; console.warn('Terrain unavailable', e); }
+  state.hotelLabels = installHotelLabels(map, $('map'), {
+    onSelect: r => selectHotel(r.id, {fly: false, showPopup: true, fromPin: true}),
+    bounds: () => state.pins?.bounds?.() || {left: 0, top: 0, right: map.getContainer().clientWidth, bottom: map.getContainer().clientHeight, exclusions: []},
+    radius: (r, zoom) => (zoom >= DETAIL_MIN_ZOOM ? Math.max(4, Math.min(20, pinRadius(r.rooms, zoom))) : pinRadius(r.rooms, zoom)),
+    isPhone: mobilePortrait,
+    finePointer: () => matchMedia('(hover: hover) and (pointer: fine)').matches,
+    num, priceText,
+    groupName: r => state.data.groups[r.group]?.short || state.data.groups[r.group]?.th || '',
+    // Place words a label may drop (the map already shows the place): the province in Thai and English.
+    placesOf: r => { const p = provinceByCode(r.province); return [p?.th, p?.en, ...(r.province === 'BKK' ? ['กรุงเทพฯ', 'กรุงเทพ', 'Bangkok'] : [])].filter(Boolean); },
   });
   updatePins();
   updateSpatialLayers();
@@ -1287,6 +1358,8 @@ function initMap() {
     state.map.on('zoomend', () => { if (state.loaded) renderLegend(); });
     // Coalesced: a camera fit jumps the map many times in one task; labels and frame loading follow the last position.
     state.map.on('moveend', scheduleLabelView);
+    // The open stay's terrain chips read the basemap tiles round it: read again once the map has settled there.
+    state.map.on('idle', () => { if (state.loaded && state.panel.mode === 'hotel') fillTerrain(rowById(state.panel.id)); });
     state.map.on('mouseout', () => { state.areaLayers?.hover(''); });
     state.map.on('style.load', installSpatialLayers);
     state.map.on('click', onMapClick);
@@ -1317,6 +1390,7 @@ async function startMap() {
 function toggle3d() {
   state.view3d = !state.view3d;
   $('toggle-3d').setAttribute('aria-pressed', String(state.view3d));
+  state.terrain?.setEnabled(state.view3d);
   renderLegend();
   updateSpatialLayers();
   if (state.map) {
@@ -1400,6 +1474,8 @@ function refreshOptionCounts() {
   setOptions('chain', [...[...state.data.chains].sort((a, b) => (chains.get(b.id) || 0) - (chains.get(a.id) || 0) || COLLATOR.compare(a.name, b.name))
     .map(c => [c.id, `${c.name} (${num(chains.get(c.id) || 0)})`]), ['none', `ไม่ระบุเครือ (${num(unbranded)})`]]);
   $('category-items').innerHTML = state.data.groups.map(g => `<span>${cueMarkup(g.series)}${esc(g.th)}</span>`).join('');
+  // The closed key shows the shapes themselves (owner 2026-11-01: symbols before words).
+  $('category-cues').innerHTML = state.data.groups.map(g => cueMarkup(g.series)).join('');
 }
 
 function restoreFromURL() {
@@ -1503,6 +1579,8 @@ async function init() {
     state.stationById = new Map(state.data.stations.map(s => [s.id, s]));
     if (state.data.dropped) console.warn('Rows outside the area index', state.data.dropped);
     state.rowById = new Map(state.data.rows.map(r => [r.id, r]));
+    // Chain-brand logos (data/brand-logos.json) arrive on their own; names stay until then.
+    loadLogos().then(n => { if (!n) return; if (state.panel.mode === 'hotel') renderPanel(); state.hotelLabels?.refresh(); });
     state.frames = createFrameStore({index: state.index, fetchJSON, version: RELEASE, onLoad: onFramesLoaded,
       onError: (code, e) => { console.warn('Province outlines unavailable', code, e); $('map-status').dataset.framesError = code; }});
 
