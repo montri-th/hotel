@@ -18,7 +18,7 @@ Static site บน GitHub Pages · ES modules ผ่าน import map (ทุก
 | `js/map-layers.js` · `js/provinces.js` · `js/frames.js` · `js/areas.js` | choropleth เขต/อำเภอ, กรอบจังหวัด, ขอบเขตรายจังหวัด, ดัชนีพื้นที่ |
 | `js/pins.js` · `js/stations.js` | หมุดที่พัก (ขนาดตามห้อง), สถานีรถไฟฟ้าและวงรัศมี |
 | `js/ask.js` · `js/breadcrumb.js` · `js/navigation.js` | ปุ่ม Google, เส้นทาง, ไอคอนและวิธีใช้ |
-| `js/massing.js` · `js/camera.js` · `js/venue-xray.js` · `js/building-join.js` · `js/maplibre-guard.js` · `js/map-style.js` · `js/mvt.js` · `js/geometry.js` | มวลอาคาร กล้อง มุมมองอาคาร (สืบทอดจาก Fitness 0.3.1) · 0.3.0: อาคาร CityMETER Building V4 ในพื้นที่ที่ใช้ และกล้อง/x-ray บนภูมิประเทศ · 0.3.2: ที่พัก → อาคารที่หมุดอยู่ในขอบ หรืออาคารใกล้หมุด (`nearestBuilding`, 300/800 ม.), กดแล้วเปิด 3 มิติ, วางกล้องลงพื้นหลัง ease (`guardElevationFreeze`), ฐาน x-ray ที่พื้นต่ำสุด |
+| `js/massing.js` · `js/camera.js` · `js/venue-xray.js` · `js/building-join.js` · `js/maplibre-guard.js` · `js/map-style.js` · `js/mvt.js` · `js/geometry.js` | มวลอาคาร กล้อง มุมมองอาคาร (สืบทอดจาก Fitness 0.3.1) · 0.3.0: อาคาร CityMETER Building V4 ในพื้นที่ที่ใช้ และกล้อง/x-ray บนภูมิประเทศ · 0.3.2: ที่พัก → อาคารที่หมุดอยู่ในขอบ หรืออาคารใกล้หมุด (`nearestBuilding`, 300/800 ม.), กดแล้วเปิด 3 มิติ, วางกล้องลงพื้นหลัง ease (`guardElevationFreeze`), ฐาน x-ray ที่พื้นต่ำสุด, shift lens (`lensPadding`) และตรวจกล้องจมเนิน (`withoutLift`) |
 | `js/building-units.js` | 0.3.0: แหล่งอาคารราย อปท./เขต (`data/building-units/`) — โหลดรายจังหวัด, ขอบเขตพื้นที่ CityMETER, URL tile production, attribution |
 | `js/labels.js` · `js/logos.js` · `js/terrain.js` | 0.2.0: ชื่อกลางจอ, โลโก้เครือ, ภูมิประเทศ (0.3.0: รวมรอบอาคารที่เปิด) |
 
