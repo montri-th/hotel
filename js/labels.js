@@ -52,6 +52,7 @@ export function shortName(row, {hasLogo = false, places = []} = {}) {
     const hit = brands.find(b => name.toLowerCase().startsWith(b.toLowerCase()));
     if (hit) name = name.slice(hit.length).replace(/^[\s\-–—:,·&]+/, '');
   }
+  const afterBrand = name.trim();
   const placeList = places.filter(Boolean).sort((a, b) => b.length - a.length);
   // Leading place or type word, then trailing place, then a generic ending (twice: "… Resort & Spa Phuket").
   for (let i = 0; i < 2; i++) {
@@ -63,7 +64,9 @@ export function shortName(row, {hasLogo = false, places = []} = {}) {
     name = name.replace(TYPE_ENDINGS, '');
   }
   name = name.trim();
-  return name.length >= 3 ? name : original;
+  if (name.length >= 3) return name;
+  // Everything was a brand, type or place word: keep the brand-less name if it still says something, else the name.
+  return afterBrand.length >= 3 ? afterBrand : original;
 }
 
 /**
@@ -202,16 +205,18 @@ export function installHotelLabels(map, container, {onSelect, bounds, radius = (
   function chip(kind, text, title = '') {
     return `<span class="hc-chip"${title ? ` title="${esc(title)}"` : ''}>${kind ? `<i class="pictogram pic-${esc(kind)}" aria-hidden="true"></i>` : ''}${esc(text)}</span>`;
   }
+  /** Beside its label or point (right, else left, else below), inside the usable map, never over the label itself. */
   function placeCard() {
     if (!cardRow) return;
     const c = container.getBoundingClientRect();
-    let ax, ay;
-    if (cardAnchor?.isConnected) { const r = cardAnchor.getBoundingClientRect(); ax = r.right - c.left; ay = r.top - c.top; }
-    else { const p = map.project([cardRow.longitude, cardRow.latitude]); ax = p.x + 10; ay = p.y - 10; }
+    let a;
+    if (cardAnchor?.isConnected) { const r = cardAnchor.getBoundingClientRect(); a = {left: r.left - c.left, right: r.right - c.left, top: r.top - c.top, bottom: r.bottom - c.top}; }
+    else { const p = map.project([cardRow.longitude, cardRow.latitude]); a = {left: p.x - 8, right: p.x + 8, top: p.y - 8, bottom: p.y + 8}; }
     const w = card.offsetWidth || 280, h = card.offsetHeight || 120, b = bounds();
-    let x = ax + 10, y = ay - 6;
-    if (x + w > b.right) x = Math.max(b.left, ax - w - 30);
-    if (y + h > b.bottom) y = Math.max(b.top, b.bottom - h);
+    let x = a.right + 10, y = a.top - 6;
+    if (x + w > b.right) x = a.left - w - 10;
+    if (x < b.left) { x = Math.min(Math.max(b.left, a.left), b.right - w); y = a.bottom + 8; }
+    if (y + h > b.bottom) y = b.bottom - h;
     card.style.transform = `translate(${Math.round(x)}px, ${Math.round(Math.max(b.top, y))}px)`;
   }
   async function showCard(row, anchor = null) {
