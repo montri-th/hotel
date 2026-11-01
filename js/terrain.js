@@ -196,8 +196,8 @@ export function siteRelief(lon, lat, {halfM = 1000} = {}) {
 /**
  * Mount terrain mode on a map (after style.load). options.colors: {shadow, highlight, accent}; options.onChange(active);
  * options.onLoaded() once the DEM under the view has loaded; options.site() → [lon, lat] of a building or stay being
- * looked at, or null: at building scale the view is too small to read the land, so the relief round that point
- * (siteRelief, ±1 km) also counts (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”).
+ * looked at, or null: then the relief round that point decides (siteRelief, ±1 km; owner 2026-11-01: “อยากให้เห็น
+ * อาคารบนภูมิประเทศ”) — the building camera's view is too close, and its pitched bounds too far, to read the land.
  * Returns {setEnabled(on3d), evaluate(), active(), retheme(colors), dispose()}.
  */
 export function installTerrain(map, {beforeId = 'water', colors = {}, onChange = null, onLoaded = null, site = null, exaggeration = TERRAIN.exaggeration} = {}) {
@@ -247,11 +247,15 @@ export function installTerrain(map, {beforeId = 'water', colors = {}, onChange =
     const my = ++token, zoom = map.getZoom();
     if (!enabled || zoom < TERRAIN.offZoom) { setMode(false); return; }
     if (zoom < TERRAIN.minZoom && !mode) return;
-    const b = map.getBounds(), at = typeof site === 'function' ? site() : null;
-    const [visible, near] = await Promise.all([reliefOf([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]),
-      Array.isArray(at) && at.every(Number.isFinite) ? siteRelief(at[0], at[1]).catch(() => null) : null]);
-    const relief = Math.max(visible ?? -Infinity, near ?? -Infinity);
-    if (my !== token || !Number.isFinite(relief)) return;
+    // A building or stay being looked at: its site decides (a fixed reading, no hysteresis) — the bounds of a camera
+    // pitched at 75° reach kilometres past the site, where SRTM reads a city's towers as relief.
+    const at = typeof site === 'function' ? site() : null;
+    const near = Array.isArray(at) && at.every(Number.isFinite) ? await siteRelief(at[0], at[1]).catch(() => null) : null;
+    if (my !== token) return;
+    if (Number.isFinite(near)) { setMode(near >= TERRAIN.reliefOn); return; }
+    const b = map.getBounds();
+    const relief = await reliefOf([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+    if (my !== token || relief === null) return;
     setMode(relief >= TERRAIN.reliefOn || (mode && relief >= TERRAIN.reliefOff));
   }
   const schedule = () => { clearTimeout(timer); timer = setTimeout(evaluate, 120); };
