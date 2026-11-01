@@ -56,7 +56,7 @@ import {createFrameStore, provinceLocator} from './frames.js';
 import {buildOverview, buildAreaProfile, buildHotelDetail, buildBuildingProfile, buildChainProfile, buildStationProfile, stationsOf, listOrder, STATION_RADIUS_M} from './profile-model.js';
 import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, terrainChipsHTML, esc, num, pct, words, meters, priceText} from './panel.js';
 import {installStationLayer} from './stations.js';
-import {joinBuildings} from './building-join.js';
+import {joinBuildings, nearestBuilding} from './building-join.js';
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
 import {installMassing, outerRings} from './massing.js';
 import {createBuildingUnitStore, cmTileUrl, CM_ATTRIBUTION} from './building-units.js';
@@ -490,6 +490,9 @@ function hotelPopup(r) {
 function selectHotel(id, {fly = true, showPopup = false, fromPin = false} = {}) {
   const r = rowById(id);
   if (!r) return;
+  if (state.hotelReach?.id !== id) state.hotelReach = null;
+  // Owner 2026-11-02: a stay with a point always opens the 2-point view of a 3D building mass.
+  if (hasPoint(r)) ensure3d();
   if (state.panel.mode !== 'hotel') pushHistory();
   // A hotel outside the filters (a comparison-set row reads every row): clear the filters to keep it in scope.
   const outside = !state.scopeRows.includes(r);
@@ -528,6 +531,7 @@ function selectBuilding(key) {
   const b = state.join?.buildings.get(key);
   const rows = buildingRows(key);
   if (!b || !rows.length) return;
+  ensure3d();
   if (state.panel.mode !== 'building' || state.panel.id !== key) pushHistory();
   state.buildingSel = {key, kind: b.kind, footprint: b, rows, height: b.height};
   state.panel = {mode: 'building', id: key};
@@ -585,9 +589,31 @@ function panelSpatialSig() {
 }
 
 /**
- * The building being looked at: the open building; the building the open hotel's point falls in.
- * {id, key, refs, anchor: [lon, lat]} — key/refs are null/[] while the building is not known (tiles still loading,
- * or the point falls in no drawn building); null without a point.
+ * How far round a stay's pin the building camera looks for a building (owner 2026-11-02: “เวลาคลิกที่ poi hotel
+ * แล้วต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณี”): the massing region of a hotel (± m), widened
+ * once for that hotel when nothing is drawn within the first reach.
+ */
+const HOTEL_REACH_M = 300, HOTEL_REACH_FAR_M = 800;
+/** Refits of one frame: the building may arrive in steps (the nearest drawn, then the one holding the pin, a wider
+ *  reach) and the ground may move once when its DEM tile arrives; never after the user has moved the map. */
+const MAX_REFITS = 3;
+const hotelReach = id => (state.hotelReach?.id === id ? state.hotelReach.m : HOTEL_REACH_M);
+
+/** The drawn building nearest a pin that falls in none (js/building-join.js#nearestBuilding), per join and pieces. */
+function nearestOf(r) {
+  const pieces = state.massing?.buildings() || [], join = state.join, key = `${r.id}|${hotelReach(r.id)}`;
+  if (nearestOf.key !== key || nearestOf.join !== join || nearestOf.pieces !== pieces) {
+    Object.assign(nearestOf, {key, join, pieces});
+    nearestOf.value = join ? nearestBuilding(pieces, [r.longitude, r.latitude], {keyOfPiece: join.keyOfPiece, maxM: hotelReach(r.id)}) : null;
+  }
+  return nearestOf.value;
+}
+
+/**
+ * The building being looked at: the open building; the building the open hotel's point falls in, else the drawn
+ * building nearest its pin (`near`: the camera's building, named “อาคารใกล้หมุด”, never a join).
+ * {id, key, refs, anchor: [lon, lat], near} — key/refs are null/[] while no building is known (tiles still loading,
+ * or nothing drawn within the reach); null without a point.
  */
 function focusTarget() {
   const {mode, id} = state.panel, j = state.join;
@@ -596,11 +622,14 @@ function focusTarget() {
     const b = state.buildingSel;
     if (!b) return null;
     const [w, s, e, n] = b.footprint.bbox;
-    return {id: `building:${b.key}`, ...of(b.key), anchor: [(w + e) / 2, (s + n) / 2]};
+    return {id: `building:${b.key}`, ...of(b.key), anchor: [(w + e) / 2, (s + n) / 2], near: false};
   }
   if (mode === 'hotel') {
     const r = rowById(id);
-    return hasPoint(r) ? {id: `hotel:${r.id}`, ...of(j?.byRow.get(r.id)), anchor: [r.longitude, r.latitude]} : null;
+    if (!hasPoint(r)) return null;
+    const inside = j?.byRow.get(r.id) || null;
+    const near = inside ? null : nearestOf(r)?.key || null;
+    return {id: `hotel:${r.id}`, ...of(inside || near), anchor: [r.longitude, r.latitude], near: Boolean(near)};
   }
   return null;
 }
@@ -619,6 +648,8 @@ function focusShape(target = focusTarget()) {
   const rings = features.flatMap(f => outerRings(f).map(ring => ({ring, height: Number(f.properties.height) || 3})));
   let points = features.length ? state.massing?.fitPointsOf(features.map(f => f.id), 18) || [] : [];
   if (!points.length) points = rings.flatMap(({ring, height}) => ring.flatMap(([lng, lat]) => [[lng, lat, 0], [lng, lat, height]]));
+  // The building nearest the pin is framed with the pin, so the stay's symbol stays in view beside it.
+  if (points.length && target?.near) points = [...points, [target.anchor[0], target.anchor[1], 0]];
   if (!points.length && target) {
     // Not known yet: a 90 m box round the point (12 m tall), framed the same way.
     const [lon, lat] = target.anchor, dLat = 45 / 110574, dLng = 45 / (111320 * Math.cos((lat * Math.PI) / 180));
@@ -724,7 +755,7 @@ function onGroundChange() {
   if (!state.loaded) return;
   syncFocusBuilding();
   const target = twoPoint() ? focusTarget() : null;
-  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= 2) return;
+  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= MAX_REFITS) return;
   if (Math.abs(groundAt(state.map, target.anchor) - (state.framed.ground || 0)) < 3) return; // the frame still holds
   state.framed.refits++;
   frameFocus();
@@ -733,7 +764,7 @@ function onGroundChange() {
 /** The building arrived (or changed) after the target was framed: turn to it, unless the user moved the map. */
 function refitOnNewBuilding() {
   const target = focusTarget();
-  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= 2) return;
+  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= MAX_REFITS) return;
   if (focusShape(target).key === state.framed.key) return;
   state.framed.refits++;
   frameFocus();
@@ -745,10 +776,25 @@ function applyJoin() {
   state.blueBuildings = n > 0;
   document.querySelector('.map-panel')?.classList.toggle('has-open-building', state.blueBuildings);
   const label = $('legend-building-label');
-  if (label) label.textContent = currentBuilding() ? 'อาคารที่เปิด' : 'อาคารของที่พัก';
+  if (label) label.textContent = currentBuilding() ? 'อาคารที่เปิด' : focusTarget()?.near ? 'อาคารใกล้หมุด' : 'อาคารของที่พัก';
   if (panelSpatialSig() !== state.renderedSig) renderPanel();
   syncFocusBuilding();
   refitOnNewBuilding();
+  widenHotelReach();
+}
+
+/**
+ * Nothing drawn within the first reach of the open stay's pin (a resort in the trees, a gap in the building data):
+ * look once more, farther (HOTEL_REACH_FAR_M), so the camera still turns to a building — only after a massing result
+ * of the stay's own first region, once per hotel.
+ */
+function widenHotelReach() {
+  if (state.panel.mode !== 'hotel' || state.hotelReach?.id === state.panel.id) return;
+  if (state.massingReadFor !== `hotel:${state.panel.id}:${HOTEL_REACH_M}`) return; // not yet read round this pin
+  const t = focusTarget();
+  if (!t || t.key) return;
+  state.hotelReach = {id: state.panel.id, m: HOTEL_REACH_FAR_M};
+  updateSpatialLayers();
 }
 
 /** Focus the top districts of the current scope (auto mode; URL stays clean). */
@@ -1191,7 +1237,7 @@ function massingRegions() {
   }
   if (state.panel.mode === 'hotel') {
     const r = rowById(state.panel.id);
-    if (hasPoint(r)) return [squareAround(r.longitude, r.latitude, 300)];
+    if (hasPoint(r)) return [squareAround(r.longitude, r.latitude, hotelReach(r.id))];
     const a = r?.area ? areaById(r.area) : null;
     if (a?.feature) return outerRings(a.feature);
   }
@@ -1229,6 +1275,9 @@ function updateSpatialLayers() {
   state.buildingUnits?.ensureMany(codes);
   if (!state.buildingUnits || codes.every(c => state.buildingUnits.settled(c))) {
     const zones = state.buildingUnits?.zonesFor(regions) || [];
+    // Which hotel region this request reads (widenHotelReach acts only on a result of the stay's own region).
+    const r = state.panel.mode === 'hotel' ? rowById(state.panel.id) : null;
+    state.massingFor = hasPoint(r) ? `hotel:${r.id}:${hotelReach(r.id)}` : '';
     state.massing?.update({regions, hosts: [], anchors, zones, enabled: true, city: state.view3d, zoom: state.map.getZoom(), latitude: state.map.getCenter().lat})?.catch(e => console.warn('Massing', e));
   }
   applyJoin();
@@ -1333,6 +1382,7 @@ function installSpatialLayers() {
     // CityMETER Building V4 inside CityMETER units (js/building-units.js); credited in the attribution while drawn.
     cmTileUrl, cmAttribution: CM_ATTRIBUTION,
     onResult: result => {
+      state.massingReadFor = state.massingFor; // a result is always the latest request's (stale ones are dropped)
       const status = $('map-status');
       status.dataset.massing = `${result.features || 0}`;
       status.dataset.cmBuildings = `${result.cm?.kept || 0}`;
@@ -1463,6 +1513,19 @@ async function startMap() {
     el.querySelector('button').onclick = event => { event.target.disabled = true; startMap(); };
     console.warn(e);
   }
+}
+
+/**
+ * The building view is 3D (owner 2026-11-02: “… ต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณี”): a stay
+ * or a building chosen on the flat map turns the map 3D, as the 3D button does (the caller updates the layers and
+ * frames the building). Returns true when it switched.
+ */
+function ensure3d() {
+  if (state.view3d) return false;
+  state.view3d = true;
+  $('toggle-3d').setAttribute('aria-pressed', 'true');
+  renderLegend();
+  return true;
 }
 
 function toggle3d() {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {joinRows, containsPoint, footprint, groupPieces, joinBuildings} from '../js/building-join.js';
+import {joinRows, containsPoint, footprint, groupPieces, joinBuildings, nearestBuilding} from '../js/building-join.js';
 
 // Synthetic footprints near Din Daeng (lon/lat squares; d = half-size in degrees).
 const square = (cx, cy, d) => [[cx - d, cy - d], [cx + d, cy - d], [cx + d, cy + d], [cx - d, cy + d], [cx - d, cy - d]];
@@ -99,4 +99,26 @@ test('building:parts inside an outline hidden in 3D are one building; parts stan
   // With the outline the venue point joins the same group however the parts are drawn.
   const k2 = joinBuildings([outline, podium, tower, neighbour], [], [venue]);
   assert.deepEqual(k2.buildings.get(k2.byVenue.get('v')).refs.sort(), [50, 51, 52]);
+});
+
+test('nearestBuilding: a pin in no outline turns the camera to the drawn building nearest it — the largest within the slack, never past the reach', () => {
+  // Metres → degrees at this latitude.
+  const mx = 1 / (111320 * Math.cos((Y * Math.PI) / 180)), my = 1 / 110574;
+  const box = (id, cx, cy, half) => ({id, outer: square(X + cx * mx, Y + cy * my, 0).map(([x, y], i) => [x + [-1, 1, 1, -1, -1][i] * half * mx, y + [-1, -1, 1, 1, -1][i] * half * my])});
+  const kiosk = box(1, 6, 0, 2);       // 4 m wide, its edge 4 m from the pin
+  const hotel = box(2, 0, 20, 10);     // 20 m wide, its edge 10 m from the pin
+  const far = box(3, 0, -200, 10);     // 190 m away
+  const keyOfPiece = new Map([[1, 'cm:1'], [2, 'cm:2'], [3, 'cm:3']]);
+  const n = nearestBuilding([kiosk, hotel, far], [X, Y], {keyOfPiece});
+  assert.equal(n.key, 'cm:2', 'within 10 m of the nearest, the largest footprint (the hotel block, not the kiosk)');
+  assert.ok(Math.abs(n.distanceM - 10) < 0.5, `${n.distanceM}`);
+  assert.equal(nearestBuilding([kiosk, hotel, far], [X, Y], {keyOfPiece, slackM: 0}).key, 'cm:1', 'no slack: the nearest itself');
+  assert.equal(nearestBuilding([far], [X, Y], {keyOfPiece, maxM: 100}), null, 'nothing within the reach');
+  assert.equal(nearestBuilding([far], [X, Y], {keyOfPiece, maxM: 300}).key, 'cm:3', 'a wider reach finds it');
+  // A pin in a courtyard measures to the courtyard's edges; a pin inside an outline is at 0 m.
+  const ring = {id: 4, outer: box(0, 0, 0, 30).outer, holes: [box(0, 0, 0, 10).outer]};
+  assert.ok(Math.abs(nearestBuilding([ring], [X, Y], {keyOfPiece: new Map([[4, 'osm:4']])}).distanceM - 10) < 0.5);
+  assert.equal(nearestBuilding([hotel], [X, Y + 20 * my]).distanceM, 0);
+  assert.equal(nearestBuilding([], [X, Y]), null);
+  assert.equal(nearestBuilding([hotel], [NaN, Y]), null);
 });

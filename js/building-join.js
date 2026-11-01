@@ -169,6 +169,47 @@ export function joinRows(footprints, rows) {
 }
 
 /**
+ * The drawn building the camera turns to when a stay's pin lies in no outline (owner 2026-11-02: “เวลาคลิกที่ poi hotel
+ * แล้วต้องแสดง 2-point perspective ของ 3d building mass ทุกกรณี”). Pins are often published on the road, a drive or a
+ * garden: the building nearest the pin, measured to its outline (and courtyard edges) on a local plane, within
+ * `maxM`; among the pieces within `slackM` of the nearest, the largest footprint — a hotel block before a kiosk or a
+ * gatehouse beside the pin. It names the camera's building only (“อาคารใกล้หมุด”): never a join, never a row of
+ * “ที่พักในอาคารนี้”.
+ * pieces: massing footprints [{id, outer, holes?, bbox?}]; keyOfPiece: Map(piece id → building key) of joinBuildings.
+ * → {key, pieceId, distanceM} | null (nothing drawn within maxM).
+ */
+export function nearestBuilding(pieces, [lon, lat], {keyOfPiece = null, maxM = 300, slackM = 10} = {}) {
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+  const kx = 111320 * Math.cos((lat * Math.PI) / 180), ky = 110574;
+  const dLon = maxM / kx, dLat = maxM / ky;
+  const px = lon * kx, py = lat * ky;
+  const toSegment = (a, b) => {
+    const ax = a[0] * kx, ay = a[1] * ky, dx = b[0] * kx - ax, dy = b[1] * ky - ay;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  };
+  const areaM2 = ring => { let s = 0; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) s += (ring[j][0] + ring[i][0]) * kx * (ring[j][1] - ring[i][1]) * ky; return Math.abs(s / 2); };
+  const found = [];
+  for (const p of pieces || []) {
+    if (!Array.isArray(p?.outer) || p.outer.length < 4) continue;
+    const [w, s, e, n] = p.bbox || bboxOf(p.outer);
+    if (lon < w - dLon || lon > e + dLon || lat < s - dLat || lat > n + dLat) continue;
+    const holes = p.holes || [];
+    let d = 0;
+    const inHole = holes.find(h => pointInRing([lon, lat], h));
+    if (!pointInRing([lon, lat], p.outer) || inHole) {
+      d = Infinity;
+      for (const ring of inHole ? [inHole] : [p.outer, ...holes]) for (let i = 0; i < ring.length - 1; i++) d = Math.min(d, toSegment(ring[i], ring[i + 1]));
+    }
+    if (d <= maxM) found.push({p, d});
+  }
+  if (!found.length) return null;
+  const nearest = Math.min(...found.map(f => f.d));
+  const pick = found.filter(f => f.d <= nearest + slackM).map(f => ({...f, area: areaM2(f.p.outer)})).sort((a, b) => b.area - a.area || a.d - b.d)[0];
+  return {key: keyOfPiece?.get(pick.p.id) ?? null, pieceId: pick.p.id, distanceM: Math.round(pick.d * 10) / 10};
+}
+
+/**
  * The page's display-time join: rows and CityMETER venue reference points × the drawn focus-tier footprints, with
  * the pieces of one building grouped (groupPieces). A building is keyed `osm:<group id>` (or `cm:<group id>` when
  * the group's first piece is a CityMETER building; `kind` says which) and lists its pieces (`refs` = focus-tier
