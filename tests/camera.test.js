@@ -20,7 +20,7 @@ function rect(w, d, az, [cx, cy] = [0, 0]) {
  * Pinhole map: what fitBuilding reads and writes, nothing else. `terrain(lng, lat)` (metres, as drawn) lifts every
  * point by the ground under it and the camera orbits its centre at `elevation`, as MapLibre does on terrain.
  */
-function fakeMap({width = 390, height = 640, terrain = null} = {}) {
+function fakeMap({width = 390, height = 640, terrain = null, lift = false} = {}) {
   const cam = {center: {lng: LON + 0.01, lat: LAT - 0.01}, zoom: 13, pitch: 56, bearing: 28, fov: 36.87, padding: {top: 0, bottom: 0, left: 0, right: 0}, elevation: 0};
   const moves = [];
   const geometry = () => {
@@ -47,6 +47,17 @@ function fakeMap({width = 390, height = 640, terrain = null} = {}) {
     if (!(z > 1)) return {x: NaN, y: NaN};
     return {x: width / 2 + (f * x) / z, y: height / 2 - (f * v) / z};
   };
+  // MapLibre 5.6.2 Map#_elevateCameraIfInsideTerrain, run on every camera change: a camera below the ground under it is
+  // raised to that ground over the same spot, still looking at the centre — a lower pitch and a lower zoom.
+  const liftOutOfTerrain = () => {
+    const {f, D, p, b, kx} = geometry();
+    const back = D * Math.sin(p);
+    const ground = terrain(cam.center.lng - (back * Math.sin(b)) / kx, cam.center.lat - (back * Math.cos(b)) / KY);
+    if (cam.elevation + D * Math.cos(p) >= ground) return;
+    const up = ground - cam.elevation;
+    cam.pitch = Math.atan2(back, up) / RAD;
+    cam.zoom = Math.log2(((f / Math.hypot(back, up)) * 40075016.686 * Math.cos(cam.center.lat * RAD)) / 512);
+  };
   const map = {
     width, height, moves,
     getCenter: () => ({...cam.center}), getZoom: () => cam.zoom, getPitch: () => cam.pitch, getBearing: () => cam.bearing, getPadding: () => ({...cam.padding}),
@@ -55,6 +66,7 @@ function fakeMap({width = 390, height = 640, terrain = null} = {}) {
       if (o.center) cam.center = Array.isArray(o.center) ? {lng: o.center[0], lat: o.center[1]} : {lng: o.center.lng, lat: o.center.lat};
       for (const k of ['zoom', 'pitch', 'bearing', 'elevation']) if (o[k] != null) cam[k] = o[k];
       if (o.padding) cam.padding = {...o.padding};
+      if (lift) liftOutOfTerrain();
     },
     easeTo(o) { moves.push(['ease', o]); map.jumpTo(o); },
     flyTo(o) { moves.push(['fly', o]); map.jumpTo(o); },
@@ -142,8 +154,12 @@ test('fit on terrain (owner 2026-11-01: buildings on the ground): the landed cam
   const drawn = points.map(q => [q[0], q[1], q[2] + terrain(...anchor)]);
   const box = {left: 12, top: 70, right: 330, bottom: 470};
   const startElevation = map.transform.elevation;
+  const computed = fitBuilding(map, points, {box, bearing: 45, project, projectAbs, apply: false});
+  assert.equal(map.transform.elevation, startElevation, 'the start camera (with its elevation) is restored after the computation');
   const target = fitBuilding(map, points, {box, bearing: 45, project, projectAbs, animate: false});
-  assert.equal(map.transform.elevation, startElevation, 'the start camera (with its elevation) is restored before the move');
+  assert.deepEqual(target, computed);
+  assert.ok(Math.abs(target.elevation - terrain(target.center.lng, target.center.lat)) < 0.1, 'the target carries the ground under its centre');
+  assert.equal(map.transform.elevation, target.elevation, 'an instant jump lands there');
   map.land();
   assert.ok(Math.abs(map.transform.elevation - terrain(target.center.lng, target.center.lat)) < 1e-9);
   const b = screenBounds(map, drawn, (_, q) => projectAbs(map, q));
@@ -177,6 +193,47 @@ test('fit on terrain (0.3.2): a point carrying its own ground (4th value) is fra
   const b = screenBounds(map, drawn, (_, q) => projectAbs(map, q));
   assert.ok(b.minX >= box.left - 2 && b.maxX <= box.right + 2 && b.minY >= box.top - 2 && b.maxY <= box.bottom + 2, `inside the box: ${JSON.stringify(b)}`);
   assert.ok(Math.abs((b.minY + b.maxY) / 2 - (box.top + box.bottom) / 2) < 3, `centred down (${((b.minY + b.maxY) / 2).toFixed(1)})`);
+});
+
+test('fit on terrain (0.3.2): a camera lifted out of the hill behind it early in the fit is not kept — the frame is computed and applied at the eye pitch', () => {
+  // Phone: the free box is the strip above the sheet, so the camera stands far back. A ridge rises 600 m south of a
+  // 60 × 40 m hotel (45°, as drawn): the first, wide camera stands in it, the fitted one does not.
+  const terrain = (lng, lat) => 40 + Math.max(0, -(lat - LAT) * KY - 600);
+  const {map, projectAbs} = fakeMap({width: 390, height: 652, terrain, lift: true});
+  const block = rect(60, 40, 0);
+  const points = block.flatMap(([a, b]) => [[a, b, 0, 40], [a, b, 15, 40]]);
+  const drawn = block.flatMap(([a, b]) => [[a, b, 40], [a, b, 55]]);
+  const box = {left: 12, top: 54, right: 343, bottom: 194};
+  const target = fitBuilding(map, points, {box, bearing: 0, projectAbs, animate: false, maxZoom: 21});
+  assert.equal(target.pitch, CAMERA.eye.pitch, 'the eye pitch, as asked');
+  map.jumpTo({...target}); map.land();
+  assert.equal(map.getPitch(), CAMERA.eye.pitch, 'not lifted where it lands');
+  const b = screenBounds(map, drawn, (_, q) => projectAbs(map, q));
+  assert.ok(b.minX >= box.left - 2 && b.maxX <= box.right + 2 && b.minY >= box.top - 2 && b.maxY <= box.bottom + 2, `inside the box: ${JSON.stringify(b)}`);
+});
+
+test('fit on terrain (0.3.2): when the camera at the asked corner stays inside the hill, another corner keeps the eye pitch', () => {
+  // A ridge rises 150 m south of the hotel (45°, as drawn): every camera looking north at it from the south stands in it.
+  const terrain = (lng, lat) => 40 + Math.max(0, -(lat - LAT) * KY - 150);
+  const block = rect(60, 40, 0);
+  const points = block.flatMap(([a, b]) => [[a, b, 0, 40], [a, b, 15, 40]]);
+  const drawn = block.flatMap(([a, b]) => [[a, b, 40], [a, b, 55]]);
+  const box = {left: 12, top: 54, right: 343, bottom: 194};
+  const inside = (b, tol) => b && b.minX >= box.left - tol && b.maxX <= box.right + tol && b.minY >= box.top - tol && b.maxY <= box.bottom + tol;
+  // Asked alone, the corner is lifted: the target says so (a lower pitch) and still frames the hotel where it lands.
+  const one = fakeMap({width: 390, height: 652, terrain, lift: true});
+  const lifted = fitBuilding(one.map, points, {box, bearing: 0, projectAbs: one.projectAbs, animate: false, maxZoom: 21});
+  assert.ok(lifted.pitch < CAMERA.eye.pitch - 0.5, `lifted (${lifted.pitch})`);
+  one.map.jumpTo({...lifted}); one.map.land();
+  const lb = screenBounds(one.map, drawn, (_, q) => one.projectAbs(one.map, q));
+  assert.ok(inside(lb, 4), `the lifted frame holds: ${JSON.stringify(lb)}`);
+  // With the other corners offered, the opposite one (from the open side) keeps the two-point view.
+  const two = fakeMap({width: 390, height: 652, terrain, lift: true});
+  const target = fitBuilding(two.map, points, {box, bearing: 0, alternates: [180, 90, -90], projectAbs: two.projectAbs, animate: false, maxZoom: 21});
+  assert.equal(target.pitch, CAMERA.eye.pitch);
+  assert.equal(Math.abs(target.bearing), 180, 'looking at it from the open side');
+  two.map.jumpTo({...target}); two.map.land();
+  assert.ok(inside(screenBounds(two.map, drawn, (_, q) => two.projectAbs(two.map, q)), 2));
 });
 
 test('two-point bearing avoids a drawn building standing between the camera and the venue', () => {

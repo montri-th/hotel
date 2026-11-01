@@ -769,7 +769,9 @@ function frameFocus({instant = false} = {}) {
   const known = shape.rings.length > 0;
   const obstacles = known ? state.massing?.obstaclesNear(target.anchor, 400, target.refs) || [] : [];
   const bearing = known ? twoPointBearing(shape.rings.map(t => t.ring), map.getBearing(), obstacles) : map.getBearing();
-  fitBuilding(map, shape.points, {box, bearing, maxZoom: known ? (target.near ? BUILDING_MAX_ZOOM - 1 : BUILDING_MAX_ZOOM) : 18, animate: animate() && !instant});
+  // The other corners, opposite first (downhill of a building on a slope), when MapLibre lifts the camera out of the terrain.
+  const alternates = known ? [180, 90, -90].map(d => bearing + d) : [];
+  fitBuilding(map, shape.points, {box, bearing, alternates, maxZoom: known ? (target.near ? BUILDING_MAX_ZOOM - 1 : BUILDING_MAX_ZOOM) : 18, animate: animate() && !instant});
   return true;
 }
 
