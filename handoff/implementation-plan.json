@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.4",
+  "productVersion": "0.3.5",
   "updatedOn": "2026-11-02",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
@@ -312,6 +312,27 @@
         "tests/data.test.js",
         "tests/views.test.js",
         "tests/map-style.test.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T12",
+      "title": "0.3.5 (owner 2026-11-02 “ในมือถือ เหลือพื้นที่ map น้อยมาก ช่วยปรับปรุงด้วย”): phone dock (Aha + one legend row), attribution-aware placement, zoom buttons off on touch phones, 56% sheet opening on the selection, label-aware ramp ticks",
+      "dependsOn": [
+        "T5",
+        "T6"
+      ],
+      "acceptanceCriteria": [
+        "A5",
+        "A8",
+        "A14"
+      ],
+      "files": [
+        "index.html",
+        "styles.css",
+        "js/app.js",
+        "js/scales.js",
+        "tests/scales.test.js"
       ],
       "status": "done"
     }

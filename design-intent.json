@@ -1,6 +1,6 @@
 {
   "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
-  "productVersion": "0.3.4",
+  "productVersion": "0.3.5",
   "updatedOn": "2026-11-02",
   "ldsVersion": "0.9.7",
   "release": "v0.9.7-owner.1",
@@ -55,7 +55,7 @@
     "readingPanelWidth": "min(max(300px, 28%), 440px)",
     "map": "full remaining viewport below header",
     "chartTray": "collapsible bottom overlay",
-    "mobilePortrait": "full map, five toolbar buttons in one row (วิธีใช้ and Product statement at the top of the sheet), bottom sheet with sticky close, compact Aha card on the map while the sheet is closed"
+    "mobilePortrait": "full map, five toolbar buttons in one row (วิธีใช้ and Product statement at the top of the sheet); 0.3.5 (owner 2026-11-02 “ในมือถือ เหลือพื้นที่ map น้อยมาก ช่วยปรับปรุงด้วย”): one compact dock at the foot of the map — the Aha finding in two lines with its action, over one legend row (measure switch | level + zero swatch over the 41-sample ramp) — above the attribution while it is open, dropped to the tray once it folds to its (i) button; zoom buttons off on touch phones (pinch; the compass stays); bottom sheet 56% of the screen with a sticky close, opening on the stay, building, station or area (the dataset heading and search return with the overview)"
   },
   "mapContract": {
     "basemap": "generated at runtime by js/map-style.js on https://tiles.openfreemap.org/planet with --basemap-* tokens",
