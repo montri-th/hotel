@@ -1,13 +1,42 @@
-# CityMETER Hotel 0.3.4 — verification
+# CityMETER Hotel 0.3.5 — verification
 
-Release 0.3.4 (code `7d22acf` + documents `b8762d2` as cache tag `?v=20261102-r12`; search `439c7ee` as `r13`) shows
-rebranded stays under the name their brand lists, makes light water read as water and matches every word of a search;
-section 0 records how it was checked. Section 0a records 0.3.3 (one link); sections 1–6 record 0.3.2, whose camera and
-building code is unchanged since. Results are from 2026-11-02 (Asia/Bangkok). The commit that adds this file changes
-documentation only; the final live attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the
-handoff bundle (it cannot live in the commit it attests).
+Release 0.3.5 (commit `b12352c`, cache tag `?v=20261102-r14`) gives a phone more map; section 0 records how it was
+checked. Section 0a records 0.3.4 (current names, light water, every search word), 0b records 0.3.3 (one link) and
+sections 1–6 record 0.3.2, whose camera and building code is unchanged since. Results are from 2026-11-02
+(Asia/Bangkok). The commit that adds this file changes documentation only; the final live attestation of the published
+commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
 
-## 0. Release 0.3.4 — current names, light water, every search word
+## 0. Release 0.3.5 — more map on a phone
+
+Owner request (2026-11-02 23:11, with a phone screenshot of the country view in Safari): “ในมือถือ เหลือพื้นที่ map
+น้อยมาก ช่วยปรับปรุงด้วย”. The screenshot also showed the legend ticks “11,026” and “153,200” written over each other.
+
+Measured in Chrome on same-origin frames (`window.__citymeter`), free map = from the toolbar's foot to the top of the
+first thing covering the map from below:
+
+| Frame | 0.3.4 (live `r13`) | 0.3.5 (preview, then live `r14`) |
+|---|---|---|
+| 393 × 852, first screen, attribution open (on load) | 449 px (53 %): Aha 101 px + legend 93 px + attribution 40 px | 544 px (64 %): one dock 106 px over the attribution |
+| 393 × 852, after the first drag (attribution folded to (i)) | 449 px (53 %) | 590 px (70 %): the dock on the tray, the (i) in its corner |
+| 360 × 740, country view, attribution folded | — | 478 px; ramp 164 px, ticks 1,104 · 3,821 · 6,785 · 153,200 apart |
+| 393 × 852, Holiday Inn Resort Phuket Karon Beach (sheet open) | sheet 64 %, heading under the dataset title and search | sheet 56 % (top at 373 px), the stay's heading 277 px into the sheet; the building fills the strip above at pitch 75 |
+| 1710 px desktop | legend 380 × 152 at the bottom left | unchanged (`#map-dock` is `display: contents`); ticks 4 · 60 · 179 · 549 · 62,561 |
+
+Ticks: `rampTicks` now spaces labels by their width for the 204 px ramp (the old rule counted samples only: 8 samples
+are 40 px, less than half of “11,026” plus the whole of the end-anchored “153,200”); `spaceTicks` hides, on the ramp's own width, a tick that would still touch
+(the highest value keeps its tick). `tests/scales.test.js` holds three value sets with no label closer than 5 px at
+204 px. `npm test` 125 pass · LDS + LI parity 124 ok.
+
+Live `r14` (commit `b12352c`), walked 2026-11-03 in same-origin frames of montri-th.github.io/hotel: 393 × 852 light
+544 px on load and 590 px once the attribution folds; dark the same (dock 106 px, ticks 4 · 60 · 179 · 549 · 62,561,
+Thai legible); Holiday Inn Resort Phuket Karon Beach opens the sheet at 373 px (475 px tall, the stay's heading in it,
+search off); desktop unchanged; no console errors. `npm run verify:live` 352/352 files at `b12352c` (one rerun after a
+transient 503 on three building-unit files).
+
+Not checked in a frame: the zoom buttons step aside only for a coarse pointer (a touch phone); Chrome's desktop frames
+keep them, so the free box there stops left of them while a phone's does not.
+
+## 0a. Release 0.3.4 — current names, light water, every search word
 
 Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
 body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
@@ -56,7 +85,7 @@ and other instances did not answer within the tool's time limit.
 Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
 `subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
 
-## 0a. Release 0.3.3 — ถาม Google AI answers at once
+## 0b. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
