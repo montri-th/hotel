@@ -1,11 +1,62 @@
-# CityMETER Hotel 0.3.3 — verification
+# CityMETER Hotel 0.3.4 — verification
 
-Release 0.3.3 (commit `17f60b3`, cache tag `?v=20261102-r11`) changes one link; section 0 records how it was checked.
-Sections 1–6 record release 0.3.2, whose code is unchanged in 0.3.3. Results are from 2026-11-02 (Asia/Bangkok). The
-commit that adds this file changes documentation only; the final live attestation of the published commit is recorded
-in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
+Release 0.3.4 (code `7d22acf` + documents `b8762d2` as cache tag `?v=20261102-r12`; search `439c7ee` as `r13`) shows
+rebranded stays under the name their brand lists, makes light water read as water and matches every word of a search;
+section 0 records how it was checked. Section 0a records 0.3.3 (one link); sections 1–6 record 0.3.2, whose camera and
+building code is unchanged since. Results are from 2026-11-02 (Asia/Bangkok). The commit that adds this file changes
+documentation only; the final live attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the
+handoff bundle (it cannot live in the commit it attests).
 
-## 0. Release 0.3.3 — ถาม Google AI answers at once
+## 0. Release 0.3.4 — current names, light water, every search word
+
+Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
+body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
+pool villa สามารถ ทำ spatial join เป็นกลุ่มอาคารเลยได้มั้ย ถึงจะสมจริง”.
+
+**Cause of the Novotel / Holiday Inn pair.** `01_VENUES` row `HOTEL-TAT-20160504143431473963` keeps the TAT register name
+(Novotel Phuket Karon Beach Resort and Spa) with `brand_name` Holiday Inn Resort; its `19_AFFILIATIONS` row is IHG's own
+listing (ihg.com hotel detail, retrieved 2026-10-24) naming the property Holiday Inn Resort Phuket Karon Beach, matched by
+the research team on address, telephone and point. The panel showed the register name beside the brand's logo.
+
+| Check | Result |
+|---|---|
+| Rebuild reproducibility | `scripts/build-data.py` on the same export (SHA-256 `ec460c81…2d2e`, its CSV tabs) before the change: `data/hotels.json` identical to 0.3.3 except `meta.builtOn` |
+| Rebuild with the rule | only `meta.builtOn`, `meta.counts['name.current']` (24), `meta.currentNames`, `currentNames` (24 rows) and 24 listing links appended to `urls` (216 → 240; row link indices unchanged) differ |
+| The 24 rows | 13 renamed or rebranded properties, 11 records spelled without the brand's words or with a broken character (`DATA_METHOD.md` §2a); V Villas Phuket – MGallery keeps its name once every label of the brand is known (an early build judged it before the label “MGallery” arrived; fixed by judging after all rows) |
+| Unit tests | `npm test` 124 pass: the rule's invariants on every renamed row, Karon's names and IHG link, a capitals listing in title case, Thai-only HOP INN names kept, HTML entities read as characters, “novotel karon” and “โนโวเทล กะรน” find the stay; the panel heading, recorded line and brand link; the map label reads Holiday Inn Resort / Karon Beach |
+| LDS + LI parity | 124 ok, 0 failed (no LDS value changed; the water and shore are basemap-only tokens) |
+
+**Water.** Light `--basemap-water` #CFDDE7 (CIELAB L 87, C 7, h 247) stands 1.22:1 from the ground (#EEF1EE; the
+surface.blueTint it replaces stood 1.08:1); the shore line `water-shore` #B2C7D6 stands 1.26:1 from the water and draws
+above the district fill. Dark keeps #18333E with a quiet shore #1F3F4C. Candidates were compared on the live tiles in
+Chrome at Phuket (zoom 5.6, 8.2, 9.3, 12.6 and 15.2 in 3D with terrain): no seam at tile edges or across the open sea.
+The li.supply ramp is light blue at its low end (sample 6 #CFE2EB lies ΔE00 2.3 from the new water; the old water lay
+2.2 from sample 2), so the coast line and the district outlines, not the hue, part the sea from a low district.
+
+| Live (`r12`/`r13`, Chrome, signed-in profile) | Result |
+|---|---|
+| Phuket, desktop light | the sea reads as water; districts, chips and legend unchanged |
+| Holiday Inn Resort Phuket Karon Beach, desktop light | heading = the listed name; “ชื่อที่บันทึก โนโวเทล ภูเก็ต กะรน บีช รีสอร์ท แอนด์ สปา” under it; source details: ชื่อ + หน้าแบรนด์ (ihg.com) + 24 ต.ค. 2569, ชื่อที่บันทึก in Thai and English; ถาม Google AI asks with the listed name; building view pitch 75 |
+| Same stay, 390 × 700 frame, light | heading and recorded name wrap cleanly under the logo; the building sits in the strip above the sheet |
+| Phuket overview, 390 × 700, light and dark | light: blue-grey sea, shore line; dark: unchanged sea |
+| DoubleTree by Hilton Bangkok Ploenchit (recorded แมเจสติค แกรนด์, no point), desktop dark (preview) | heading, recorded line, district view as before for a stay without a point |
+| Mamaka Phuket, Tapestry Collection by Hilton (recorded Hilton Garden Inn Phuket Bangtao) | heading, recorded line, nearest building at pitch 75 |
+| `?search=novotel+karon` (`r13`) | one stay: Holiday Inn Resort Phuket Karon Beach; no console error |
+| `npm run verify:live` | `b8762d2` (r12) 352 identical; `439c7ee` (r13) 352 identical (one transient 503 on a building-unit file in each first run, identical on the rerun) |
+
+**Multi-building stays (answer, no code).** The live research sheet has the tab `49_SITE_BOUNDARY_CHECK` (read
+2026-11-02 through the sheet's own query, nothing written): 300 stays ranked by importance — resort 282, hotel 14,
+bungalow 2, other 2; signals resort_type 256, resort_type + villa in the name 26, villa in the name 18; 203 with a point —
+with columns `boundary_status`, `boundary_source`, `boundary_evidence_url`, `boundary_geojson`, `buildings_in_boundary`,
+`main_building_note`, `checked_by`, `checked_on`. Every row is `todo`, so no stay has a site boundary yet. CityMETER
+Building V4 tiles carry `height_m`, `estimated_floor` and `height_class_code` only (no parcel or site key). An interim
+check of OpenStreetMap resort outlines was not completed: overpass-api.de answered 406 to every request from the browser
+and other instances did not answer within the tool's time limit.
+
+Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
+`subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
+
+## 0a. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
