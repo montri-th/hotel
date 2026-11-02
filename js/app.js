@@ -1068,7 +1068,7 @@ function cameraPadding() {
   const aha = $('map-aha'), legend = $('map-legend');
   const chromeTop = !aha.hidden && aha.offsetHeight ? aha.getBoundingClientRect().top : legend.offsetHeight ? legend.getBoundingClientRect().top : null;
   let bottom = chromeTop != null ? height - (chromeTop - mapTop) + 12 : panel + edge;
-  if (mobilePortrait() && $('panel').classList.contains('is-open')) bottom = Math.max(bottom, Math.round(window.innerHeight * 0.64) - (window.innerHeight - height - mapTop) + 8);
+  if (mobilePortrait() && $('panel').classList.contains('is-open')) bottom = Math.max(bottom, Math.round($('panel').getBoundingClientRect().height) - (window.innerHeight - height - mapTop) + 8);
   return {top: Math.max(edge, toolbar.bottom - mapTop + 12), left: edge, right: edge, bottom: Math.min(height * 0.7, bottom)};
 }
 
