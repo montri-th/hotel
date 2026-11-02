@@ -1,5 +1,5 @@
 {
- "release": "hotel-data-2026-11-01",
+ "release": "hotel-data-2026-11-02",
  "export": {
   "sha256": "ec460c8121aaa2753c0e06b8e25257dcebec0713eee45a918562b81320a65d2e",
   "title": "CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24"
@@ -11,6 +11,7 @@
   "admin.source": 28380,
   "alias.excluded": 1,
   "brand": 468,
+  "name.current": 24,
   "points": 29149,
   "price.recorded": 28381,
   "rooms.known": 30650,
@@ -39,8 +40,8 @@
  "files": [
   {
    "path": "data/hotels.json",
-   "bytes": 5928384,
-   "sha256": "1720ea927f7dbd7305a8881bf692a1433470389c4851b1c1cbb4e71953905646"
+   "bytes": 5932132,
+   "sha256": "be26a512e979b8087dcca7b52fc1ea4bb2e8bdd57a5f73bce69634ebee940e40"
   }
  ]
 }

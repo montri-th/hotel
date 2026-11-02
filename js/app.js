@@ -54,7 +54,7 @@ import {installAreaLayers, installAreaLabels, buildAreaModel, setFillSwitchZoom,
 import {installProvinceLayers, buildProvinceModel, PROVINCE_FILL_MAX_ZOOM, PROVINCE_LABEL_MAX_ZOOM} from './provinces.js';
 import {createFrameStore, provinceLocator} from './frames.js';
 import {buildOverview, buildAreaProfile, buildHotelDetail, buildBuildingProfile, buildChainProfile, buildStationProfile, stationsOf, listOrder, STATION_RADIUS_M} from './profile-model.js';
-import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, terrainChipsHTML, esc, num, pct, words, meters, priceText} from './panel.js';
+import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, terrainChipsHTML, subLine, esc, num, pct, words, meters, priceText} from './panel.js';
 import {installStationLayer} from './stations.js';
 import {joinBuildings, nearestBuilding} from './building-join.js';
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
@@ -477,7 +477,7 @@ function hotelPopup(r) {
   const wrap = document.createElement('div');
   wrap.className = 'popup-card';
   const meta = [state.data.groups[r.group]?.th, r.rooms ? `${num(r.rooms)} ห้อง` : 'ไม่ทราบจำนวนห้อง', r.brand?.name].filter(Boolean).join(' · ');
-  wrap.innerHTML = `<div class="popup-identity">${cueMarkup(r.series)}<div><h3>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</h3>${r.nameEn && r.nameEn !== r.name ? `<p class="popup-branch">${esc(r.nameEn)}</p>` : ''}</div></div>
+  wrap.innerHTML = `<div class="popup-identity">${cueMarkup(r.series)}<div><h3>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</h3>${subLine(r, 'popup-branch', 'p')}</div></div>
     <p class="popup-meta">${esc(meta)}</p>`;
   return wrap;
 }

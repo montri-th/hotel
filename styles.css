@@ -591,6 +591,8 @@ td small { display: block; color: var(--text-metadata); font-size: 12px; margin-
 .identity .eyebrow { margin-bottom: 2px; }
 .identity-pic { width: 46px; height: 46px; font-size: 42px; flex: 0 0 46px; }
 .branch-name { font-size: 15px; line-height: 1.45; color: var(--text-secondary); margin-top: 2px; overflow-wrap: anywhere; }
+/* The record's own name under the name the brand lists now (data.currentNames): a quiet word, then the name. */
+.recorded-label { font-size: 0.86em; font-weight: 600; color: var(--text-metadata); white-space: nowrap; margin-right: 2px; }
 .title-link { font: inherit; color: inherit; padding: 0; min-height: 0; border: 0; background: none; text-align: left; white-space: normal; text-decoration: none; }
 .title-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .store-status { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 13px; }

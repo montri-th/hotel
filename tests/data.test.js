@@ -130,3 +130,37 @@ test('boundaries: 928 districts and 77 provinces from production; per-province f
   assert.equal(sha256(Buffer.from(py(receipts.base))), receipts.baseSha256);
   assert.equal(indexJSON.metadata.receiptsSha256, receipts.baseSha256);
 });
+
+test('current name (owner 2026-11-02 “ทำไม novotel กะรน ใช้ logo Holiday Inn?”): a rebranded record reads under the name its brand lists, its own name kept and searchable', () => {
+  const {raw, data} = load();
+  const fold = s => ` ${String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').match(/[0-9a-z]+/g)?.join(' ') || ''} `;
+  const shown = data.rows.filter(r => r.recorded);
+  assert.equal(shown.length, raw.meta.counts['name.current']);
+  assert.equal(shown.length, Object.keys(raw.currentNames).length);
+  assert.equal(raw.meta.currentNames.rows, shown.length);
+  for (const r of shown) {
+    assert.ok(r.brand, `${r.id}: only a branded record`);
+    const record = r.recorded.nameEn || r.recorded.name;
+    assert.match(record, /[A-Za-z]/, `${r.id}: the record has a Latin name to compare`);
+    assert.ok(![r.brand.name, ...(r.brand.labels || [])].some(l => fold(l).trim().length >= 2 && fold(record).includes(fold(l))), `${r.id}: the record's name carries no label of its brand`);
+    assert.notEqual(fold(r.name), fold(record), `${r.id}: the listed name differs`);
+    assert.match(r.nameSource.url, /^https:\/\//, `${r.id}: the listing is a public https page`);
+    assert.match(r.nameSource.on, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(r.nameSource.on <= raw.meta.checkedOn, `${r.id}: listed on or before the check date`);
+    assert.equal(r.nameEn, '', 'one name shown; the record names are kept apart');
+  }
+  const karon = data.rows.find(r => r.id === 'HOTEL-TAT-20160504143431473963');
+  assert.equal(karon.name, 'Holiday Inn Resort Phuket Karon Beach');
+  assert.deepEqual(karon.recorded, {name: 'โนโวเทล ภูเก็ต กะรน บีช รีสอร์ท แอนด์ สปา', nameEn: 'Novotel Phuket Karon Beach Resort and Spa'});
+  assert.equal(karon.brand.name, 'Holiday Inn Resort');
+  assert.match(karon.nameSource.url, /^https:\/\/www\.ihg\.com\//);
+  assert.ok(filterRows(data.rows, {search: 'novotel phuket karon'}).includes(karon), 'the recorded name still finds it');
+  assert.ok(filterRows(data.rows, {search: 'holiday inn resort phuket karon'}).includes(karon), 'the listed name finds it');
+  const naka = data.rows.find(r => r.id === 'HOTEL-TAT-20160413120525455474');
+  assert.equal(naka.name, 'The Naka Island, a Luxury Collection Resort & Spa, Phuket', 'a listing in capitals reads in title case');
+  // A record that carries its brand keeps its own name (Thai-only names are read as written).
+  const hopInn = data.rows.find(r => r.brand?.name === 'HOP INN' && !/[A-Za-z]/.test(r.name) && !r.nameEn);
+  assert.ok(hopInn && !hopInn.recorded);
+  assert.ok(data.rows.filter(r => !r.recorded).every(r => !r.nameSource));
+  assert.ok(!data.rows.some(r => /&amp;|&quot;/.test(`${r.name} ${r.nameEn}`)), 'source HTML entities read as characters');
+});

@@ -33,13 +33,13 @@ const FONT_ITALIC = ['Noto Sans Italic'];
 /** Fallbacks equal the values in assets/theme.css; the live values are read from CSS at build time. */
 const FALLBACK = {
   light: {
-    ground: '#EEF1EE', water: '#E2E9ED', waterLine: '#CBD9E1', park: '#DCE6D4', wood: '#D2DFC8', grass: '#E3EBDA', sand: '#F0EEE4', aeroway: '#E9EBE7',
+    ground: '#EEF1EE', water: '#CFDDE7', waterLine: '#CBD9E1', shore: '#B2C7D6', park: '#DCE6D4', wood: '#D2DFC8', grass: '#E3EBDA', sand: '#F0EEE4', aeroway: '#E9EBE7',
     building: '#DFE2DD', buildingLine: '#CDD2CD', massingQuiet: '#ECEDE8', massingFocus: '#D9D7CD',
     road: '#FFFFFF', roadCasing: '#DCE1DD', motorwayCasing: '#C9D0CB', tunnel: '#F4F6F3', rail: '#C9D0CB', transit: '#B4BDB7', path: '#FFFFFF',
     label: '#5F635A', labelQuiet: '#7B877D', halo: '#F6F7F3', sky: '#F6F7F3', horizon: '#DCE1DD', fog: '#EEF1EE',
   },
   dark: {
-    ground: '#11191D', water: '#18333E', waterLine: '#1F3F4C', park: '#16251F', wood: '#14211C', grass: '#172620', sand: '#1C2328', aeroway: '#172126',
+    ground: '#11191D', water: '#18333E', waterLine: '#1F3F4C', shore: '#1F3F4C', park: '#16251F', wood: '#14211C', grass: '#172620', sand: '#1C2328', aeroway: '#172126',
     building: '#1C262B', buildingLine: '#2A3539', massingQuiet: '#2A343A', massingFocus: '#4A5760',
     road: '#293337', roadCasing: '#33403D', motorwayCasing: '#46524F', tunnel: '#1A2327', rail: '#46524F', transit: '#5E6B67', path: '#293337',
     label: '#A6B5B1', labelQuiet: '#8D9D99', halo: '#11191D', sky: '#0D1418', horizon: '#172126', fog: '#11191D',
@@ -54,7 +54,7 @@ export function basemapPalette(theme = 'light') {
   const read = (token, fallback) => style.getPropertyValue(token).trim() || fallback;
   return {
     ...base,
-    ground: read('--basemap-ground', base.ground), water: read('--basemap-water', base.water), waterLine: read('--basemap-water-line', base.waterLine),
+    ground: read('--basemap-ground', base.ground), water: read('--basemap-water', base.water), waterLine: read('--basemap-water-line', base.waterLine), shore: read('--basemap-shore', base.shore),
     park: read('--basemap-park', base.park), wood: read('--basemap-wood', base.wood), grass: read('--basemap-grass', base.grass), sand: read('--basemap-sand', base.sand), aeroway: read('--basemap-aeroway', base.aeroway),
     building: read('--basemap-building', base.building), buildingLine: read('--basemap-building-line', base.buildingLine), massingQuiet: read('--basemap-massing-quiet', base.massingQuiet), massingFocus: read('--basemap-massing-focus', base.massingFocus),
     road: read('--basemap-road', base.road), roadCasing: read('--basemap-road-casing', base.roadCasing), motorwayCasing: read('--basemap-motorway-casing', base.motorwayCasing), tunnel: read('--basemap-tunnel', base.tunnel), rail: read('--basemap-rail', base.rail), transit: read('--basemap-transit', base.transit), path: read('--basemap-path', base.path),
@@ -153,6 +153,10 @@ export function buildMapStyle(theme = 'light', {palette = basemapPalette(theme),
       // they sit above the ground but beneath water lines, building footprints and roads.
       {id: FIRST_LINE_LAYER, type: 'line', source: SOURCE_ID, 'source-layer': 'waterway', filter: ['all', line, ['!=', ['get', 'brunnel'], 'tunnel']],
         layout: {'line-cap': 'round'}, paint: {'line-color': p.waterLine, 'line-width': ['interpolate', ['exponential', 1.3], ['zoom'], 10, ['match', ['get', 'class'], 'river', 1.2, 0.6], 18, ['match', ['get', 'class'], 'river', 7, 3]]}},
+      // The shore (0.3.4): the outline of the water, above the district fill, so the coast reads where a fill meets
+      // the sea. Ocean and lake polygons are clipped at tile edges inside the tile buffer, so no seam is drawn.
+      {id: 'water-shore', type: 'line', source: SOURCE_ID, 'source-layer': 'water', filter: ['all', poly, ['!=', ['get', 'brunnel'], 'tunnel']],
+        paint: {'line-color': p.shore, 'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.4, 10, 0.8, 16, 1.2]}},
       {id: 'building', type: 'fill', source: SOURCE_ID, 'source-layer': 'building', minzoom: 13, paint: {'fill-color': p.building, 'fill-outline-color': p.buildingLine, 'fill-antialias': true}},
       {id: 'aeroway-runway', type: 'line', source: SOURCE_ID, 'source-layer': 'aeroway', minzoom: 11, filter: ['all', line, cls('runway', 'taxiway')], paint: {'line-color': p.road, 'line-width': zoomWidth(1.4, [[11, 1], [18, 20]])}},
       {id: 'pier', type: 'fill', source: SOURCE_ID, 'source-layer': 'transportation', filter: ['all', poly, cls('pier')], paint: {'fill-color': p.road}},

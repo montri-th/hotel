@@ -16,7 +16,7 @@
  * Distances are straight lines (the distance pictogram; “ระยะตรง” in titles). A stay's pin inside a drawn building is
  * “ที่พักในอาคารนี้” / “อีก N แห่งในอาคารนี้”, never “ตั้งอยู่ใน”. Sources, methods and ids sit in one closed <details>.
  */
-import {productionLink, provinceByCode, hasPoint, stationLink, retailLink, SIZE_BANDS} from './model.js';
+import {productionLink, provinceByCode, hasPoint, stationLink, retailLink, SIZE_BANDS, subName, RECORDED_NAME} from './model.js';
 import {areaWord} from './areas.js';
 import {cueMarkup} from './cues.js';
 import {actionBar} from './ask.js';
@@ -41,6 +41,18 @@ export const METHOD_URL = 'DATA_METHOD.md';
 export function link(url, label, cls = 'source-link') {
   const u = safeURL(url);
   return u ? `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener">${esc(label)}</a>` : '';
+}
+
+/**
+ * The line under a stay's name (model.js#subName): its recorded name, labelled, when the stay is shown under the name its
+ * brand lists now; else its English name.
+ */
+export function subLine(r, cls, tag = 'p') {
+  const sub = subName(r);
+  if (!sub) return '';
+  return r.recorded
+    ? `<${tag} class="${cls} recorded-name"><span class="recorded-label">${RECORDED_NAME}</span> ${esc(sub)}</${tag}>`
+    : `<${tag} class="${cls}">${esc(sub)}</${tag}>`;
 }
 
 export function thaiDate(iso) {
@@ -141,7 +153,7 @@ function rowMeta(r, {showArea = false, index = null, distance = null} = {}) {
 
 /** Hotels: cue (accommodation group) + name, then rooms · brand · where · distance. */
 export function hotelList(rows, opts = {}) {
-  return `<ul class="outlet-list">${rows.map(r => `<li><button type="button" class="brand-row" data-action="select-hotel" data-id="${esc(r.id)}">${cueMarkup(r.series, {className: 'row-cue'})}<span class="row-text"><strong>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</strong>${r.nameEn && r.nameEn !== r.name ? `<span class="row-branch">${esc(r.nameEn)}</span>` : ''}<span class="row-meta">${esc(rowMeta(r, opts))}</span></span></button></li>`).join('')}</ul>`;
+  return `<ul class="outlet-list">${rows.map(r => `<li><button type="button" class="brand-row" data-action="select-hotel" data-id="${esc(r.id)}">${cueMarkup(r.series, {className: 'row-cue'})}<span class="row-text"><strong>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</strong>${subLine(r, 'row-branch', 'span')}<span class="row-meta">${esc(rowMeta(r, opts))}</span></span></button></li>`).join('')}</ul>`;
 }
 
 /** "ดูทั้งหมด 193 แห่ง" under a shortened list. */
@@ -462,7 +474,7 @@ export function renderHotel(d, ctx = {}) {
         ${r.brand && logoMarkup(r.brand.id) ? `<p class="identity-logo">${logoMarkup(r.brand.id, {className: 'brand-logo panel-logo'})}<span class="sr-only">${esc(r.brand.name)}</span></p>` : ''}
         <p class="eyebrow eyebrow-cue">${esc(d.group?.th || '')}${r.rawType && r.rawType !== d.group?.th ? ` · ${esc(r.rawType)}` : ''}</p>
         <h2>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</h2>
-        ${r.nameEn && r.nameEn !== r.name ? `<p class="branch-name">${esc(r.nameEn)}</p>` : ''}</div></div>
+        ${subLine(r, 'branch-name', 'p')}</div></div>
       <div class="fact-chips">${roomsChip}${chainChip}${areaChip}${priceChip}${meetingChip}${railChip}${nextChip}${shopChip}${buildingChip}${coords ? '' : '<span class="fact-chip is-quiet">ไม่มีพิกัด</span>'}</div>
       ${neighbours}${sameChain}
       ${actionBar({kind: 'hotel', row: r, area: d.area ? {place: `${w.area}${d.area.name}`, province: prov} : r.province ? {place: '', province: prov} : null,
@@ -470,6 +482,8 @@ export function renderHotel(d, ctx = {}) {
       <details class="source-details"><summary>ที่มาและพิกัด</summary>
         <dl class="facts">
           <dt>แหล่ง</dt><dd>${esc(r.source?.th || 'แหล่งทางการ')}${r.url ? ` · ${link(r.url, 'หน้าแหล่ง')}` : ''}</dd>
+          ${r.recorded ? `<dt>ชื่อ</dt><dd>${esc(r.name)}${r.nameSource?.url ? ` · ${link(r.nameSource.url, 'หน้าแบรนด์')}` : ''}${r.nameSource?.on ? ` · ${nw(esc(thaiDate(r.nameSource.on)))}` : ''}</dd>
+          <dt>${RECORDED_NAME}</dt><dd>${esc([r.recorded.name, r.recorded.nameEn].filter(Boolean).join(' · '))}</dd>` : ''}
           <dt>พื้นที่</dt><dd>${esc(ADMIN_TH[r.admin] || '')}</dd>
           <dt>พิกัด</dt><dd>${point}</dd>
           ${price ? `<dt>ราคาที่บันทึก</dt><dd>${price}</dd><dt>วันที่ราคา</dt><dd>ไม่ระบุในแหล่ง</dd>` : ''}

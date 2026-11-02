@@ -37,3 +37,25 @@ test('camera presets: 2D plan, 3D city overview, upright-vertical model close-up
   assert.ok(CAMERA.eye.pitch <= 90 - CAMERA.eye.fov / 2 - 2, 'two-point: the horizon stays outside the frame (MapLibre 5.6.2 draws fill-extrusion wrongly once it enters)');
   assert.ok(CAMERA.eye.pitch >= 72 && CAMERA.eye.fov <= 26, 'strongly pitched, narrow field of view → verticals near-parallel');
 });
+
+test('water reads as water in light and stays quiet; the shore draws above the district fill (0.3.4)', async () => {
+  const {readFileSync} = await import('node:fs');
+  const {contrastRatio} = await import('../js/scales.js');
+  const light = basemapPalette('light'), dark = basemapPalette('dark');
+  const css = readFileSync(new URL('../assets/theme.css', import.meta.url), 'utf8');
+  const [lightCss, darkCss] = css.split(':root[data-theme="dark"]');
+  const token = (block, name) => (block.match(new RegExp(`--basemap-${name}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1];
+  for (const [name, key] of [['water', 'water'], ['water-line', 'waterLine'], ['shore', 'shore'], ['ground', 'ground']]) {
+    assert.equal(token(lightCss, name), light[key], `light --basemap-${name} = the module fallback`);
+    assert.equal(token(darkCss, name), dark[key], `dark --basemap-${name} = the module fallback`);
+  }
+  const water = contrastRatio(light.water, light.ground);
+  assert.ok(water >= 1.18 && water <= 1.3, `light water stands apart from the ground but stays quiet (${water.toFixed(2)}:1)`);
+  assert.ok(contrastRatio(light.shore, light.water) >= 1.2, 'the shore is darker than the water');
+  assert.equal(dark.water, '#18333E', 'dark water = LDS surface.blueTint (dark), unchanged');
+  for (const theme of ['light', 'dark']) {
+    const ids = buildMapStyle(theme).layers.map(l => l.id);
+    assert.ok(ids.indexOf('water-shore') > ids.indexOf(DATA_FILL_BEFORE), 'the shore is drawn above the district fill');
+    assert.ok(ids.indexOf('water-shore') < ids.indexOf('building'), 'and beneath footprints and roads');
+  }
+});

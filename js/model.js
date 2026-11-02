@@ -123,6 +123,16 @@ export const hasPoint = r => Number.isFinite(r?.latitude) && Number.isFinite(r?.
 
 const lower = v => String(v || '').toLocaleLowerCase('th-TH');
 const pos = v => (Number.isFinite(v) && v > 0 ? v : null);
+/** Source names sometimes hold HTML entities (“Siam Society Hotel &amp; Resort”); the screen reads the character. */
+const plain = v => String(v || '').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+
+/** Label of the record's own name when the brand's listing names the stay differently (data.currentNames). */
+export const RECORDED_NAME = 'ชื่อที่บันทึก';
+/**
+ * The line under a stay's name: the record's own name (ชื่อที่บันทึก) when the stay is shown under the name its brand
+ * lists now, else its English name when that differs. '' when there is none.
+ */
+export const subName = r => (r?.recorded ? r.recorded.name || r.recorded.nameEn : r?.nameEn && r.nameEn !== r.name ? r.nameEn : '');
 
 /**
  * Decode data/hotels.json into row objects plus dictionaries.
@@ -137,7 +147,7 @@ export function decodeDataset(json, index) {
   const sources = json.sources || [];
   const stations = (json.stations || []).map((s, i) => ({...s, index: i}));
   const retail = (json.retail || []).map((v, i) => ({...v, index: i}));
-  const inBuilding = json.inBuilding || {}, collections = json.collections || {};
+  const inBuilding = json.inBuilding || {}, collections = json.collections || {}, current = json.currentNames || {};
   const rows = [];
   let dropped = 0;
   for (let i = 0; i < n; i++) {
@@ -151,7 +161,7 @@ export function decodeDataset(json, index) {
     const source = sources[c.src[i]] || {id: '', th: '', url: ''};
     const lat = c.lat[i], lon = c.lon[i];
     const row = {
-      id: c.key[i], name: c.name[i] || '', nameEn: c.nameEn[i] || '', index: i,
+      id: c.key[i], name: plain(c.name[i]), nameEn: plain(c.nameEn[i]), index: i,
       group: group.index, groupId: group.id, series: group.series, rawType: json.rawTypes?.[c.raw[i]] || '',
       rooms, size: sizeOf(rooms), price,
       brand, chain: brand?.chainRec || null,
@@ -164,9 +174,18 @@ export function decodeDataset(json, index) {
       shop: c.shop[i] >= 0 ? {venue: retail[c.shop[i]], m: c.shopM[i]} : null,
       inBuilding: inBuilding[String(i)] || [], collections: collections[String(i)] || [],
     };
+    // The name the stay's brand lists now (owner 2026-11-02 “ทำไม novotel กะรน ใช้ logo Holiday Inn?”): the record keeps
+    // its own names as the recorded name, shown under the heading and found by search.
+    const now = current[String(i)];
+    if (now?.[0]) {
+      row.recorded = {name: row.name, nameEn: row.nameEn};
+      row.name = now[0];
+      row.nameEn = '';
+      row.nameSource = {url: now[1] >= 0 ? json.urls?.[now[1]] || '' : '', on: now[2] || ''};
+    }
     const a = area ? index.byId.get(area) : null;
     const p = province ? PROVINCE_LIST.find(x => x.code === province) : null;
-    row.haystack = lower([row.name, row.nameEn, brand?.name, row.chain?.name, a?.name, a?.nameEn, p?.th, p?.en, group.th, row.rawType].filter(Boolean).join(' '));
+    row.haystack = lower([row.name, row.nameEn, row.recorded?.name, row.recorded?.nameEn, brand?.name, row.chain?.name, a?.name, a?.nameEn, p?.th, p?.en, group.th, row.rawType].filter(Boolean).join(' '));
     rows.push(row);
   }
   const scores = importanceScores(rows);

@@ -48,6 +48,16 @@ a walking route or a catchment; computed at build time, a row without a point ha
             another CityMETER research dataset whose source point falls in the same research building mass as the
             hotel's point (not a tenancy, floor or located-in claim)
 
+CURRENT NAME (owner question 2026-11-02 “ทำไม novotel กะรน ใช้ logo Holiday Inn?”): the sheet links a record to the
+brand that operates the property now, with evidence, and keeps the record's own name (a TAT register name can predate a
+rebrand: Novotel Phuket Karon Beach Resort and Spa → Holiday Inn Resort Phuket Karon Beach). When a branded record's
+Latin name carries no label of its linked brand, and the brand's own listing of the property (19_AFFILIATIONS, an
+accepted listing row of that brand: `source_property_name`, `source_url`, `retrieved_on`) names it differently, that
+listed name is published as the current name (data.currentNames[row] = [name, url index, retrieved on]; a listing in
+capitals only reads in title case); the record's own names stay in the row (`name`, `nameEn`), shown as “ชื่อที่บันทึก”
+and searchable. A Thai-only record name, or a brand listing the property under several names, keeps the record's name.
+Nothing else of the row changes.
+
 Not copied (meta.excludedFields): addresses, phone numbers, raw coordinates, researcher notes, internal sheet URLs,
 licence or operator fields, source record ids, quality flags, the names of branches of other datasets. Source links are public https pages (TAT data catalogue, owner and group websites); CityMETER Hotel V3 rows
 link to the same district on CityMETER production (?d=hotel).
@@ -220,6 +230,44 @@ class Locator:
         return None, None
 
 
+NAME_STATUSES = ('official_source_affiliation', 'resolved_source_claim', 'source_membership_claim')
+
+
+def latin_key(s):
+    """' holiday inn resort ' — accents, case, HTML entities and punctuation folded; padded for whole-word tests."""
+    s = unicodedata.normalize('NFKD', (s or '').replace('&amp;', '&'))
+    s = ''.join(ch for ch in s if not unicodedata.combining(ch)).casefold().replace('&', ' and ')
+    return ' %s ' % ' '.join(re.findall(r'[0-9a-z]+', s))
+
+
+SMALL_WORDS = {'a', 'an', 'and', 'at', 'by', 'for', 'in', 'of', 'on', 'the', 'to'}
+
+
+def display_case(name):
+    """A listing written in capitals only reads in title case (“THE NAKA ISLAND, A LUXURY …” → “The Naka Island, a
+    Luxury …”); any other spelling is kept as listed."""
+    if re.search(r'[a-z]', name) or not re.search(r'[A-Z]{2}', name):
+        return name
+    words = name.split(' ')
+    cap = lambda m: m.group(0)[0].upper() + m.group(0)[1:].lower()
+    return ' '.join(w.lower() if k and w.strip(',.;:()').lower() in SMALL_WORDS else re.sub(r"[A-Za-z][A-Za-z']*", cap, w)
+                    for k, w in enumerate(words))
+
+
+def current_name(name, name_en, labels, listed):
+    """The brand's listed name of the property when the record's Latin name carries none of the brand's labels and
+    differs from it; else None. `listed` = the accepted listing rows of the linked brand ({name, url, on})."""
+    if len({x['name'] for x in listed}) != 1:
+        return None  # none, or the brand lists the property under several names: keep the record's name
+    record = name_en or (name if re.search(r'[A-Za-z]', name or '') else '')
+    if not record:
+        return None  # a Thai-only record name is read as written (no Latin to compare)
+    key = latin_key(record)
+    if any(len(latin_key(l).strip()) >= 2 and latin_key(l) in key for l in labels):
+        return None  # the record already carries its brand
+    return listed[0] if latin_key(listed[0]['name']) != key else None
+
+
 def public_url(u):
     u = (u or '').strip()
     if not u.startswith('https://'):
@@ -370,6 +418,14 @@ def main():
         # Published: the industry and the public brand only (the panel shows counts per industry; no branch names).
         inside[r['venue_id']].append([INDUSTRY_TH.get(r['industry'], r['industry']), (r.get('brand_name') or '').strip()])
     collections_by_venue = collections.defaultdict(set)
+    listed_names = collections.defaultdict(list)  # venue → accepted brand listings that name the property (CURRENT NAME)
+    for r in tabs['19_AFFILIATIONS']:
+        role = r.get('relationship_role', '')
+        if r.get('venue_id') and (r.get('source_property_name') or '').strip() and r.get('affiliation_status') in NAME_STATUSES \
+                and ('listing' in role or role == 'official_property_brand'):
+            listed_names[r['venue_id']].append({'brand': (r.get('brand_id') or '').strip(), 'group': (r.get('group_entity_id') or '').strip(),
+                                                'name': r['source_property_name'].strip(), 'url': public_url(r.get('source_url')),
+                                                'on': (r.get('retrieved_on') or '')[:10]})
     for r in tabs['19_AFFILIATIONS']:
         if r.get('venue_id') and r.get('relationship_role', '').startswith('collection_member') or r.get('relationship_role') in ('collection_membership', 'collection_membership_self_reported'):
             if r.get('affiliation_status') in ('resolved_source_claim', 'official_source_affiliation', 'source_membership_claim') and r.get('affiliation_name'):
@@ -395,7 +451,7 @@ def main():
     cols = {k: [] for k in ('key', 'name', 'nameEn', 'group', 'raw', 'rooms', 'pmin', 'pmax', 'pavg', 'brand', 'province', 'district',
                             'admin', 'lat', 'lon', 'coord', 'src', 'url', 'meet', 'mass', 'rail', 'railM', 'rail2', 'rail2M', 'shop', 'shopM')}
     counts = collections.Counter()
-    conflicts, disagree, inside_rows, colls = [], [], {}, {}
+    conflicts, disagree, inside_rows, colls, current, listed_rows = [], [], {}, {}, {}, []
     uuid_re = re.compile(r'/hotel/info/beeSwarm/DISTRICT/([0-9a-f-]{36})')
     seen = set()
     for r in venues:
@@ -453,6 +509,7 @@ def main():
         pr = [int(round(x)) if x and x > 0 else -1 for x in pr]
         # Brand → group (chain)
         bi = -1
+        link_ids, link_gid = set(), ''
         bname = (r.get('brand_name') or '').strip()
         if bname:
             br = brand_rows.get(bname.casefold())
@@ -478,6 +535,8 @@ def main():
             bi = brand_index[key]
             if bname not in brands[bi]['labels']:
                 brands[bi]['labels'].append(bname)
+            link_ids = ({key, (br or {}).get('brand_id', '')} | set(reg_ids)) - {''}
+            link_gid = gid
         # Source + public link
         dsid = r.get('source_dataset_id', '')
         si = source_of(dsid)
@@ -501,6 +560,11 @@ def main():
         if not re.search(r'[A-Za-z]', name_en) or name_en.casefold() == name.casefold():
             name_en = ''
         i = len(cols['key'])
+        if bi >= 0:
+            mine = [x for x in listed_names.get(vid, []) if x['brand'] in link_ids] \
+                or [x for x in listed_names.get(vid, []) if not x['brand'] and link_gid and x['group'] == link_gid]
+            if mine:
+                listed_rows.append((i, name, name_en, bi, mine))  # judged after the rows, with every label of the brand
         cols['key'].append(vid)
         cols['name'].append(name)
         cols['nameEn'].append(name_en)
@@ -534,6 +598,12 @@ def main():
         counts['price.recorded'] += 1 if pr[2] > 0 else 0
         counts['brand'] += 1 if bi >= 0 else 0
 
+    # CURRENT NAME, judged with the complete label set of each brand; urls interned after the rows (row indices stay).
+    for i, name, name_en, bi, mine in listed_rows:
+        now = current_name(name, name_en, [brands[bi]['name']] + brands[bi]['labels'], mine)
+        if now:
+            current[i] = [display_case(now['name']), intern(urls, url_index, now['url']) if now['url'] else -1, now['on']]
+            counts['name.current'] += 1
     used_stations = sorted({x for x in cols['rail'] + cols['rail2'] if x >= 0})
     used_retail = sorted({x for x in cols['shop'] if x >= 0})
     # Re-index the context dictionaries to the entries the rows use (plus every operating station: the map draws them).
@@ -588,6 +658,8 @@ def main():
                            'source_quality_flags', 'record_review_status', 'building_source_id', 'star_raw', 'star_selected',
                            '16_BRANCH_SPATIAL_CANDIDATES.branch_name', 'README text'],
         'checks': {'sourcePointDisagree': len(disagree), 'sourcePointDisagreeSample': disagree[:20]},
+        'currentNames': {'rule': "a branded record whose Latin name carries no label of its linked brand, and which that brand's accepted listing in 19_AFFILIATIONS (source_property_name) names differently, is shown under the listed name; the record's own names stay in the row as the recorded name (ชื่อที่บันทึก) and in search",
+                         'rows': len(current), 'retrievedOn': sorted({v[2] for v in current.values() if v[2]})},
         'brandIdentity': {'rule': 'a 01_VENUES brand label is read by its exact 17_BRANDS name; a label without one, or a spelling variant, is read through the brand identity of the research team logo library (its 17_BRANDS ids); labels of one identity count as one brand',
                           'library': logo_lib, 'rows': dict(brand_resolution),
                           'merged': sorted([b['name'], b['labels']] for b in brands if len(b['labels']) > 1)},
@@ -611,6 +683,7 @@ def main():
         'vocab': {'admin': ADMIN, 'coord': list(COORD.values()), 'mass': MASS},
         'inBuilding': {str(k): v for k, v in sorted(inside_rows.items())},
         'collections': {str(k): v for k, v in sorted(colls.items())},
+        'currentNames': {str(k): v for k, v in sorted(current.items())},
         'cols': cols,
     }
     os.makedirs(os.path.join(a.out, 'data'), exist_ok=True)

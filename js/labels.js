@@ -16,6 +16,7 @@
  * the accessible names and chip titles only; the provenance line stays in the panel.
  */
 import {cueMarkup} from './cues.js';
+import {subName, RECORDED_NAME} from './model.js';
 import {logoMarkup} from './logos.js';
 import {terrainFacts, terrainChips} from './terrain.js';
 
@@ -249,7 +250,7 @@ export function installHotelLabels(map, container, {onSelect, bounds, avoid = ()
       row.price ? chip('price', `${priceText(row.price)} ที่บันทึก`, 'ราคาต่อคืนที่บันทึก') : '',
       row.brand && !logo ? chip('chain', row.brand.name) : '',
     ].filter(Boolean).join('');
-    card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${row.nameEn && row.nameEn !== row.name ? `<span class="hc-sub">${esc(row.nameEn)}</span>` : ''}</div></div>
+    card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${subName(row) ? `<span class="hc-sub">${row.recorded ? `${RECORDED_NAME} · ` : ''}${esc(subName(row))}</span>` : ''}</div></div>
       <div class="hc-chips">${chips}</div><div class="hc-chips hc-terrain" aria-live="off"></div>`;
     card.hidden = false;
     placeCard();

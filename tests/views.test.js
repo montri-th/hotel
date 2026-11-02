@@ -214,3 +214,17 @@ test('shares print whole percentages; a non-zero part never prints as 0%', () =>
   assert.equal(pct(3, 0), '—');
   assert.ok(text(provenance({meta: {checkedOn: '2026-10-25', context: {rail: {asOf: '2026-10-31'}}}, unit: unitWords('rooms')}, 'x', {rail: true})).includes('CityMETER Transit 31 ต.ค. 2569'));
 });
+
+test('a stay shown under its brand’s listed name: the heading is that name, the recorded name sits under it, the listing is in the source details', () => {
+  const {data, index} = load();
+  const ctx = ctxFor(data, index);
+  const karon = data.rows.find(r => r.id === 'HOTEL-TAT-20160504143431473963');
+  const html = renderHotel(buildHotelDetail(karon, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx);
+  const t = text(html);
+  assert.match(html, /<h2>Holiday Inn Resort Phuket Karon Beach<\/h2>/);
+  assert.ok(t.includes('ชื่อที่บันทึก โนโวเทล ภูเก็ต กะรน บีช รีสอร์ท แอนด์ สปา'), 'the recorded name under the heading');
+  assert.ok(t.includes('Novotel Phuket Karon Beach Resort and Spa'), 'both recorded names in the source details');
+  assert.match(html, /href="https:\/\/www\.ihg\.com\/[^"]+"[^>]*>หน้าแบรนด์</);
+  const plain = data.rows.find(r => r.id === HOTEL);
+  assert.ok(!renderHotel(buildHotelDetail(plain, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx).includes('ชื่อที่บันทึก'), 'other stays read as before');
+});
