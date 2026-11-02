@@ -1581,6 +1581,7 @@ function initMap() {
     state.map.addControl(new maplibregl.NavigationControl({showCompass: true, visualizePitch: true}), 'top-right');
     state.attribObserver = trackAttribution(state.map);
     state.legendObserver ||= trackLegend();
+    document.fonts?.ready?.then(() => spaceTicks($('map-legend')));
     state.freeBoxObserver ||= watchFreeBox();
     state.labels = installAreaLabels(state.map, $('map'), {className: 'neighborhood-label', hostId: 'area-labels', hostLabel: 'เขต/อำเภอบนแผนที่', minZoom: PROVINCE_VIEW_MIN_ZOOM, verb: 'กดเพื่อสำรวจพื้นที่', onSelect: id => selectArea(id, {fromMap: true}), reservedBottom: labelBottomSpace, maxLabels: 40});
     state.provinceLabels = installAreaLabels(state.map, $('map'), {className: 'province-label', hostId: 'province-labels', hostLabel: 'จังหวัดบนแผนที่', minZoom: 0, maxZoom: PROVINCE_LABEL_MAX_ZOOM, verb: 'กดเพื่อดูจังหวัด', detailZoomClass: false, onSelect: code => selectProvince(code), reservedBottom: labelBottomSpace, maxLabels: 77, avoid: '.neighborhood-label:not([hidden])'});
