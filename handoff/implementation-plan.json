@@ -285,6 +285,35 @@
         "tests/views.test.js"
       ],
       "status": "done"
+    },
+    {
+      "id": "T11",
+      "title": "0.3.4 (owner 2026-11-02 “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water body ดูเหมือนน้ำมากกว่านี้ … แต่ยัง clean and quiet”): a rebranded stay reads under the name its brand lists (19_AFFILIATIONS.source_property_name), its recorded name kept as “ชื่อที่บันทึก”; light water is a quiet blue with a shore line above the district fill",
+      "dependsOn": [
+        "T1",
+        "T4"
+      ],
+      "acceptanceCriteria": [
+        "A1",
+        "A2",
+        "A4",
+        "A8"
+      ],
+      "files": [
+        "scripts/build-data.py",
+        "data/hotels.json",
+        "js/model.js",
+        "js/panel.js",
+        "js/labels.js",
+        "js/app.js",
+        "styles.css",
+        "assets/theme.css",
+        "js/map-style.js",
+        "tests/data.test.js",
+        "tests/views.test.js",
+        "tests/map-style.test.js"
+      ],
+      "status": "done"
     }
   ],
   "acceptanceCriteria": [
@@ -417,7 +446,7 @@
     {
       "id": "B7",
       "item": "Point 3 follow-up: join a stay spread over several buildings to its site (research boundaries of the 300 most important resorts and pool villas, 49_SITE_BOUNDARY_CHECK)",
-      "evidence": "point 3 released in 0.3.0 (buildings per อปท./เขต); site boundaries pending the research team"
+      "evidence": "point 3 released in 0.3.0 (buildings per อปท./เขต); 49_SITE_BOUNDARY_CHECK exists in the live sheet (checked 2026-11-02: 300 rows — resort 282, hotel 14, bungalow 2, other 2; 203 with a point; columns boundary_geojson, boundary_source, boundary_evidence_url, buildings_in_boundary), every row todo"
     }
   ]
 }

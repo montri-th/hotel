@@ -1,7 +1,8 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.3 (data built 2026-11-01 from the export of 2026-11-01, unchanged since 0.3.1); the page computes everything from the data
+a snapshot of release 0.3.4 (data rebuilt 2026-11-02 from the same export of 2026-11-01: the figures of 0.3.1 unchanged, 24 stays under
+their brand's listed name, §2a); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
 ## วิธีนับ — อ่านตัวเลขในหน้าอย่างไร
@@ -15,6 +16,7 @@ at run time, so these are fixtures, not constants.
 - **ราคาที่บันทึก** = ต่ำสุด สูงสุด เฉลี่ยต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้ แสดงรายโรงแรมเท่านั้น ตัวเลขจากคำตอบของ Google ที่ปุ่ม “ถาม Google AI” เปิดให้ไม่ถูกนำมาใส่ในหน้านี้
 - **คู่เทียบ** = ที่พักประเภทเดียวกัน ห้องครึ่งเท่าถึงสองเท่า ในระยะตรง 2 กม. เรียงใกล้ก่อน เป็นรายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่ชุดคู่แข่งที่ยืนยันแล้ว
 - **เครือ** = จากแบรนด์ที่ชุดข้อมูลบันทึกพร้อมหลักฐาน ที่พักที่ไม่มีแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ
+- **ชื่อที่บันทึก** = ชื่อที่พักตามแหล่ง (ทะเบียนที่พัก ททท. หรือ CityMETER Hotel V3) แสดงใต้ชื่อเมื่อที่พักเปลี่ยนแบรนด์หรือชื่อแล้ว ชื่อหัวข้อเป็นชื่อที่แบรนด์ใช้บนหน้าเว็บของแบรนด์ (ลิงก์ “หน้าแบรนด์” และวันที่ตรวจอยู่ใน “ที่มาและพิกัด”) ค้นด้วยชื่อใดก็เจอ
 - **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
 - **อาคารใกล้หมุด** = เมื่อหมุดของที่พักไม่อยู่ในขอบอาคารใด มุมมองอาคาร 3 มิติเปิดที่อาคารบนแผนที่ที่ใกล้หมุดที่สุดภายใน 300 ม. (ไม่มีก็ขยายเป็น 800 ม.) โดยมีหมุดอยู่ในภาพด้วย เป็นการเลือกมุมกล้องเท่านั้น ไม่ได้ยืนยันว่าที่พักอยู่ในอาคารนั้น และไม่นับใน “ที่พักในอาคารนี้” ถ้าในระยะ 800 ม. ไม่มีอาคารบนแผนที่ ภาพแสดงพื้นที่รอบหมุด
 - **ภูมิประเทศ** = พื้นดินรอบหมุดของที่พัก (รัศมี 500 ม. ต้นไม้ 300 ม.) จาก SRTM 30 ม. (สำรวจปี 2543) และแผนที่ OSM ไม่ใช่การยืนยันวิว ราคา หรือความเสี่ยง
@@ -66,6 +68,33 @@ are third-party pages. Dated prices come only from `46_PRICE_OBSERVATIONS` of th
 publisher, stay dates, room, occupancy, tax basis, status, source URL and capture hash (59 quotes for 13 hotels, checked
 2026-10-25, not yet published) — rebuilt like every other field.
 Star ratings are not published (64 rows only, `source_recorded_not_certification_verified`; a star would read as a rating).
+
+## 2a. Names: recorded and current (0.3.4)
+
+Owner question 2026-11-02: “ทำไม novotel กะรน ใช้ logo Holiday Inn?”. The research sheet links a record to the brand
+that operates the property now, with evidence, and keeps the record's own name: the TAT register still names the asset
+at 568 Patak as Novotel Phuket Karon Beach Resort and Spa, IHG lists it as Holiday Inn Resort Phuket Karon Beach
+(`19_AFFILIATIONS`, retrieved 2026-10-24), so the panel showed a Novotel name beside a Holiday Inn Resort logo.
+
+Rule (`scripts/build-data.py#current_name`, judged after every row so each brand has all its labels): a branded record
+whose Latin name (`name_en`, else a Latin `venue_name`) carries none of its brand's labels, and which that brand's
+accepted listing (a listing role; status official, resolved or membership; `brand_id` of the linked brand, or the same
+group when the listing has no brand id) names differently, is shown under the listed name (`data.currentNames`: name,
+link, retrieved on). A listing in capitals only reads in title case. The record's own names stay in the row: under the
+heading and in the hover card, lists and the popup as “ชื่อที่บันทึก”, in “ที่มาและพิกัด” beside the listing link, and in
+search. A Thai-only record name (no Latin to compare) or a brand that lists the property under several names keeps the
+record's name. Nothing else of the row changes: rooms, prices, district, point and brand are the record's.
+
+24 rows at this build: 13 renamed or rebranded properties (Novotel Phuket Karon → Holiday Inn Resort Phuket Karon Beach,
+Novotel Bangkok Fenix Silom → Hilton Garden Inn Bangkok Silom, Pullman Bangkok Grande Sukhumvit → Hilton Bangkok Grande
+Asoke, Le Meridien Suvarnabhumi → Hilton Bangkok Suvarnabhumi Golf Resort & Spa, Majestic Grande → DoubleTree by Hilton
+Bangkok Ploenchit, The Tawana → voco Bangkok Surawong, Windsor Suites → Fairmont Bangkok Sukhumvit, Imperial Adamas →
+Phuket Marriott Resort and Spa, Nai Yang Beach, Wiang Indra → Kahavadi Chiang Rai, Hyatt Place Phuket Patong → Andaman
+Beach Hotel Phuket, Hilton Garden Inn Phuket Bangtao → Mamaka Phuket, Journey Hub → Mercure Phuket Patong Journeyhub,
+Tana Boutique → Mercure Samui Chaweng Tana) and 11 whose record spells the name differently, without the brand's words
+or with a broken character (Hop in → HOP INN Sa Kaeo, Emmiline → Emmaline Hotel Nan, Kimton → Kimpton Kitalay Samui,
+Le M?ridien → Le Méridien Chiang Rai Resort, Sheraton Grande Sukhumvit → … a Luxury Collection Hotel, Bangkok). Source names that
+carry HTML entities (`&amp;`, 240 rows) read as the character on screen.
 
 ## 3. District membership (build time, never re-assigned on screen)
 
@@ -247,7 +276,11 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
 - 642 research building masses (Drive bundle `hotel-building-mass.geojson`) are not drawn in this release; the map draws
   OpenStreetMap or CityMETER Building V4 massing per area (§7b). The research team checks the site boundaries of the 300
   most important resorts and pool villas in `49_SITE_BOUNDARY_CHECK` (owner 2026-11-01); a stay spread over several
-  buildings is joined to one building until those boundaries are in.
+  buildings is joined to one building until those boundaries are in. Checked in the live sheet 2026-11-02: the tab holds
+  the 300 stays (resort 282 · hotel 14 · bungalow 2 · other 2; 203 with a point) with columns for the boundary
+  (`boundary_geojson`, `boundary_source`, `boundary_evidence_url`, `buildings_in_boundary`), every row `todo`.
+- 24 records whose name predates a rebrand or spells the brand differently read under their brand's listed name (§2a);
+  the register names stay as the recorded names. Renaming the record itself is the research team's call.
 
 ## 10. Rebuild
 

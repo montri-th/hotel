@@ -8,13 +8,13 @@ Winning strategy ของชุดข้อมูลนี้ เขียน�
 |---|---|
 | Parent product | CityMETER (City Intelligence Base Layer ของ Landometer) · แกน Land (ทะเบียนกลาง `research.TH.hotel` / Land / TH) · production dataset code `hotel` (`https://landometer.com/v3/citymeter?d=hotel`) |
 | Feature / dataset | Hotel — ที่พักและห้องพักที่แหล่งบันทึก ทั่วประเทศไทย ระดับเขต/อำเภอ พร้อมบริบทรถไฟฟ้า ศูนย์การค้า เครือโรงแรม และที่พักใกล้เคียงขนาดใกล้กัน |
-| รุ่นเอกสาร | 0.3.3 · 2 พฤศจิกายน 2569 |
-| สถานะ | Public demo รุ่น 0.3.3 บน GitHub Pages (`https://montri-th.github.io/hotel/`); ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักที่เปิดอยู่ |
+| รุ่นเอกสาร | 0.3.4 · 2 พฤศจิกายน 2569 |
+| สถานะ | Public demo รุ่น 0.3.4 บน GitHub Pages (`https://montri-th.github.io/hotel/`); ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักที่เปิดอยู่ |
 | ผู้รับผิดชอบ | Landometer · CityMETER (owner: Montri) |
 | ผู้ใช้หลัก | ทีมพัฒนาโครงการและนักลงทุนที่ดิน/โรงแรม · ทีมขยายเครือและ revenue ของผู้ประกอบการโรงแรม · หน่วยงานท่องเที่ยว จังหวัด และ อปท. ที่ต้องอ่านความพร้อมของที่พักรายพื้นที่ · ผู้ประเมินมูลค่าและสถาบันการเงินที่ต้องคัดกรองทำเล |
 | ชุดข้อมูลที่ใช้ร่วม | CityMETER · Transit (สถานีราง release `transit-data-2026-10-31-r1`, `meta.context.rail`) · CityMETER Shopping centers (ทะเบียนศูนย์การค้า ณ 26 ต.ค. 2569, `meta.context.retail`) · งานวิจัยอาคารของชีตเดียวกัน (`16_BRANCH_SPATIAL_CANDIDATES`) · มวลอาคารเป็นบริบท: CityMETER Building V4 ใน อปท./เขตที่มีอาคารมากกว่า OSM ≥ 15% นอกนั้น OpenStreetMap ผ่าน OpenFreeMap (`data/building-units/`) |
 | แหล่งข้อมูล / วิธี (สรุป) | ชีตวิจัย `CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24` (แท็บ `01_VENUES` และแท็บประกอบ): CityMETER Hotel V3 ของ production, ทะเบียนที่พัก ททท. (TAT Data Catalog), หน้าทางการของเครือและที่พัก, รายชื่อที่หน่วยงานจังหวัดเผยแพร่; หนึ่งรายการ = หนึ่งแถวของ `01_VENUES` (`DATA_METHOD.md` §1–3) |
-| ข้อมูลตรวจถึง | 25 ต.ค. 2569 (`meta.checkedOn`) · สร้างข้อมูล 1 พ.ย. 2569 (`meta.builtOn`) · วันที่ตรวจ ≠ วันที่ที่พักเปิด ปิด หรือเปลี่ยนจำนวนห้อง |
+| ข้อมูลตรวจถึง | 1 พ.ย. 2569 (`meta.checkedOn`) · สร้างข้อมูล 2 พ.ย. 2569 (`meta.builtOn`; ตัวเลขเท่ารุ่น 0.3.1 เพิ่มชื่อปัจจุบันของที่พักที่เปลี่ยนแบรนด์ 24 แห่ง) · วันที่ตรวจ ≠ วันที่ที่พักเปิด ปิด หรือเปลี่ยนจำนวนห้อง |
 
 ## 1. Highlight
 

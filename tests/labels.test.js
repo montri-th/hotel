@@ -40,3 +40,14 @@ test('label text: a branded stay reads brand + site as text (logos are too small
   assert.deepEqual(labelParts({name: 'Holiday Inn Resort', nameEn: '', rooms: null, brand: {name: 'Holiday Inn Resort'}}, {places: P}), {brand: 'Holiday Inn Resort', site: '', rooms: null}, 'no site line when it would repeat the brand; unknown rooms → no number');
   assert.deepEqual(labelParts({name: 'โรงแรมภูเก็ต เกรซแลนด์ รีสอร์ท แอนด์ สปา', nameEn: 'Phuket Graceland Resort and Spa', rooms: 600, brand: null}, {places: P}), {brand: '', site: 'เกรซแลนด์', rooms: 600});
 });
+
+test('a stay under its brand’s listed name labels as that brand and site, never the recorded name (0.3.4)', async () => {
+  const {load} = await import('./helpers.js');
+  const {data} = load();
+  const P = ['ภูเก็ต', 'Phuket'];
+  const karon = data.rows.find(r => r.id === 'HOTEL-TAT-20160504143431473963');
+  const parts = labelParts(karon, {places: P});
+  assert.equal(parts.brand, 'Holiday Inn Resort');
+  assert.equal(parts.site, 'Karon Beach');
+  assert.ok(!/Novotel|โนโวเทล/.test(`${parts.brand} ${parts.site}`), 'the label reads the brand that operates the stay now');
+});
