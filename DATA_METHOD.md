@@ -1,7 +1,7 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.2 (data built 2026-11-01 from the export of 2026-11-01, unchanged since 0.3.1); the page computes everything from the data
+a snapshot of release 0.3.3 (data built 2026-11-01 from the export of 2026-11-01, unchanged since 0.3.1); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
 ## วิธีนับ — อ่านตัวเลขในหน้าอย่างไร
@@ -12,7 +12,7 @@ at run time, so these are fixtures, not constants.
 - **แห่ง** = รายการที่พักหนึ่งรายการตามแหล่ง ยังไม่ได้ตรวจภาคสนามว่ายังเปิดอยู่ ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักทั้งประเทศ
 - **สัดส่วนของจังหวัด** = ห้อง (หรือแห่ง) ในพื้นที่ ÷ ทั้งจังหวัดในตัวกรอง รวมที่พักที่แหล่งระบุได้แค่จังหวัด ซึ่งนับในยอดจังหวัดแต่ไม่อยู่ในสีของเขต/อำเภอใด
 - **ใกล้รถไฟฟ้า** = ห่างจุดอ้างอิงของสถานีที่เปิดแล้วไม่เกิน 500 ม. เป็นระยะตรง ไม่ใช่ระยะเดินหรือเวลาเดินทาง นับเฉพาะที่พักที่มีพิกัด (ตัวตั้งและตัวหารอยู่ในคำอธิบายของแต่ละแท่ง)
-- **ราคาที่บันทึก** = ต่ำสุด สูงสุด เฉลี่ยต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้ แสดงรายโรงแรมเท่านั้น
+- **ราคาที่บันทึก** = ต่ำสุด สูงสุด เฉลี่ยต่อคืนตามที่ CityMETER Hotel V3 บันทึก ไม่ทราบช่วงเวลา ไม่ใช่ราคาวันนี้ ADR หรือรายได้ แสดงรายโรงแรมเท่านั้น ตัวเลขจากคำตอบของ Google ที่ปุ่ม “ถาม Google AI” เปิดให้ไม่ถูกนำมาใส่ในหน้านี้
 - **คู่เทียบ** = ที่พักประเภทเดียวกัน ห้องครึ่งเท่าถึงสองเท่า ในระยะตรง 2 กม. เรียงใกล้ก่อน เป็นรายชื่อเริ่มต้นสำหรับเทียบ ไม่ใช่ชุดคู่แข่งที่ยืนยันแล้ว
 - **เครือ** = จากแบรนด์ที่ชุดข้อมูลบันทึกพร้อมหลักฐาน ที่พักที่ไม่มีแบรนด์ไม่ได้แปลว่าเป็นโรงแรมอิสระ
 - **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
@@ -59,6 +59,12 @@ measure the data does not support.
 per hotel as “ราคาที่บันทึก” (the unknown period is the “วันที่ราคา · ไม่ระบุในแหล่ง” field of the hotel's source
 details and a line of “วิธีนับ”), in the table and in the comparison set — never summed, averaged across
 hotels or called a rate, an ADR or revenue (owner decision 2026-11-01: publish per hotel, including the recorded prices).
+Prices are never taken from a search engine's AI answer (owner question 2026-11-02): it states no stay date, room,
+occupancy or tax basis, gives different figures from one ask to the next (Sri Panwa the same morning: 8,999–20,382 บาท
+per night in an AI Overview, 19,000–24,000 for its cheapest zone and a THB 17,159 map pin in AI Mode) and its sources
+are third-party pages. Dated prices come only from `46_PRICE_OBSERVATIONS` of the research sheet — each quote with its
+publisher, stay dates, room, occupancy, tax basis, status, source URL and capture hash (59 quotes for 13 hotels, checked
+2026-10-25, not yet published) — rebuilt like every other field.
 Star ratings are not published (64 rows only, `source_recorded_not_certification_verified`; a star would read as a rating).
 
 ## 3. District membership (build time, never re-assigned on screen)

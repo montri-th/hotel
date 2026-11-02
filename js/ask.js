@@ -1,9 +1,13 @@
 /**
  * Contextual outbound actions: the next question a reader has at each view, answered outside the demo.
  *
- *  - ถาม Google AI — Google Search AI Mode (udm=50) with a question written for the view: a hotel (is it still open,
- *    rates now, recent reviews, getting there), a district or a station (where to stay, prices, what is near), a
- *    hotel group (its brands and openings), a building, or the country/province overview (supply and occupancy news);
+ *  - ถาม Google AI — Google Search with a question written for the view: a hotel (is it still open, rates now, recent
+ *    reviews, getting there), a district or a station (where to stay, prices, what is near), a hotel group (its brands
+ *    and openings), a building, or the country/province overview (supply and occupancy news). Google answers at the
+ *    top of the results (AI Overview) and its AI Mode tab carries the question on. Never a link straight into AI Mode
+ *    (`udm=50`): Google stops one that comes from another site at “Continue with this search?” (Hotel 0.3.3, measured
+ *    2026-11-02 for long and short questions, with or without a referrer; a typed address or Google's own AI Mode tab
+ *    opens without it). Owner 2026-11-02: “ทำให้มันตอบทันเลยได้มั้ย”;
  *  - Street View — only where the view has a point (a hotel's selected point, or a station's reference point, which
  *    is not an entrance: the label says "ใกล้");
  *  - Google Maps — a search by hotel name + district + province (or "โรงแรม" + place).
@@ -12,7 +16,7 @@
  * buttons say where the answers come from (owner 2026-11-01: no caveat lines).
  */
 const enc = encodeURIComponent;
-export const aiModeURL = q => `https://www.google.com/search?udm=50&q=${enc(q)}`;
+export const googleAskURL = q => `https://www.google.com/search?q=${enc(q)}`;
 export const mapsSearchURL = q => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 export const streetViewURL = (lat, lon) => (Number.isFinite(lat) && Number.isFinite(lon)
   ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}` : '');
@@ -29,23 +33,23 @@ export function contextActions(ctx = {}) {
   const add = (id, label, href, note = '') => { if (href) out.push({id, label, href, note}); };
   if (ctx.kind === 'hotel' && ctx.row) {
     const r = ctx.row, name = clean(r.name || r.nameEn);
-    add('ai', 'ถาม Google AI', aiModeURL(`${join(name, place ? `(${place})` : '')} ยังเปิดให้บริการอยู่ไหม ราคาห้องพักช่วงนี้เท่าไร รีวิวล่าสุดเป็นอย่างไร และเดินทางจากสนามบินหรือสถานีอย่างไร`));
+    add('ai', 'ถาม Google AI', googleAskURL(`${join(name, place ? `(${place})` : '')} ยังเปิดให้บริการอยู่ไหม ราคาห้องพักช่วงนี้เท่าไร รีวิวล่าสุดเป็นอย่างไร และเดินทางจากสนามบินหรือสถานีอย่างไร`));
     add('maps', 'Google Maps', mapsSearchURL(join(name, ctx.area?.place, ctx.area?.province)));
   } else if (ctx.kind === 'building') {
     const names = [...new Set((ctx.rows || []).map(r => clean(r.name || r.nameEn)).filter(Boolean))].slice(0, 2);
-    add('ai', 'ถาม Google AI', aiModeURL(`${join(names.join(' และ '), place)} อยู่อาคารเดียวกันไหม และในอาคารนี้มีอะไรอีกบ้าง`));
+    add('ai', 'ถาม Google AI', googleAskURL(`${join(names.join(' และ '), place)} อยู่อาคารเดียวกันไหม และในอาคารนี้มีอะไรอีกบ้าง`));
   } else if (ctx.kind === 'area' && ctx.area) {
-    add('ai', 'ถาม Google AI', aiModeURL(`โรงแรมและที่พักใน${clean(ctx.area.place)} ${clean(ctx.area.province)} ย่านไหนน่าพัก ราคาช่วงนี้ประมาณเท่าไร และใกล้รถไฟฟ้าหรือแหล่งท่องเที่ยวอะไร`));
+    add('ai', 'ถาม Google AI', googleAskURL(`โรงแรมและที่พักใน${clean(ctx.area.place)} ${clean(ctx.area.province)} ย่านไหนน่าพัก ราคาช่วงนี้ประมาณเท่าไร และใกล้รถไฟฟ้าหรือแหล่งท่องเที่ยวอะไร`));
     add('maps', 'Google Maps', mapsSearchURL(`โรงแรม ${join(ctx.area.place, ctx.area.province)}`));
   } else if (ctx.kind === 'station' && ctx.station) {
     const s = ctx.station, line = (s.lines || []).join(' ');
-    add('ai', 'ถาม Google AI', aiModeURL(`โรงแรมใกล้สถานี${clean(s.name)}${line ? ` (${clean(line)})` : ''} มีที่ไหนบ้าง เดินไปกี่นาที ราคาช่วงนี้และรีวิวเป็นอย่างไร`));
+    add('ai', 'ถาม Google AI', googleAskURL(`โรงแรมใกล้สถานี${clean(s.name)}${line ? ` (${clean(line)})` : ''} มีที่ไหนบ้าง เดินไปกี่นาที ราคาช่วงนี้และรีวิวเป็นอย่างไร`));
     add('maps', 'Google Maps', mapsSearchURL(`โรงแรมใกล้สถานี${clean(s.name)}`));
   } else if (ctx.kind === 'chain' && ctx.chain) {
-    add('ai', 'ถาม Google AI', aiModeURL(`${clean(ctx.chain.name)} ในประเทศไทยมีโรงแรมกี่แห่ง แบรนด์อะไรบ้าง และประกาศเปิดโรงแรมใหม่ที่ไหนบ้าง`));
+    add('ai', 'ถาม Google AI', googleAskURL(`${clean(ctx.chain.name)} ในประเทศไทยมีโรงแรมกี่แห่ง แบรนด์อะไรบ้าง และประกาศเปิดโรงแรมใหม่ที่ไหนบ้าง`));
   } else if (ctx.kind === 'overview') {
     const where = clean(ctx.province) || 'ประเทศไทย';
-    add('ai', 'ถาม Google AI', aiModeURL(`ภาพรวมห้องพักโรงแรมใน${where}ล่าสุด อัตราการเข้าพักเป็นอย่างไร และมีโรงแรมใหม่เปิดหรือประกาศเปิดที่ไหนบ้าง`));
+    add('ai', 'ถาม Google AI', googleAskURL(`ภาพรวมห้องพักโรงแรมใน${where}ล่าสุด อัตราการเข้าพักเป็นอย่างไร และมีโรงแรมใหม่เปิดหรือประกาศเปิดที่ไหนบ้าง`));
   }
   const p = ctx.point;
   if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) {

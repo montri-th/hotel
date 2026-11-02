@@ -1,6 +1,6 @@
 {
   "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
-  "productVersion": "0.3.2",
+  "productVersion": "0.3.3",
   "updatedOn": "2026-11-02",
   "ldsVersion": "0.9.7",
   "release": "v0.9.7-owner.1",
@@ -71,6 +71,6 @@
     "terrain": "terrain mode at hilly sites (zoom ≥ 12.5, 3D, relief ≥ 30 m in view) and round a building or stay being looked at (relief ≥ 30 m within ±1 km of the site, 0.3.0): 3D ground × 1.5 + hillshade in basemap tones; the district fill switches off at 12.5 (hard switch, never a fade); buildings, the x-ray and the building camera stand on the drawn ground; switched only while the camera is still (js/terrain.js, js/camera.js)",
     "iconFirstText": "district chips carry the measure pictogram, the status is a pin + number, legend items are a symbol + 1–2 words; sentences live in titles and accessible names (owner 2026-11-01)"
   },
-  "outboundActions": "js/ask.js — Google AI Mode (hotel: still open, rates now, reviews, getting there · district/station: where to stay · group: brands and openings · overview: supply and occupancy news), Maps and Street View per view, pictograms ai/streetview/maps, one disclaimer line",
+  "outboundActions": "js/ask.js — Google Search answered by Google’s AI Overview, AI Mode one tab away (0.3.3; hotel: still open, rates now, reviews, getting there · district/station: where to stay · group: brands and openings · overview: supply and occupancy news), Maps and Street View per view, pictograms ai/streetview/maps, one disclaimer line",
   "copy": "short natural Thai: ห้อง / แห่ง / ที่พัก / ประเภท / ขนาด / เครือ / แบรนด์ / สถานี / เขต·อำเภอ / ระยะตรง / ราคาที่บันทึก; units on every number; one provenance line per panel view"
 }

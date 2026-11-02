@@ -182,6 +182,17 @@ test('Google actions: public names and points only, https, the question of the v
   assert.deepEqual(acts.map(a => a.id), ['ai', 'maps', 'streetview']);
   assert.ok(acts.every(a => a.href.startsWith('https://www.google.com/')));
   assert.ok(decodeURIComponent(acts[0].href).includes('ยังเปิดให้บริการอยู่ไหม'));
+  // 0.3.3 (owner 2026-11-02 “ทำให้มันตอบทันเลยได้มั้ย”): a plain Google Search, answered at the top by Google's AI
+  // Overview — a link straight into AI Mode (udm=50) stops at Google's “Continue with this search?” from another site.
+  const views = [acts, contextActions({kind: 'area', area: {place: 'เขตวัฒนา', province: 'กรุงเทพมหานคร'}}),
+    contextActions({kind: 'station', station: {name: 'อโศก', lines: ['สุขุมวิท']}}), contextActions({kind: 'chain', chain: {name: 'Accor'}}),
+    contextActions({kind: 'overview', province: 'ภูเก็ต'}), contextActions({kind: 'building', rows: [h], area: {place: 'เขตปทุมวัน', province: 'กรุงเทพมหานคร'}})];
+  for (const list of views) {
+    const ai = list.find(a => a.id === 'ai');
+    assert.ok(ai, 'every view asks Google AI');
+    assert.match(ai.href, /^https:\/\/www\.google\.com\/search\?q=[^&]+$/, 'a plain search, the question only');
+    assert.ok(!/udm=/.test(ai.href), 'never straight into AI Mode');
+  }
   assert.ok(!acts.some(a => a.href.includes(h.id)), 'no internal id leaves the page');
   assert.deepEqual(contextActions({kind: 'area', area: {place: 'เขตวัฒนา', province: 'กรุงเทพมหานคร'}}).map(a => a.id), ['ai', 'maps']);
   const st = contextActions({kind: 'station', station: {name: 'อโศก', lines: ['สุขุมวิท']}, point: {lat: 13.737, lon: 100.56, role: 'station'}});
