@@ -1,11 +1,42 @@
-# CityMETER Hotel 0.3.2 — verification
+# CityMETER Hotel 0.3.3 — verification
 
-What was checked for release 0.3.2, how, and what was not. Results are from 2026-11-02 (Asia/Bangkok). The code verified
-here is commit `7aa0cee` (cache tag `?v=20261102-r10`); the commit that adds this file changes documentation only. The
-tag went live as `r8` (`f006daa`) and `r9` (`4ba1bbe`) the same morning before the walk found the two fixes below
-(phone fit, free-box refit, names off the building); each push was attested. The final live attestation of the
-published commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
-Earlier releases: 0.3.1 (`8a05b44`, `r7`), 0.3.0 (`0016573`, `r6`), 0.2.0 (`6e699b7`, `r5`), 0.1.0 (`cf8fa6b`, `r2`).
+Release 0.3.3 (commit `17f60b3`, cache tag `?v=20261102-r11`) changes one link; section 0 records how it was checked.
+Sections 1–6 record release 0.3.2, whose code is unchanged in 0.3.3. Results are from 2026-11-02 (Asia/Bangkok). The
+commit that adds this file changes documentation only; the final live attestation of the published commit is recorded
+in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
+
+## 0. Release 0.3.3 — ถาม Google AI answers at once
+
+Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
+ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
+
+| Link | Opened by | Result |
+|---|---|---|
+| AI Mode `search?udm=50&q=` (0.3.2), the long hotel question | a click on the live site (`rel="noopener noreferrer"`) | “Continue with this search? Malicious queries could result in unsafe or harmful actions.” |
+| AI Mode, a short question (“Sri Panwa Phuket”) | a click from the live site (referrer kept) | the same dialog |
+| AI Mode, the same two questions | the address typed in the browser | the answer at once, no dialog |
+| Google Search `search?q=` (0.3.3), the same long question | a click from the site | no dialog; AI Overview at the top |
+| Google's own AI Mode tab on that results page | a click inside Google | AI Mode answers, no dialog |
+
+So the dialog follows a link into AI Mode from another site, whatever the question or the referrer, and no URL form
+avoids it; Google Search does not ask. The questions of all six views (hotel, building, district, station, group,
+overview) each showed an AI Overview at the top of Google Search (hotel and district opened by a click from the site,
+the others by address). `tests/views.test.js` holds every AI link to a plain
+search with the question only. Live (`17f60b3`, r11): 352 published files identical (`npm run verify:live`); a click on
+ถาม Google AI in เขตวัฒนา opened Google Search with an AI Overview and no dialog. Not checked: a signed-out browser, other
+countries' Google, Safari and Firefox; whether Google shows an AI Overview is Google's call per question.
+
+Prices in Google's answers are not copied into the data (owner question the same morning): the same Sri Panwa question
+gave 8,999–20,382 บาท per night in an AI Overview and 19,000–24,000 (its cheapest zone) with a THB 17,159 map pin in AI
+Mode, with no stay date, room or occupancy. Dated prices have their own path: `46_PRICE_OBSERVATIONS` (59 quotes, 13
+hotels, checked 2026-10-25; not yet published).
+
+## Release 0.3.2
+
+The code verified for 0.3.2 is commit `7aa0cee` (cache tag `?v=20261102-r10`). The tag went live as `r8` (`f006daa`)
+and `r9` (`4ba1bbe`) the same morning before the walk found the fixes below (phone fit, free-box refit, names off the
+building); each push was attested. Earlier releases: 0.3.1 (`8a05b44`, `r7`), 0.3.0 (`0016573`, `r6`), 0.2.0
+(`6e699b7`, `r5`), 0.1.0 (`cf8fa6b`, `r2`).
 
 Owner rule for this release (2026-11-02 00:07): “เวลาคลิกที่ poi hotel แล้วต้องแสดง 2-point perspective ของ 3d building
 mass ทุกกรณีสิ”.
