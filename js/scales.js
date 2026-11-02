@@ -119,11 +119,18 @@ export const buildMetricRamp = (values, {metric = 'rooms', unit = 'ห้อง'
 /** The count ramp (count family) of one reading. */
 export const buildCountRamp = (values, {unit = 'แห่ง'} = {}) => buildRamp(values, {scale: COUNT_SCALE, unit});
 
+/** Narrowest ramp the legends draw (px): the phone dock (0.3.5) — the tick spacing is checked at this width. */
+export const RAMP_MIN_WIDTH = 190;
+/** Width of a tick label at 11 px tabular figures (px): digits 6.2, separators 3, anything else 6.6. */
+export const tickLabelWidth = label => [...String(label)].reduce((w, c) => w + (/\d/.test(c) ? 6.2 : /[.,]/.test(c) ? 3 : 6.6), 0);
+
 /**
  * Legend ticks: the lowest and highest values plus the values nearest samples 10, 20 and 30, each placed at its
- * own sample; a tick closer than 8 samples to the one before it is dropped (the highest value always stays).
+ * own sample (the lowest anchored at the start, the highest at the end, the rest centred). A tick whose label
+ * would touch its neighbour's on a ramp `widthPx` wide is dropped; the highest value always stays (0.3.5: the
+ * phone showed “11,026” over “153,200” when the spacing counted samples only).
  */
-export function rampTicks(levels, fmt = String) {
+export function rampTicks(levels, fmt = String, {widthPx = RAMP_MIN_WIDTH, gapPx = 5} = {}) {
   if (!levels.length) return [];
   const picks = [];
   for (const target of [0, 10, 20, 30, 40]) {
@@ -133,12 +140,22 @@ export function rampTicks(levels, fmt = String) {
   }
   const top = levels.at(-1);
   if (!picks.includes(top)) picks.push(top);
+  const perSample = widthPx / RAMP_STEPS;
+  const box = t => {
+    const x = (t.index + 0.5) * perSample, w = tickLabelWidth(fmt(t.value));
+    const edge = t.index <= 2 ? 'start' : t.index >= RAMP_STEPS - 3 ? 'end' : 'mid';
+    return edge === 'start' ? [x - 2, x - 2 + w] : edge === 'end' ? [x + 2 - w, x + 2] : [x - w / 2, x + w / 2];
+  };
+  const fits = (a, b) => b.index - a.index >= 8 && box(a)[1] + gapPx <= box(b)[0];
   const kept = [];
   for (const l of picks.sort((a, b) => a.index - b.index)) {
-    if (kept.length && l.index - kept.at(-1).index < 8) {
-      if (l === top) kept.pop(); else continue;
+    if (l === top) {
+      while (kept.length > 1 && !fits(kept.at(-1), l)) kept.pop();
+      if (kept.length === 1 && kept[0] !== l && !fits(kept[0], l) && kept[0].index !== l.index) kept.pop();
+      if (!kept.includes(l)) kept.push(l);
+      continue;
     }
-    kept.push(l);
+    if (!kept.length || fits(kept.at(-1), l)) kept.push(l);
   }
   return kept.map(l => ({index: l.index, value: l.value, label: fmt(l.value)}));
 }

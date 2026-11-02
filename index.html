@@ -120,6 +120,8 @@
         <button id="open-help" type="button" aria-haspopup="dialog" aria-controls="usage-help">วิธีใช้</button>
         <button id="mobile-panel" type="button" aria-expanded="false" aria-controls="panel">ข้อมูล</button>
       </div>
+      <!-- Phone dock (0.3.5): the Aha line and the legend as one compact card; on wider screens it adds no box. -->
+      <div class="map-dock" id="map-dock">
       <section id="map-aha" class="map-aha" aria-label="ข้อค้นพบแรก" hidden></section>
       <div class="map-legend" id="map-legend" aria-label="คำอธิบายแผนที่">
         <div class="legend-block" id="legend-areas">
@@ -138,6 +140,7 @@
           <span id="legend-terrain" class="legend-terrain-item" hidden title="ภูมิประเทศ 3 มิติ ขยายความสูง 1.5 เท่า · SRTM 30 ม. · แสดงเองในพื้นที่ที่มีเนินเขา"><i class="pictogram pic-elevation" aria-hidden="true"></i>ภูมิประเทศ ×1.5</span>
           <details id="category-key"><summary title="ประเภทที่พัก: สีและรูปทรงของสัญลักษณ์"><span id="category-cues" class="category-cues" aria-hidden="true"></span>ประเภท</summary><div id="category-items"></div></details>
         </div>
+      </div>
       </div>
       <p class="map-status" id="map-status" aria-live="off"></p>
     </section>

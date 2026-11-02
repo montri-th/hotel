@@ -734,8 +734,10 @@ function visibleBox() {
   for (const x of [$('insights'), $('results'), $('map-legend'), $('map-aha')]) if (shown(x)) bottom = Math.min(bottom, x.getBoundingClientRect().top - r.top - 10);
   if (sheetOpen()) bottom = Math.min(bottom, window.innerHeight - $('panel').offsetHeight - r.top - 10);
   let right = W - 12;
+  // The map controls hold the top-right corner only: they bound the box on the right only where they reach into it
+  // (a phone keeps the compass alone, beside the toolbar — 0.3.5).
   const nav = el.querySelector('.maplibregl-ctrl-top-right');
-  if (nav?.offsetWidth) right = Math.min(right, nav.getBoundingClientRect().left - r.left - 8);
+  if (nav?.offsetWidth && nav.getBoundingClientRect().bottom - r.top > top) right = Math.min(right, nav.getBoundingClientRect().left - r.left - 8);
   const left = 12;
   if (bottom - top < 140) top = Math.max(4, bottom - 140); // very short screens borrow the toolbar strip
   return {left, top, right: Math.max(left + 120, right), bottom: Math.max(top + 120, bottom)};
@@ -1491,15 +1493,20 @@ function installSpatialLayers() {
 
 /**
  * The attribution (OpenStreetMap / OpenMapTiles / CityMETER) must stay readable: its live height — expanded on
- * load, compact after the first drag — becomes --attrib-height, which keeps the phone legend and Aha card above it.
+ * load, compact after the first drag — becomes --attrib-height, which keeps the phone dock above it while it is open.
+ * Folded to its (i) button (`is-attrib-compact`, 0.3.5) the phone dock drops to the tray and leaves the button its corner.
  */
 function trackAttribution(map) {
   const panel = map.getContainer().closest('.map-panel');
   const el = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
   if (!panel || !el) return null;
-  const set = () => panel.style.setProperty('--attrib-height', `${Math.ceil(el.getBoundingClientRect().height) + 10}px`);
+  const set = () => {
+    panel.style.setProperty('--attrib-height', `${Math.ceil(el.getBoundingClientRect().height) + 10}px`);
+    panel.classList.toggle('is-attrib-compact', el.classList.contains('maplibregl-compact') && !el.classList.contains('maplibregl-compact-show'));
+  };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(set) : null;
   observer?.observe(el);
+  if (typeof MutationObserver === 'function') new MutationObserver(set).observe(el, {attributes: true, attributeFilter: ['class']});
   set();
   return observer;
 }

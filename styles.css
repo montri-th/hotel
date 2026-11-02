@@ -322,6 +322,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 
 /* Compact Aha on the map (mobile only; see responsive section) */
 .map-aha { display: none; }
+/* The phone dock (0.3.5) holds the Aha card and the legend; on wider screens it adds no box (each keeps its place). */
+.map-dock { display: contents; }
 
 /* Neighborhood labels */
 .area-labels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
@@ -487,19 +489,33 @@ td small { display: block; color: var(--text-metadata); font-size: 12px; margin-
   .map-toolbar button#open-help { display: none; }
   .sheet-links { display: flex; justify-content: flex-end; align-items: center; gap: 18px; margin: 0 0 6px; font-size: 12px; }
   .sheet-links .link-button, .sheet-links .text-link { display: inline-flex; align-items: center; min-height: 32px; font-size: 12px; }
-  /* --attrib-height (app.js) keeps the legend and the Aha card above the map attribution, expanded or compact. */
-  .map-legend { bottom: calc(var(--bottom-panel-height) + var(--attrib-height, 32px) + 4px); max-width: calc(100% - 16px); padding: 8px 10px; gap: 4px; }
+  /* Map dock (0.3.5, owner 2026-11-02 “ในมือถือ เหลือพื้นที่ map น้อยมาก ช่วยปรับปรุงด้วย”): the Aha line and the
+     legend read as one compact card at the foot of the map. While the attribution is open (on load) the dock sits
+     above it (--attrib-height, app.js); once it folds to its (i) button the dock drops to the tray and leaves the
+     button its corner. */
+  .map-dock { position: absolute; left: 8px; right: 8px; bottom: calc(var(--bottom-panel-height) + var(--attrib-height, 32px) + 4px); z-index: 5; display: flex; flex-direction: column; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); overflow: hidden; }
+  .map-panel.is-attrib-compact .map-dock { right: 46px; bottom: calc(var(--bottom-panel-height) + 8px); }
+  .map-panel.is-detail-zoom .map-dock:has(> .map-aha[hidden]), .map-panel.is-tight .map-dock:has(> .map-aha[hidden]) { display: none; }
+  .map-dock .map-legend { position: static; max-width: none; padding: 6px 10px 6px; gap: 4px; border: 0; border-radius: 0; background: transparent; }
+  .map-dock .map-aha:not([hidden]) + .map-legend { border-top: 1px solid var(--border-hairline); }
+  /* Legend in one row: the measure switch, then the level and the ramp stacked beside it. */
+  .map-dock #legend-areas { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 10px; }
+  .map-dock .metric-switch { grid-row: 1 / span 2; }
+  .map-dock .metric-switch button { min-height: 34px; padding: 2px 11px; }
+  .map-dock .legend-title { font-size: 11px; line-height: 1.25; font-weight: 600; color: var(--text-secondary); margin: 0; }
+  .map-dock .legend-steps { flex-wrap: nowrap; min-width: 0; }
+  .map-dock .legend-ramp { width: 100%; min-width: 0; max-width: 260px; }
   .legend-marks { display: none; }
   .map-status { display: none; }
-  .map-aha { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; position: absolute; left: 8px; right: 8px; bottom: calc(var(--bottom-panel-height) + var(--attrib-height, 32px) + var(--legend-height, 66px) + 10px); z-index: 5; padding: 10px 12px; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
-  .map-aha h2 { font-size: 14px; line-height: 1.4; font-family: var(--font-body); font-weight: 600; }
-  .map-aha p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-  .map-aha .map-aha-crumb { font-size: 11px; color: var(--text-metadata); margin: 0 0 2px; }
+  .map-aha { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 8px 7px 10px; }
+  .map-aha h2 { font-size: 13px; line-height: 1.35; font-family: var(--font-body); font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  /* The province and the district names are on the map (crumb chips, district labels): the dock keeps the finding. */
+  .map-aha p, .map-aha .map-aha-crumb { display: none; }
   .crumbs-nav { margin-bottom: 4px; }
   .crumbs.is-collapsible:not(.is-expanded) .is-collapsible { display: none; }
   .crumbs.is-collapsible:not(.is-expanded) .crumb-ellipsis { display: inline-flex; }
   .crumbs.is-collapsible:not(.is-expanded) .crumb-ellipsis::before { content: none; padding: 0; }
-  .map-aha .btn { min-height: 40px; font-size: 12px; padding: 6px 12px; }
+  .map-aha .btn { min-height: 36px; font-size: 12px; padding: 4px 12px; }
   .panel { position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 64dvh; border-left: 0; border-top: 1px solid var(--border-default); border-radius: var(--radius-md) var(--radius-md) 0 0; transform: translateY(100%); visibility: hidden; transition: transform .2s ease, visibility 0s linear .2s; z-index: 12; padding-bottom: env(safe-area-inset-bottom); }
   .panel.is-open { transform: none; visibility: visible; transition: transform .2s ease; }
   .panel-top { position: static; padding: 6px 14px 8px; }
@@ -523,6 +539,10 @@ td small { display: block; color: var(--text-metadata); font-size: 12px; margin-
   .quality-bar { grid-template-columns: minmax(0, 1fr) 64px; }
   .quality-bar .mix-track { grid-column: 1 / -1; grid-row: 2; }
   .map-failure { inset: 25% 12px; }
+}
+/* Phones zoom with two fingers: the zoom buttons step aside for the map; the compass (north, tilt) stays (0.3.5). */
+@media (max-width: 760px) and (orientation: portrait) and (pointer: coarse) {
+  .map-panel .maplibregl-ctrl-zoom-in, .map-panel .maplibregl-ctrl-zoom-out { display: none; }
 }
 @media (min-width: 761px), (orientation: landscape) {
   .panel button.mobile-close, .map-toolbar button#mobile-panel { display: none; }

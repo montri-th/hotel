@@ -94,3 +94,22 @@ test('label ink is the foundation pair with the higher contrast; a number on a s
   assert.equal(classify(29, m).plate, true, 'sample 28 carries a plate');
   assert.equal(classify(41, m).plate, false);
 });
+
+test('ramp tick labels never touch on the narrowest legend (0.3.5: “11,026” sat on “153,200” on a phone)', async () => {
+  const {RAMP_MIN_WIDTH, tickLabelWidth} = await import('../js/scales.js');
+  const fmt = v => v.toLocaleString('en-US');
+  const sets = [
+    [1104, 1500, 2000, 2600, 3200, 3821, 4300, 5000, 5800, 6785, 7500, 8200, 9000, 11026, 15000, 20000, 28656, 30000, 49107, 50000, 93098, 153200],
+    [4, 20, 60, 179, 300, 549, 1000, 5000, 12000, 62561],
+    [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711],
+  ];
+  for (const values of sets) {
+    const m = buildRamp(values, {scale: SUPPLY_SCALE});
+    const ticks = rampTicks(m.levels, fmt);
+    assert.equal(ticks[0].value, Math.min(...values), 'the lowest value keeps its tick');
+    assert.equal(ticks.at(-1).value, Math.max(...values), 'the highest value keeps its tick');
+    const per = RAMP_MIN_WIDTH / RAMP_STEPS;
+    const box = t => { const x = (t.index + 0.5) * per, w = tickLabelWidth(t.label); return t.index <= 2 ? [x - 2, x - 2 + w] : t.index >= 38 ? [x + 2 - w, x + 2] : [x - w / 2, x + w / 2]; };
+    for (let i = 1; i < ticks.length; i++) assert.ok(box(ticks[i - 1])[1] + 5 <= box(ticks[i])[0], `${ticks[i - 1].label} and ${ticks[i].label} keep apart`);
+  }
+});
