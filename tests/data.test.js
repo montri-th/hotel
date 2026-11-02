@@ -156,6 +156,10 @@ test('current name (owner 2026-11-02 “ทำไม novotel กะรน ใช
   assert.match(karon.nameSource.url, /^https:\/\/www\.ihg\.com\//);
   assert.ok(filterRows(data.rows, {search: 'novotel phuket karon'}).includes(karon), 'the recorded name still finds it');
   assert.ok(filterRows(data.rows, {search: 'holiday inn resort phuket karon'}).includes(karon), 'the listed name finds it');
+  assert.ok(filterRows(data.rows, {search: 'novotel karon'}).includes(karon), 'every word, in any place: the way people type a name');
+  assert.ok(filterRows(data.rows, {search: 'โนโวเทล กะรน'}).includes(karon), 'Thai words separated by a space');
+  assert.ok(filterRows(data.rows, {search: 'novotel karon'}).every(r => /novotel/i.test(r.haystack) && /karon/i.test(r.haystack)));
+  assert.equal(filterRows(data.rows, {search: '   '}).length, data.rows.length, 'a blank search filters nothing');
   const naka = data.rows.find(r => r.id === 'HOTEL-TAT-20160413120525455474');
   assert.equal(naka.name, 'The Naka Island, a Luxury Collection Resort & Spa, Phuket', 'a listing in capitals reads in title case');
   // A record that carries its brand keeps its own name (Thai-only names are read as written).

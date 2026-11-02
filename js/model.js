@@ -200,13 +200,15 @@ export function decodeDataset(json, index) {
  * Area selection and area focus are applied by the caller (row scopes, see app.js).
  */
 export function filterRows(rows, f = {}) {
-  const q = lower(f.search).trim();
+  // Every word of the search, anywhere in the stay's names, brand, group, area or type (0.3.4: “novotel karon” finds
+  // Novotel Phuket Karon Beach…); Thai written without spaces is one word, matched as before.
+  const terms = lower(f.search).trim().split(/\s+/).filter(Boolean);
   return rows.filter(r => {
     if (f.group && r.groupId !== f.group) return false;
     if (f.size && r.size !== f.size) return false;
     if (f.province && r.province !== f.province) return false;
     if (f.chain === 'none' ? r.chain : f.chain && r.chain?.id !== f.chain) return false;
-    return !q || r.haystack.includes(q);
+    return terms.every(t => r.haystack.includes(t));
   });
 }
 
