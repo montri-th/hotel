@@ -120,7 +120,7 @@ export const buildMetricRamp = (values, {metric = 'rooms', unit = 'ห้อง'
 export const buildCountRamp = (values, {unit = 'แห่ง'} = {}) => buildRamp(values, {scale: COUNT_SCALE, unit});
 
 /** Narrowest ramp the legends draw (px): the phone dock (0.3.5) — the tick spacing is checked at this width. */
-export const RAMP_MIN_WIDTH = 190;
+export const RAMP_MIN_WIDTH = 170;
 /** Width of a tick label at 11 px tabular figures (px): digits 6.2, separators 3, anything else 6.6. */
 export const tickLabelWidth = label => [...String(label)].reduce((w, c) => w + (/\d/.test(c) ? 6.2 : /[.,]/.test(c) ? 3 : 6.6), 0);
 

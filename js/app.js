@@ -982,6 +982,7 @@ function renderLegend() {
   steps.innerHTML = m?.ramp?.levels.length
     ? rampLegendHTML(m.ramp, {zero: m.zeroCount > 0, zeroTitle: `0 ${u.one} ในตัวกรองนี้`})
     : `<span class="hint">ไม่มี${esc(u.subject)}ในตัวกรองนี้</span>`;
+  spaceTicks(steps);
   $('legend-areas').title = atProvince
     ? `${u.label}รวมต่อจังหวัด · สีเข้ม = มาก · ซูมเข้าเพื่อดูรายเขต/อำเภอ`
     : `${u.label}รวมต่อเขต/อำเภอ · สีเข้ม = มาก`;
@@ -1511,11 +1512,34 @@ function trackAttribution(map) {
   return observer;
 }
 
-/** The phone Aha card sits above the legend, whose height changes with the measure switch and the ramp (--legend-height). */
+/**
+ * Ramp tick labels on the ramp's actual width (the phone dock narrows it): a label that would touch the one before it
+ * steps aside; the highest value keeps its tick and the one before it steps aside instead (js/scales.js#rampTicks
+ * already spaces them for the narrowest ramp; this is the safety net for fonts and widths it cannot know).
+ */
+function spaceTicks(root) {
+  for (const ramp of root?.querySelectorAll('.ramp-ticks') || []) {
+    const ticks = [...ramp.querySelectorAll('.ramp-tick')];
+    ticks.forEach(t => t.classList.remove('is-crowded'));
+    if (ticks.length < 3 || !ramp.offsetWidth) continue;
+    const shown = [ticks[0]];
+    for (const t of ticks.slice(1)) {
+      const last = t === ticks.at(-1);
+      while (shown.length > 1 && shown.at(-1).getBoundingClientRect().right + 4 > t.getBoundingClientRect().left) {
+        if (!last) break;
+        shown.pop().classList.add('is-crowded');
+      }
+      if (shown.at(-1).getBoundingClientRect().right + 4 > t.getBoundingClientRect().left && !last) { t.classList.add('is-crowded'); continue; }
+      shown.push(t);
+    }
+  }
+}
+
+/** The legend's height changes with the measure switch and the ramp (--legend-height); its ticks are spaced again on resize. */
 function trackLegend() {
   const panel = document.querySelector('.map-panel'), el = $('map-legend');
   if (!panel || !el) return null;
-  const set = () => panel.style.setProperty('--legend-height', `${Math.ceil(el.offsetParent ? el.getBoundingClientRect().height : 0)}px`);
+  const set = () => { panel.style.setProperty('--legend-height', `${Math.ceil(el.offsetParent ? el.getBoundingClientRect().height : 0)}px`); spaceTicks(el); };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(set) : null;
   observer?.observe(el);
   set();

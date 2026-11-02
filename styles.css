@@ -299,6 +299,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .ramp-tick.is-end { transform: translateX(calc(-100% + 2px)); }
 .ramp-tick.is-end::before { left: auto; right: 2px; }
 .ramp-zero i { height: 12px; }
+/* A tick whose label would touch its neighbour on this ramp's actual width steps aside (js/app.js#spaceTicks). */
+.ramp-tick.is-crowded { visibility: hidden; }
 .chart-legend .legend-ramp { margin-top: 2px; }
 .legend-step .legend-nodata, .legend-nodata { background: repeating-linear-gradient(135deg, var(--border-emphasis) 0 1.5px, var(--data-no-data) 1.5px 5px); border-color: var(--border-emphasis); }
 .legend-marks span { display: inline-flex; align-items: center; gap: 6px; }
@@ -498,13 +500,16 @@ td small { display: block; color: var(--text-metadata); font-size: 12px; margin-
   .map-panel.is-detail-zoom .map-dock:has(> .map-aha[hidden]), .map-panel.is-tight .map-dock:has(> .map-aha[hidden]) { display: none; }
   .map-dock .map-legend { position: static; max-width: none; padding: 6px 10px 6px; gap: 4px; border: 0; border-radius: 0; background: transparent; }
   .map-dock .map-aha:not([hidden]) + .map-legend { border-top: 1px solid var(--border-hairline); }
-  /* Legend in one row: the measure switch, then the level and the ramp stacked beside it. */
-  .map-dock #legend-areas { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 10px; }
-  .map-dock .metric-switch { grid-row: 1 / span 2; }
-  .map-dock .metric-switch button { min-height: 34px; padding: 2px 11px; }
-  .map-dock .legend-title { font-size: 11px; line-height: 1.25; font-weight: 600; color: var(--text-secondary); margin: 0; }
-  .map-dock .legend-steps { flex-wrap: nowrap; min-width: 0; }
-  .map-dock .legend-ramp { width: 100%; min-width: 0; max-width: 260px; }
+  /* Legend in one row: the measure switch, then the level (with the zero swatch at its end) over the ramp. */
+  .map-dock #legend-areas { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 8px; }
+  .map-dock .metric-switch { grid-row: 1 / span 2; grid-column: 1; }
+  .map-dock .metric-switch button { min-height: 34px; padding: 2px 10px; }
+  .map-dock .legend-title { grid-row: 1; grid-column: 2; font-size: 11px; line-height: 1.25; font-weight: 600; color: var(--text-secondary); margin: 0; }
+  .map-dock .legend-steps { display: contents; }
+  .map-dock .legend-ramp { grid-row: 2; grid-column: 2 / -1; width: 100%; min-width: 0; max-width: 280px; }
+  .map-dock .ramp-zero { grid-row: 1; grid-column: 3; flex-direction: row; gap: 4px; min-width: 0; }
+  .map-dock .ramp-zero i { width: 18px; height: 10px; }
+  .map-dock .legend-steps > .hint { grid-row: 2; grid-column: 2 / -1; }
   .legend-marks { display: none; }
   .map-status { display: none; }
   .map-aha { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 8px 7px 10px; }
