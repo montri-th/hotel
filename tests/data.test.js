@@ -168,3 +168,41 @@ test('current name (owner 2026-11-02 “ทำไม novotel กะรน ใช
   assert.ok(data.rows.filter(r => !r.recorded).every(r => !r.nameSource));
   assert.ok(!data.rows.some(r => /&amp;|&quot;/.test(`${r.name} ${r.nameEn}`)), 'source HTML entities read as characters');
 });
+
+test('site groups (owner 2026-11-03 “พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท”): a checked site publishes its buildings as points — no parcel, deed or note', () => {
+  const {raw, data} = load();
+  const meta = raw.meta.siteGroups, groups = Object.entries(raw.siteGroups);
+  assert.equal(meta.tab, '49_SITE_BOUNDARY_CHECK');
+  assert.equal(groups.length, meta.rows);
+  assert.equal(groups.length, raw.meta.counts['site.groups']);
+  assert.equal(groups.reduce((s, [, v]) => s + v.n, 0), meta.buildings);
+  assert.ok(meta.file === null || /^[a-f0-9]{64}$/.test(meta.file.sha256), 'the live tab read is bound by its hash');
+  for (const f of ['boundary_geojson', 'notes', 'main_building_note', 'checked_by']) assert.ok(raw.meta.excludedFields.includes(`49_SITE_BOUNDARY_CHECK.${f}`), f);
+  const byId = new Map(data.rows.map(r => [r.id, r]));
+  for (const [i, v] of groups) {
+    const r = byId.get(raw.cols.key[Number(i)]);
+    assert.deepEqual(Object.keys(v).sort(), ['n', 'on', 'pts', 'src', 'url'], 'points, count, date, source code and link only');
+    assert.equal(v.n, v.pts.length);
+    assert.equal(new Set(v.pts.map(p => p.join(','))).size, v.n, `${r.id}: one point per building`);
+    assert.ok(meta.checkedOn.includes(v.on) && v.on <= raw.meta.checkedOn, `${r.id}: dated on or before the check`);
+    assert.ok(v.src in meta.sources, `${r.id}: a known boundary source`);
+    assert.ok(v.url === -1 || /^https:\/\//.test(raw.urls[v.url]), `${r.id}: the evidence is a public https page`);
+    assert.ok(hasPoint(r), `${r.id}: only a stay with a point`);
+    for (const [lon, lat] of v.pts) {
+      assert.ok(Number.isFinite(lon) && Number.isFinite(lat) && Math.round(lon * 1e6) / 1e6 === lon && Math.round(lat * 1e6) / 1e6 === lat);
+      assert.ok(distanceM(r.latitude, r.longitude, lat, lon) <= 600, `${r.id}: a site building within 600 m of the stay`);
+    }
+    assert.deepEqual(r.site.points, v.pts);
+    assert.equal(r.site.source, meta.sources[v.src]);
+  }
+  assert.equal(data.rows.filter(r => r.site).length, groups.length, 'no other row carries a site');
+  // The three pilots of the owner's request: the buildings inside each resort's site.
+  const pilots = {'HOTEL-TAT-20160504143431473963': 20, 'HOTEL-TAT-20160428122116456581': 19, 'HOTEL-TAT-20160501120539473664': 21};
+  for (const [id, n] of Object.entries(pilots)) assert.equal(byId.get(id).site?.n, n, id);
+  assert.match(byId.get('HOTEL-TAT-20160428122116456581').site.url, /^https:\/\/theoldphuket\.com\//);
+  // Nothing of the boundary, the deeds or the notes is published.
+  const site = JSON.stringify([raw.siteGroups, meta]);
+  assert.ok(!/geojson|Polygon|coordinates|โฉนด|ระวาง|เลขที่ดิน|ไร่/.test(site), 'no parcel shape, deed or sheet note');
+  assert.ok(Object.values(raw.siteGroups).every(v => v.pts.flat().every(x => !Number.isInteger(x))), 'points only — no integer that could be a deed or parcel number');
+  assert.ok(!Object.keys(raw).some(k => /parcel|deed|boundary/i.test(k)));
+});

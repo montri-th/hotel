@@ -3,8 +3,8 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.5",
-  "updatedOn": "2026-11-02",
+  "productVersion": "0.3.6",
+  "updatedOn": "2026-11-03",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
     "commands": {
@@ -335,6 +335,30 @@
         "tests/scales.test.js"
       ],
       "status": "done"
+    },
+    {
+      "id": "T13",
+      "title": "0.3.6 (owner 2026-11-03 “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”): research site boundaries of three Karon resorts in 49_SITE_BOUNDARY_CHECK (Department of Lands parcel outlines + each stay's site layout); the build publishes the buildings inside as interior points (data.siteGroups); opening the stay highlights, x-rays and frames them together; “ทั้งรีสอร์ท N อาคาร”, a “ไซต์” source row and the site source in the provenance line",
+      "dependsOn": [
+        "T1",
+        "T6"
+      ],
+      "acceptanceCriteria": [
+        "A13",
+        "A15"
+      ],
+      "files": [
+        "scripts/build-data.py",
+        "js/model.js",
+        "js/building-join.js",
+        "js/app.js",
+        "js/panel.js",
+        "tests/building-join.test.js",
+        "tests/data.test.js",
+        "tests/views.test.js",
+        "DATA_METHOD.md"
+      ],
+      "status": "done"
     }
   ],
   "acceptanceCriteria": [
@@ -413,7 +437,7 @@
     {
       "id": "A13",
       "scenario": "hotel with a point (pin, label, list row or search)",
-      "expected": "3D switched on; eye preset (pitch 75) framed on the drawn building whose outline holds the pin, else the drawn building nearest the pin within 300 m (800 m after one widen) with the pin in the frame (legend “อาคารใกล้หมุด”); a 90 m box only where nothing is drawn within 800 m; a shift lens (principal point at the free box’s centre, never below the canvas centre) so a phone frames it at pitch 75 above the sheet; another corner when MapLibre would lift the camera out of the terrain; ≤ 3 refits; MapLibre guards (tile cover, elevation freeze) installed; on terrain the camera lands on the ground and the x-ray walls end at the lowest ground under the building",
+      "expected": "3D switched on; eye preset (pitch 75) framed on every drawn building of its site when the stay has a checked research site (0.3.6), else on the drawn building whose outline holds the pin, else the drawn building nearest the pin within 300 m (800 m after one widen) with the pin in the frame (legend “อาคารใกล้หมุด”); a 90 m box only where nothing is drawn within 800 m; a shift lens (principal point at the free box’s centre, never below the canvas centre) so a phone frames it at pitch 75 above the sheet; another corner when MapLibre would lift the camera out of the terrain; ≤ 3 refits; MapLibre guards (tile cover, elevation freeze) installed; on terrain the camera lands on the ground and the x-ray walls end at the lowest ground under the building",
       "verificationType": "unit (tests/camera.test.js, tests/maplibre-guard.test.js, tests/building-join.test.js) + render (preview and live)"
     },
     {
@@ -421,6 +445,12 @@
       "scenario": "phone 390 px",
       "expected": "five toolbar buttons in one row; the Aha card sits above the legend (--legend-height); sheet readable in light and dark",
       "verificationType": "render + live walk"
+    },
+    {
+      "id": "A15",
+      "scenario": "a stay with a checked research site (Holiday Inn Resort Phuket Karon Beach, The Old Phuket Karon Beach Resort, Phuket Orchid Resort & Spa)",
+      "expected": "every drawn building holding one of the site points is highlighted, x-rayed and framed together (Holiday Inn 20 · The Old Phuket 19 · Phuket Orchid 21, CityMETER Building V4); the panel reads “ทั้งรีสอร์ท N อาคาร”, the source details a “ไซต์” row (count · source · หน้าอ้างอิง · date) and the provenance line “ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก 3 พ.ย. 2569”; data.siteGroups holds only points, count, date, source code and link — no boundary, deed or note",
+      "verificationType": "unit (tests/building-join.test.js, tests/data.test.js, tests/views.test.js) + render (preview and live)"
     }
   ],
   "developerWorkflow": [

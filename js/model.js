@@ -148,6 +148,7 @@ export function decodeDataset(json, index) {
   const stations = (json.stations || []).map((s, i) => ({...s, index: i}));
   const retail = (json.retail || []).map((v, i) => ({...v, index: i}));
   const inBuilding = json.inBuilding || {}, collections = json.collections || {}, current = json.currentNames || {};
+  const siteGroups = json.siteGroups || {}, siteSources = json.meta?.siteGroups?.sources || {};
   const rows = [];
   let dropped = 0;
   for (let i = 0; i < n; i++) {
@@ -182,6 +183,13 @@ export function decodeDataset(json, index) {
       row.name = now[0];
       row.nameEn = '';
       row.nameSource = {url: now[1] >= 0 ? json.urls?.[now[1]] || '' : '', on: now[2] || ''};
+    }
+    // The stay's site (owner 2026-11-03 “… สร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท”): the buildings inside
+    // its research site boundary, as one interior point each (49_SITE_BOUNDARY_CHECK); the boundary stays in the sheet.
+    const site = siteGroups[String(i)];
+    if (site?.pts?.length && row.longitude !== null) {
+      row.site = {points: site.pts, n: site.n || site.pts.length, on: site.on || '', source: siteSources[site.src] || '',
+        url: site.url >= 0 ? json.urls?.[site.url] || '' : ''};
     }
     const a = area ? index.byId.get(area) : null;
     const p = province ? PROVINCE_LIST.find(x => x.code === province) : null;

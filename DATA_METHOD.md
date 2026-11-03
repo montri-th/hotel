@@ -1,8 +1,9 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.5 (data of 0.3.4, rebuilt 2026-11-02 from the same export of 2026-11-01: the figures of 0.3.1 unchanged, 24 stays under
-their brand's listed name, §2a); the page computes everything from the data
+a snapshot of release 0.3.6 (data rebuilt 2026-11-03 from the same export of 2026-11-01 and the checked rows of the live
+`49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; three resort
+sites, §7c); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
 ## วิธีนับ — อ่านตัวเลขในหน้าอย่างไร
@@ -19,6 +20,7 @@ at run time, so these are fixtures, not constants.
 - **ชื่อที่บันทึก** = ชื่อที่พักตามแหล่ง (ทะเบียนที่พัก ททท. หรือ CityMETER Hotel V3) แสดงใต้ชื่อเมื่อที่พักเปลี่ยนแบรนด์หรือชื่อแล้ว ชื่อหัวข้อเป็นชื่อที่แบรนด์ใช้บนหน้าเว็บของแบรนด์ (ลิงก์ “หน้าแบรนด์” และวันที่ตรวจอยู่ใน “ที่มาและพิกัด”) ค้นด้วยชื่อใดก็เจอ ช่องค้นหาหาทุกคำที่พิมพ์ในชื่อ แบรนด์ ประเภท หรือพื้นที่ (เช่น “novotel karon”)
 - **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
 - **อาคารใกล้หมุด** = เมื่อหมุดของที่พักไม่อยู่ในขอบอาคารใด มุมมองอาคาร 3 มิติเปิดที่อาคารบนแผนที่ที่ใกล้หมุดที่สุดภายใน 300 ม. (ไม่มีก็ขยายเป็น 800 ม.) โดยมีหมุดอยู่ในภาพด้วย เป็นการเลือกมุมกล้องเท่านั้น ไม่ได้ยืนยันว่าที่พักอยู่ในอาคารนั้น และไม่นับใน “ที่พักในอาคารนี้” ถ้าในระยะ 800 ม. ไม่มีอาคารบนแผนที่ ภาพแสดงพื้นที่รอบหมุด
+- **ทั้งรีสอร์ท N อาคาร** = อาคารบนแผนที่ที่อยู่ในขอบเขตไซต์ของที่พัก ทีมวิจัยวาดขอบเขตจากรูปแปลงที่ดินของกรมที่ดิน (LandsMaps) ร่วมกับผังของที่พักและภาพถ่ายดาวเทียม (เริ่ม 3 แห่งในกะรน ภูเก็ต ตรวจ 3 พ.ย. 2569) กดที่พักแล้วแผนที่แสดงและจัดภาพทุกอาคารของไซต์พร้อมกัน ไซต์เป็นการจัดกลุ่มอาคารเพื่อดูบนแผนที่ ไม่ใช่ขอบเขตโฉนด เนื้อที่ หรือการยืนยันกรรมสิทธิ์ และไม่เผยแพร่รูปแปลงหรือเลขโฉนด
 - **ภูมิประเทศ** = พื้นดินรอบหมุดของที่พัก (รัศมี 500 ม. ต้นไม้ 300 ม.) จาก SRTM 30 ม. (สำรวจปี 2543) และแผนที่ OSM ไม่ใช่การยืนยันวิว ราคา หรือความเสี่ยง
 - **สถานีที่กำลังสร้าง** = โครงการ ยังไม่ใช่บริการ
 
@@ -255,11 +257,41 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   the join of stays to buildings (a pin inside the outline: “ที่พักในอาคารนี้”) is the same for both sources (keys
   `osm:` / `cm:`).
 
+## 7c. Stay sites (0.3.6)
+
+Owner request 2026-11-03: “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของ
+โรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”, after “ลองใช้พิกัดโรงแรม/รีสอท ไปค้นจาก landsmaps.dol.go.th … เพื่อไปดูว่ามีโฉนดใดบ้างเป็น
+ของโรงแรม รีสอทนั้น แล้วนำกลับมาจัดกลุ่มอาคารรวมเป็นพื้นที่รีสอทเดียวกัน” (with assessprice.treasury.go.th).
+
+- **Sources of the boundary (research, in the sheet)**: Department of Lands parcel outlines as LandsMaps draws them after
+  a deed search (its parcel map layer, read from the display), the Treasury Department's appraisal map (D-Value) for the
+  deed numbers it identifies at a point, the stay's own site layout and Esri World Imagery. LandsMaps gives no owner and
+  hides part of a deed number; D-Value gives no outline and identified no parcel under the Phuket Orchid buildings or the
+  Holiday Inn main block. Parcels were chosen where the layout's buildings stand; a building the layout shows outside
+  the chosen parcels was added by its own outline. Result (`49_SITE_BOUNDARY_CHECK`, checked 2026-11-03,
+  `boundary_source = dol_parcels+site_layout`): Holiday Inn Resort Phuket Karon Beach — 2 deeds and the main-block parcel,
+  plus the long building on the east side, site ≈ 18,300 m² (layout: a guest photo of the resort's printed map on
+  Tripadvisor); The Old Phuket Karon Beach Resort — 1 deed, site ≈ 13,200 m² (the stay's own site: Sino and
+  Serene wings); Phuket Orchid Resort & Spa — 3 parcels, site ≈ 30,400 m² (Kata Group's resort map on a travel agency
+  page). A site area is the area of the drawn polygon, never a title area.
+- **Published** (`data.siteGroups`, `meta.siteGroups`): per checked stay the interior points of the drawn buildings inside
+  the boundary (`buildings_in_boundary`; CityMETER Building V4 in Karon), the count, the check date, the source code and
+  the evidence page — 60 buildings: Holiday Inn 20, The Old Phuket 19, Phuket Orchid 21. The boundary itself, deed
+  numbers, parcel data, the notes and the checker stay in the sheet (`meta.excludedFields`). A site building more than
+  600 m from the stay's point stops the build. The live tab is read through `--sites` (its header and checked rows,
+  SHA-256 in `meta.siteGroups.file`) while the export predates it.
+- **On the map** (`js/building-join.js#buildingsAtPoints`, `js/app.js#focusTarget`): opening the stay highlights, x-rays
+  and frames (two-point camera) every drawn building whose outline holds one of the points, every piece of each; a point
+  no drawn outline holds is left out, never snapped to a neighbour. The massing square round the pin grows to hold the
+  site (`siteReach`). The panel reads “ทั้งรีสอร์ท N อาคาร” (N = the sheet's count), the source details a “ไซต์” row (count ·
+  source · หน้าอ้างอิง · date) and the provenance line “ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก <date>”.
+
 ## 8. Not published
 
 Addresses, sub-districts, phone numbers, raw coordinates, operator names, source record ids, researcher notes, quality
 flags, review statuses, star fields, building source ids, branch names of other datasets, the sheet's README text, the
-internal sheet or its export, and private Drive/Sheet URLs (`meta.excludedFields`). Source links are public https pages;
+internal sheet or its export, private Drive/Sheet URLs, and of `49_SITE_BOUNDARY_CHECK` the site boundary, deed numbers,
+parcel data, notes and checker (`meta.excludedFields`). Source links are public https pages;
 CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its API.
 
 ## 9. Research follow-ups (reported, not patched in `data/`)
@@ -276,9 +308,9 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
 - 642 research building masses (Drive bundle `hotel-building-mass.geojson`) are not drawn in this release; the map draws
   OpenStreetMap or CityMETER Building V4 massing per area (§7b). The research team checks the site boundaries of the 300
   most important resorts and pool villas in `49_SITE_BOUNDARY_CHECK` (owner 2026-11-01); a stay spread over several
-  buildings is joined to one building until those boundaries are in. Checked in the live sheet 2026-11-02: the tab holds
-  the 300 stays (resort 282 · hotel 14 · bungalow 2 · other 2; 203 with a point) with columns for the boundary
-  (`boundary_geojson`, `boundary_source`, `boundary_evidence_url`, `buildings_in_boundary`), every row `todo`.
+  buildings is joined to one building until its boundary is in. The tab holds the 300 stays (resort 282 · hotel 14 ·
+  bungalow 2 · other 2; 203 with a point); since 2026-11-03 three Karon resorts are `checked` (§7c), the other 297 rows
+  are `todo`.
 - 24 records whose name predates a rebrand or spells the brand differently read under their brand's listed name (§2a);
   the register names stay as the recorded names. Renaming the record itself is the research team's call.
 
@@ -290,7 +322,7 @@ python3 -I scripts/build-boundaries.py --pharmacy <montri-th/pharmacy> --api $BU
 python3 -I scripts/build-receipts.py --api $BUILD/api --out .
 python3 -I scripts/build-data.py --sheet <research master .xlsx> [--csv <tab csv dir>] --api $BUILD/api \
     --index data/area-index.json --frames data/frames --transit <montri-th/transit> --shopping <montri-th/shoppingcenter> \
-    --logos <Hotel_Chain_Logos_Web> --out .
+    --logos <Hotel_Chain_Logos_Web> [--sites <49_SITE_BOUNDARY_CHECK.csv>] --out .
 python3 -I scripts/build-logos.py --package <Hotel_Chain_Logos_Web> --tab <48_LOGO_LIBRARY.csv> --data data/hotels.json --out .
 python3 scripts/build-pictogram-font.py <MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf>
 python3 -I scripts/build-building-units.py --api $BUILD/api --geom <LAO geometry cache> --counts <building counts .json> --out .

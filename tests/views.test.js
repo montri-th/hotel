@@ -41,7 +41,7 @@ test('every panel view ends with one provenance line — dataset · source · da
       for (const k of ['dataset', 'source', 'date', 'boundary']) assert.equal((html.match(new RegExp(`data-prov="${k}"`, 'g')) || []).length, 1, `${name}: ${k}`);
       assert.ok(t.includes('ชุดข้อมูล CityMETER Hotel'), `${name}: dataset`);
       assert.ok(/แหล่ง\s*จาก Hotel V3 · ทะเบียน ททท\. · เว็บทางการ/.test(t), `${name}: source`);
-      assert.ok(t.includes('ตรวจ 1 พ.ย. 2569'), `${name}: date`);
+      assert.ok(t.includes('ตรวจ 3 พ.ย. 2569'), `${name}: date`);
       assert.ok(/ขอบเขต \S/.test(t), `${name}: boundary`);
       assert.ok(html.includes('<span class="prov-part prov-method"><a href="DATA_METHOD.md"'), `${name}: the method link`);
       assert.equal((html.match(/class="hint panel-foot provenance"/g) || []).length, 1, `${name}: exactly one provenance line`);
@@ -227,4 +227,23 @@ test('a stay shown under its brand’s listed name: the heading is that name, th
   assert.match(html, /href="https:\/\/www\.ihg\.com\/[^"]+"[^>]*>หน้าแบรนด์</);
   const plain = data.rows.find(r => r.id === HOTEL);
   assert.ok(!renderHotel(buildHotelDetail(plain, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx).includes('ชื่อที่บันทึก'), 'other stays read as before');
+});
+
+test('a resort with a checked site reads “ทั้งรีสอร์ท N อาคาร”, its site source in the details and the provenance line; other stays read as before', () => {
+  const {data, index} = load();
+  const ctx = ctxFor(data, index);
+  const render = r => renderHotel(buildHotelDetail(r, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx);
+  const old = data.rows.find(r => r.id === 'HOTEL-TAT-20160428122116456581');
+  const html = render(old), t = text(html);
+  assert.ok(t.includes(`ทั้งรีสอร์ท ${old.site.n} อาคาร`), 'the chip counts the site’s buildings');
+  assert.ok(t.includes(`ไซต์ ${old.site.n} อาคาร · รูปแปลงกรมที่ดิน + ผังที่พัก`), 'the source details name the site sources');
+  assert.match(html, /href="https:\/\/theoldphuket\.com\/[^"]*"[^>]*>หน้าอ้างอิง</, 'the stay’s own page that shows the layout');
+  assert.ok(t.includes('3 พ.ย. 2569'), 'the date of the site check');
+  assert.match(t, /จาก [^]*ไซต์ รูปแปลงกรมที่ดิน \+ ผังที่พัก 3 พ\.ย\. 2569/, 'the provenance names the site source and date');
+  for (const id of ['HOTEL-TAT-20160504143431473963', 'HOTEL-TAT-20160501120539473664']) {
+    const r = data.rows.find(x => x.id === id);
+    assert.ok(text(render(r)).includes(`ทั้งรีสอร์ท ${r.site.n} อาคาร`), id);
+  }
+  const plain = text(render(data.rows.find(r => r.id === HOTEL)));
+  assert.ok(!/ทั้ง(รีสอร์ท|โรงแรม|บังกะโล|โครงการ) \d/.test(plain) && !plain.includes('ไซต์'), 'a stay without a site carries no site words');
 });

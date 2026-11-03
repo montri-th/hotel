@@ -95,6 +95,8 @@ export const ADMIN_TH = Object.freeze({
   conflict: 'หมุดกับข้อมูลอยู่คนละจังหวัด',
   none: 'ไม่ระบุจังหวัด',
 });
+/** The word of a stay's site chip by accommodation group (“ทั้งรีสอร์ท 20 อาคาร”); other groups read “ทั้งโครงการ”. */
+const SITE_WORD = Object.freeze({resort: 'รีสอร์ท', hotel: 'โรงแรม', bungalow: 'บังกะโล'});
 /** What a building-mass status of the research master says (13_BUILDING_LINKS), in reader words. */
 const MASS_TH = Object.freeze({
   identity: 'ผูกกับอาคารแล้ว (ตรวจตัวตน)', spatial: 'ผูกกับอาคารจากหมุด',
@@ -107,12 +109,13 @@ const MASS_TH = Object.freeze({
  * `data-prov`, its word for screen readers), then the method link. Rail, retail and terrain sources join the source
  * part when the view shows them.
  */
-export function provenance(ctx = {}, boundary = '', {rail = false, retail = false, terrain = false} = {}) {
+export function provenance(ctx = {}, boundary = '', {rail = false, retail = false, terrain = false, site = null} = {}) {
   const meta = ctx.meta || {};
   const sources = ['Hotel V3', 'ทะเบียน ททท.', 'เว็บทางการ',
     rail ? `CityMETER Transit ${thaiDate(meta.context?.rail?.asOf || '')}`.trim() : '',
     retail ? 'CityMETER Shopping centers' : '',
-    terrain ? `SRTM 30 ม. (2543)${ctx.osmDate ? ` · OSM ${thaiDate(ctx.osmDate)}` : ''}` : ''].filter(Boolean);
+    terrain ? `SRTM 30 ม. (2543)${ctx.osmDate ? ` · OSM ${thaiDate(ctx.osmDate)}` : ''}` : '',
+    site ? `ไซต์ ${site.source || 'งานวิจัย'} ${thaiDate(site.on || '')}`.trim() : ''].filter(Boolean);
   return `<p class="hint panel-foot provenance"><span class="prov-part" data-prov="dataset">${pic('dataset')}<span class="sr-only">ชุดข้อมูล </span>CityMETER Hotel</span> <span class="prov-part" data-prov="source"><span class="sr-only">แหล่ง</span>จาก ${esc(sources.join(' · '))}</span><span class="prov-part" data-prov="date">${pic('date')}<span class="sr-only">ตรวจ </span>${esc(thaiDate(meta.checkedOn || ''))}</span><span class="prov-part" data-prov="boundary">${pic('area')}<span class="sr-only">ขอบเขต </span>${esc(boundary)}</span><span class="prov-part prov-method"><a href="${METHOD_URL}" target="_blank" rel="noopener">วิธีนับ</a></span></p>`;
 }
 
@@ -461,6 +464,9 @@ export function renderHotel(d, ctx = {}) {
   const chainChip = r.chain ? `<button type="button" class="fact-chip" data-action="filter-chain" data-value="${esc(r.chain.id)}" title="ดูทุกที่พักของเครือนี้">${pic('chain')}${esc(r.brand.name)}${r.chain.name !== r.brand.name ? ` · ${esc(r.chain.name)}` : ''}</button>` : r.brand ? `<span class="fact-chip">${pic('chain')}${esc(r.brand.name)}</span>` : '';
   const bd = d.building;
   const buildingChip = bd?.others ? `<button type="button" class="fact-chip" data-action="select-building" data-id="${esc(bd.key)}" title="หมุดของที่พักอีก ${num(bd.others)} แห่งอยู่ในอาคารนี้บนแผนที่">${pic('building')}อีก ${num(bd.others)} แห่งในอาคารนี้</button>` : '';
+  // The stay's site (49_SITE_BOUNDARY_CHECK): its buildings, as the map shows them together.
+  const siteWord = SITE_WORD[d.group?.id] || 'โครงการ';
+  const siteChip = r.site ? `<span class="fact-chip" title="อาคารในขอบเขตไซต์ของที่พัก · ${esc(r.site.source || 'งานวิจัย')}${r.site.on ? ` · ${esc(thaiDate(r.site.on))}` : ''}">${pic('building')}ทั้ง${esc(siteWord)} ${nw(`${num(r.site.n)} อาคาร`)}</span>` : '';
   const neighbours = r.inBuilding.length
     ? `<p class="fact-line">${pic('building', 'fact-icon')}อาคารเดียวกัน (งานวิจัย): ${esc(summarizeIndustries(r.inBuilding))}</p>` : '';
   const sameChain = r.chain && d.sameChain.count ? `<p class="fact-line">${pic('chain', 'fact-icon')}${esc(r.chain.name)} อีก ${nw(`<button type="button" class="link-button" data-action="filter-chain" data-value="${esc(r.chain.id)}">${num(d.sameChain.count)} แห่ง</button>`)} · ${nw(`${num(d.sameChain.rooms)} ห้อง`)} · ${nw(`${num(d.sameChain.provinces)} จังหวัด`)}</p>` : '';
@@ -475,7 +481,7 @@ export function renderHotel(d, ctx = {}) {
         <p class="eyebrow eyebrow-cue">${esc(d.group?.th || '')}${r.rawType && r.rawType !== d.group?.th ? ` · ${esc(r.rawType)}` : ''}</p>
         <h2>${esc(r.name || r.nameEn || 'ไม่มีชื่อ')}</h2>
         ${subLine(r, 'branch-name', 'p')}</div></div>
-      <div class="fact-chips">${roomsChip}${chainChip}${areaChip}${priceChip}${meetingChip}${railChip}${nextChip}${shopChip}${buildingChip}${coords ? '' : '<span class="fact-chip is-quiet">ไม่มีพิกัด</span>'}</div>
+      <div class="fact-chips">${roomsChip}${chainChip}${areaChip}${siteChip}${priceChip}${meetingChip}${railChip}${nextChip}${shopChip}${buildingChip}${coords ? '' : '<span class="fact-chip is-quiet">ไม่มีพิกัด</span>'}</div>
       ${neighbours}${sameChain}
       ${actionBar({kind: 'hotel', row: r, area: d.area ? {place: `${w.area}${d.area.name}`, province: prov} : r.province ? {place: '', province: prov} : null,
         point: hasPoint(r) ? {lat: r.latitude, lon: r.longitude, role: 'point'} : null})}
@@ -488,6 +494,7 @@ export function renderHotel(d, ctx = {}) {
           <dt>พิกัด</dt><dd>${point}</dd>
           ${price ? `<dt>ราคาที่บันทึก</dt><dd>${price}</dd><dt>วันที่ราคา</dt><dd>ไม่ระบุในแหล่ง</dd>` : ''}
           <dt>อาคาร</dt><dd>${esc(MASS_TH[r.mass] || MASS_TH.not_checked)}</dd>
+          ${r.site ? `<dt>ไซต์</dt><dd>${nw(`${num(r.site.n)} อาคาร`)} · ${esc(r.site.source || 'งานวิจัย')}${r.site.url ? ` · ${link(r.site.url, 'หน้าอ้างอิง')}` : ''}${r.site.on ? ` · ${nw(esc(thaiDate(r.site.on)))}` : ''}</dd>` : ''}
           ${r.collections.length ? `<dt>คอลเลกชัน</dt><dd>${esc(r.collections.join(' · '))}</dd>` : ''}
           <dt>รหัส</dt><dd><span class="hint data-number">${esc(r.id)}</span></dd>
         </dl>
@@ -497,7 +504,7 @@ export function renderHotel(d, ctx = {}) {
     ${hasPoint(r) ? `<section class="panel-section terrain-section"><div class="section-heading">${heading('elevation', 'ภูมิประเทศ')}</div>
       <div class="fact-chips terrain-chips" data-terrain-for="${esc(r.id)}"><span class="hint">กำลังอ่านภูมิประเทศ</span></div></section>` : ''}
     ${compsetSection(d.compset, d.group?.th)}
-    ${provenance(ctx, d.area ? `${w.area}${d.area.name} ${prov}` : prov || 'ไม่ระบุจังหวัด', {rail: Boolean(r.rail || r.railNext), retail: Boolean(r.shop), terrain: hasPoint(r)})}`;
+    ${provenance(ctx, d.area ? `${w.area}${d.area.name} ${prov}` : prov || 'ไม่ระบุจังหวัด', {rail: Boolean(r.rail || r.railNext), retail: Boolean(r.shop), terrain: hasPoint(r), site: r.site || null})}`;
 }
 
 /** Terrain chips (js/terrain.js#terrainChips) as fact chips; '' when nothing is known. */

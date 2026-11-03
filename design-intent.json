@@ -1,7 +1,7 @@
 {
   "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
-  "productVersion": "0.3.5",
-  "updatedOn": "2026-11-02",
+  "productVersion": "0.3.6",
+  "updatedOn": "2026-11-03",
   "ldsVersion": "0.9.7",
   "release": "v0.9.7-owner.1",
   "revision": "standalone-0.9.7-r1",
@@ -63,7 +63,7 @@
     "provinces": "the same measure per province frame below zoom 8 without a จังหวัด filter, outlines to zoom 12, ink-chip labels to zoom 9, panel list",
     "symbols": "focus rows with a point as cue icons whose area grows with the recorded rooms (hollow = unknown); context rows as grey circles by rooms, ≤ 6 px radius; HTML pins from zoom 15.5; the pin label is hotel name · rooms; stations of CityMETER Transit as quiet clickable rings from zoom 10.5, names from 13.5",
     "buildings": "per อปท. (Bangkok: เขต): CityMETER Building V4 where it holds ≥ 1.15 × the OSM buildings of the unit, else OSM (data/building-units/); OSM buildings mapped in parts kept; same quiet massing tones and rounded shape for both sources; the attribution names CityMETER Building V4 while drawn",
-    "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius; 0.3.2 (owner 2026-11-02 “… 2-point perspective ของ 3d building mass ทุกกรณี”): every stay with a point opens it — the building its pin falls in, else the drawn building nearest the pin within 300 m (800 m after one widen) with the pin in the frame (legend “อาคารใกล้หมุด”); choosing a stay or a building switches the map to 3D; a shift lens (principal point at the free box’s centre, never below the canvas centre) keeps pitch 75 on a phone above the sheet",
+    "buildingView": "eye preset corner-on to the building on the least-occluded diagonal, zoom to fit the free part of the map on every way in (js/camera.js#fitBuilding); a station frames its 500 m radius; 0.3.2 (owner 2026-11-02 “… 2-point perspective ของ 3d building mass ทุกกรณี”): every stay with a point opens it — the building its pin falls in, else the drawn building nearest the pin within 300 m (800 m after one widen) with the pin in the frame (legend “อาคารใกล้หมุด”); choosing a stay or a building switches the map to 3D; a shift lens (principal point at the free box’s centre, never below the canvas centre) keeps pitch 75 on a phone above the sheet 0.3.6 (owner 2026-11-03 “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”): a stay with a checked research site (49_SITE_BOUNDARY_CHECK → data.siteGroups) opens on every drawn building of its site, highlighted, x-rayed and framed together (js/building-join.js#buildingsAtPoints); the panel reads “ทั้งรีสอร์ท N อาคาร”.",
     "breadcrumb": "ประเทศไทย › จังหวัด › เขต/อำเภอ with production codes and /D/ deep links, ?d=hotel",
     "symbolSize": "area ∝ recorded rooms (js/model.js#pinRadius), hollow = unknown rooms, quiet context ≤ 6 px radius (owner 2026-11-01)",
     "labels": "from zoom 12.5: ≤ 9 (phone 5) labels in the central ellipse ranked by rooms + recorded price percentiles; text only — group cue, brand in bold over the site for a branded stay (else one short name), bed pictogram + rooms; measured placement off the chrome and the district chips (js/labels.js)",

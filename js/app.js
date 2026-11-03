@@ -56,7 +56,7 @@ import {createFrameStore, provinceLocator} from './frames.js';
 import {buildOverview, buildAreaProfile, buildHotelDetail, buildBuildingProfile, buildChainProfile, buildStationProfile, stationsOf, listOrder, STATION_RADIUS_M} from './profile-model.js';
 import {renderOverview, renderArea, renderBuilding, renderHotel, renderStation, renderChainCard, renderFilterChips, terrainChipsHTML, subLine, esc, num, pct, words, meters, priceText} from './panel.js';
 import {installStationLayer} from './stations.js';
-import {joinBuildings, nearestBuilding} from './building-join.js';
+import {joinBuildings, nearestBuilding, buildingsAtPoints} from './building-join.js';
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
 import {installMassing, outerRings} from './massing.js';
 import {createBuildingUnitStore, cmTileUrl, CM_ATTRIBUTION} from './building-units.js';
@@ -610,10 +610,33 @@ function nearestOf(r) {
 }
 
 /**
- * The building being looked at: the open building; the building the open hotel's point falls in, else the drawn
- * building nearest its pin (`near`: the camera's building, named “อาคารใกล้หมุด”, never a join).
- * {id, key, refs, anchor: [lon, lat], near} — key/refs are null/[] while no building is known (tiles still loading,
- * or nothing drawn within the reach); null without a point.
+ * The drawn buildings of the open stay's site (49_SITE_BOUNDARY_CHECK, js/building-join.js#buildingsAtPoints), per join
+ * and pieces; null for a stay without a site.
+ */
+function siteOf(r) {
+  if (!r?.site) return null;
+  const pieces = state.massing?.buildings() || [], join = state.join;
+  if (siteOf.id !== r.id || siteOf.join !== join || siteOf.pieces !== pieces) {
+    Object.assign(siteOf, {id: r.id, join, pieces});
+    siteOf.value = join ? buildingsAtPoints(pieces, r.site.points, join.keyOfPiece) : null;
+  }
+  return siteOf.value;
+}
+
+/** Half-size (m) of the square round the stay's pin that holds every building of its site, with a margin; 0 without one. */
+function siteReach(r) {
+  if (!r?.site?.points?.length || !hasPoint(r)) return 0;
+  const kx = 111320 * Math.cos((r.latitude * Math.PI) / 180), ky = 110574;
+  return 80 + Math.max(...r.site.points.map(([lon, lat]) => Math.max(Math.abs(lon - r.longitude) * kx, Math.abs(lat - r.latitude) * ky)));
+}
+
+/**
+ * The building being looked at: the open building; for a stay with a site, every drawn building of its site, framed
+ * together (`site.n`: buildings found; the panel's chip counts the site's own list); else the building the open hotel's
+ * point falls in, else the drawn building nearest its pin (`near`: the camera's building, named “อาคารใกล้หมุด”, never
+ * a join).
+ * {id, key, refs, anchor: [lon, lat], near, site?} — key/refs are null/[] while no building is known (tiles still
+ * loading, or nothing drawn within the reach); null without a point.
  */
 function focusTarget() {
   const {mode, id} = state.panel, j = state.join;
@@ -627,6 +650,8 @@ function focusTarget() {
   if (mode === 'hotel') {
     const r = rowById(id);
     if (!hasPoint(r)) return null;
+    const site = siteOf(r);
+    if (site?.refs.length) return {id: `hotel:${r.id}`, key: `site:${r.id}`, refs: site.refs, anchor: [r.longitude, r.latitude], near: false, site: {n: site.keys.length}};
     const inside = j?.byRow.get(r.id) || null;
     const near = inside ? null : nearestOf(r)?.key || null;
     return {id: `hotel:${r.id}`, ...of(inside || near), anchor: [r.longitude, r.latitude], near: Boolean(near)};
@@ -1284,7 +1309,7 @@ function massingRegions() {
   }
   if (state.panel.mode === 'hotel') {
     const r = rowById(state.panel.id);
-    if (hasPoint(r)) return [squareAround(r.longitude, r.latitude, hotelReach(r.id))];
+    if (hasPoint(r)) return [squareAround(r.longitude, r.latitude, Math.max(hotelReach(r.id), siteReach(r)))];
     const a = r?.area ? areaById(r.area) : null;
     if (a?.feature) return outerRings(a.feature);
   }

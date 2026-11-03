@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {joinRows, containsPoint, footprint, groupPieces, joinBuildings, nearestBuilding} from '../js/building-join.js';
+import {joinRows, containsPoint, footprint, groupPieces, joinBuildings, nearestBuilding, buildingsAtPoints} from '../js/building-join.js';
 
 // Synthetic footprints near Din Daeng (lon/lat squares; d = half-size in degrees).
 const square = (cx, cy, d) => [[cx - d, cy - d], [cx + d, cy - d], [cx + d, cy + d], [cx - d, cy + d], [cx - d, cy - d]];
@@ -121,4 +121,23 @@ test('nearestBuilding: a pin in no outline turns the camera to the drawn buildin
   assert.equal(nearestBuilding([hotel], [X, Y + 20 * my]).distanceM, 0);
   assert.equal(nearestBuilding([], [X, Y]), null);
   assert.equal(nearestBuilding([hotel], [NaN, Y]), null);
+});
+
+test('buildingsAtPoints: a site (49_SITE_BOUNDARY_CHECK) shows every drawn building holding one of its points, every piece of each — never a neighbour', () => {
+  const mx = 1 / (111320 * Math.cos((Y * Math.PI) / 180)), my = 1 / 110574;
+  const box = (id, cx, cy, half) => ({id, outer: square(X + cx * mx, Y + cy * my, 0).map(([x, y], i) => [x + [-1, 1, 1, -1, -1][i] * half * mx, y + [-1, -1, 1, 1, -1][i] * half * my])});
+  const lobby = box(1, 0, 0, 10), wingA = box(2, 40, 0, 8), wingB = box(3, 52, 0, 4); // one wing cut in two pieces
+  const villa = box(4, 0, 60, 5), neighbour = box(5, 0, -40, 10);
+  const court = {id: 6, outer: box(6, 100, 0, 20).outer, holes: [box(0, 100, 0, 6).outer]};
+  const keyOfPiece = new Map([[1, 'cm:1'], [2, 'cm:2'], [3, 'cm:2'], [4, 'cm:4'], [5, 'cm:5'], [6, 'cm:6']]);
+  const at = (cx, cy) => [X + cx * mx, Y + cy * my];
+  const pieces = [lobby, wingA, wingB, villa, neighbour, court];
+  const site = buildingsAtPoints(pieces, [at(40, 0), at(0, 0), at(0, 61), at(1, 1), at(0, -55), at(100, 0), [NaN, Y]], keyOfPiece);
+  assert.deepEqual(site.keys, ['cm:2', 'cm:1', 'cm:4'], 'in point order, each building once');
+  assert.deepEqual(site.refs.sort(), [1, 2, 3, 4], 'every piece of the wing, so it is framed and x-rayed whole');
+  assert.equal(site.held, 4, 'a point 5 m past the neighbour, in a courtyard or not a number finds nothing');
+  assert.ok(!site.keys.includes('cm:5') && !site.keys.includes('cm:6'), 'a point outside every outline is never snapped to the nearest');
+  assert.deepEqual(buildingsAtPoints(pieces, [at(0, 0)]).keys, ['piece:1'], 'without the join, a piece stands for itself');
+  assert.deepEqual(buildingsAtPoints([], [at(0, 0)], keyOfPiece), {keys: [], refs: [], held: 0}, 'tiles still loading: nothing yet');
+  assert.deepEqual(buildingsAtPoints(pieces, [], keyOfPiece), {keys: [], refs: [], held: 0});
 });

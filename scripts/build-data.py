@@ -58,6 +58,15 @@ capitals only reads in title case); the record's own names stay in the row (`nam
 and searchable. A Thai-only record name, or a brand listing the property under several names, keeps the record's name.
 Nothing else of the row changes.
 
+SITE (owner 2026-11-03 “พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท”): a stay spread over
+several buildings whose 49_SITE_BOUNDARY_CHECK row is `checked` publishes its buildings — `buildings_in_boundary`, the
+interior points of the drawn buildings (CityMETER Building V4 or OpenStreetMap) inside the research site boundary, as
+"lon,lat;lon,lat" — so the map can show them as one site (data.siteGroups[row] = {pts, n, on, src, url}). The boundary
+itself (`boundary_geojson`, drawn from Department of Lands parcel outlines and the stay's own site layout), the deed
+numbers and the researcher's notes stay in the sheet: no parcel shape, deed number or owner is published. A point more
+than SITE_MAX_M from the stay's own point stops the build. The tab is read from the export, or from --sites (a CSV of the
+live tab — its header and checked rows suffice; its SHA-256 is recorded). The check dates of the sites date the data set.
+
 Not copied (meta.excludedFields): addresses, phone numbers, raw coordinates, researcher notes, internal sheet URLs,
 licence or operator fields, source record ids, quality flags, the names of branches of other datasets. Source links are public https pages (TAT data catalogue, owner and group websites); CityMETER Hotel V3 rows
 link to the same district on CityMETER production (?d=hotel).
@@ -70,7 +79,15 @@ ALIAS_TAB = '37_IDENTITY_ALIASES'
 TABS = ['01_VENUES', '13_BUILDING_LINKS', '16_BRANCH_SPATIAL_CANDIDATES', '17_BRANDS', '19_AFFILIATIONS', '23_TYPE_ASSIGNMENTS', ALIAS_TAB]
 LOGO_TAB = '48_LOGO_LIBRARY'  # optional: the research team's logo library tab (read for brand identity only)
 ROOM_TAB = '47_ROOM_RESOLUTION'  # optional: room-count re-checks; rows written back to 01_VENUES date the check
-OPTIONAL_TABS = (LOGO_TAB, ROOM_TAB)
+SITE_TAB = '49_SITE_BOUNDARY_CHECK'  # optional: research site boundaries of multi-building stays (buildings published)
+OPTIONAL_TABS = (LOGO_TAB, ROOM_TAB, SITE_TAB)
+SITE_STATUS = ('checked',)
+SITE_MAX_M = 600  # a site building this far from the stay's own point is a sheet error, not a site
+SITE_SOURCES = {  # boundary_source codes of 49_SITE_BOUNDARY_CHECK → the words the provenance line uses
+    'dol_parcels+site_layout': 'รูปแปลงกรมที่ดิน + ผังที่พัก',
+    'site_layout': 'ผังที่พัก',
+    'dol_parcels': 'รูปแปลงกรมที่ดิน',
+}
 
 # Accommodation groups: venue_type of 01_VENUES (the sheet's 07_TAXONOMY mapping of the source type) → product group.
 GROUPS = [
@@ -268,6 +285,22 @@ def current_name(name, name_en, labels, listed):
     return listed[0] if latin_key(listed[0]['name']) != key else None
 
 
+def site_points(text):
+    """buildings_in_boundary of 49_SITE_BOUNDARY_CHECK: "lon,lat;lon,lat" (WGS 84, Thailand) → [[lon, lat], …] (6 decimals)."""
+    pts = []
+    for part in re.split(r'[;\s]+', (text or '').strip()):
+        if not part:
+            continue
+        m = re.fullmatch(r'(\d{2,3}\.\d+),(\d{1,2}\.\d+)', part)
+        if not m:
+            sys.exit(f'{SITE_TAB}: buildings_in_boundary entry {part!r} is not "lon,lat"')
+        lon, lat = float(m[1]), float(m[2])
+        if not (97 <= lon <= 106 and 5 <= lat <= 21):
+            sys.exit(f'{SITE_TAB}: buildings_in_boundary entry {part!r} lies outside Thailand')
+        pts.append([round(lon, 6), round(lat, 6)])
+    return pts
+
+
 def public_url(u):
     u = (u or '').strip()
     if not u.startswith('https://'):
@@ -288,11 +321,17 @@ def main():
     ap.add_argument('--shopping', required=True)
     ap.add_argument('--checked-on', default='2026-10-25', help='latest checked_on date of the sheet rows read')
     ap.add_argument('--logos', default='', help="unzipped logo library of the research team (Hotel_Chain_Logos_Web: manifest.json) — brand identities")
+    ap.add_argument('--sites', default='', help='CSV of the live 49_SITE_BOUNDARY_CHECK tab (its header and checked rows suffice), when the export predates them; its SHA-256 is recorded')
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
 
     export_sha = sha256_file(a.sheet)
     tabs = read_tabs(a.sheet, a.csv)
+    sites_file = None
+    if a.sites:
+        with open(a.sites, encoding='utf-8') as fh:
+            tabs[SITE_TAB] = list(csv.DictReader(fh))
+        sites_file = {'sha256': sha256_file(a.sites), 'bytes': os.path.getsize(a.sites)}
     venues = tabs['01_VENUES']
     aliases = {r['alias_venue_id']: r for r in tabs[ALIAS_TAB] if r.get('alias_venue_id')}
 
@@ -604,6 +643,35 @@ def main():
         if now:
             current[i] = [display_case(now['name']), intern(urls, url_index, now['url']) if now['url'] else -1, now['on']]
             counts['name.current'] += 1
+
+    # SITE: the buildings of each checked site boundary (49_SITE_BOUNDARY_CHECK) as interior points; urls interned after
+    # the rows (row link indices stay). The boundary, deed numbers and notes stay in the sheet.
+    sites, site_rows = {}, tabs.get(SITE_TAB, [])
+    row_of = {k: i for i, k in enumerate(cols['key'])}
+    for r in site_rows:
+        if (r.get('boundary_status') or '').strip() not in SITE_STATUS:
+            continue
+        vid = (r.get('venue_id') or '').strip()
+        i = row_of.get(vid)
+        if i is None:
+            counts['site.unmatched'] += 1
+            continue
+        pts = site_points(r.get('buildings_in_boundary'))
+        if not pts:
+            counts['site.noBuildings'] += 1
+            continue
+        if cols['lat'][i] is not None and cols['lon'][i] is not None:
+            far = max(haversine(cols['lat'][i], cols['lon'][i], p[1], p[0]) for p in pts)
+            if far > SITE_MAX_M:
+                sys.exit(f'{SITE_TAB}: {vid} lists a site building {far:.0f} m from its point (more than {SITE_MAX_M} m)')
+        on = (r.get('checked_on') or '')[:10]
+        src = (r.get('boundary_source') or '').strip()
+        evidence = public_url(r.get('boundary_evidence_url'))
+        sites[i] = {'pts': pts, 'n': len(pts), 'on': on if re.fullmatch(r'\d{4}-\d{2}-\d{2}', on) else '',
+                    'src': src if src in SITE_SOURCES else 'other',
+                    'url': intern(urls, url_index, evidence) if evidence else -1}
+        counts['site.groups'] += 1
+        counts['site.buildings'] += len(pts)
     used_stations = sorted({x for x in cols['rail'] + cols['rail2'] if x >= 0})
     used_retail = sorted({x for x in cols['shop'] if x >= 0})
     # Re-index the context dictionaries to the entries the rows use (plus every operating station: the map draws them).
@@ -620,6 +688,8 @@ def main():
     # Room counts re-checked in 47_ROOM_RESOLUTION and written back to 01_VENUES (main_updated = yes) date that check.
     room_res = [r for r in tabs.get(ROOM_TAB, []) if (r.get('main_updated') or '').strip().lower() == 'yes']
     checked_dates |= {(r.get('retrieved_on') or '')[:10] for r in room_res if re.match(r'\d{4}-\d{2}-\d{2}', r.get('retrieved_on') or '')}
+    # Site boundaries checked in 49_SITE_BOUNDARY_CHECK date that check.
+    checked_dates |= {v['on'] for v in sites.values() if v['on']}
     checked_dates = sorted(checked_dates)
     built_on = datetime.date.today().isoformat()
     meta = {
@@ -656,10 +726,15 @@ def main():
         'conflicts': conflicts,
         'excludedFields': ['address', 'subdistrict', 'telephone', 'lat_raw', 'lng_raw', 'operator_name', 'source_record_id', 'notes',
                            'source_quality_flags', 'record_review_status', 'building_source_id', 'star_raw', 'star_selected',
-                           '16_BRANCH_SPATIAL_CANDIDATES.branch_name', 'README text'],
+                           '16_BRANCH_SPATIAL_CANDIDATES.branch_name', 'README text',
+                           SITE_TAB + '.boundary_geojson', SITE_TAB + '.notes', SITE_TAB + '.main_building_note', SITE_TAB + '.checked_by'],
         'checks': {'sourcePointDisagree': len(disagree), 'sourcePointDisagreeSample': disagree[:20]},
         'currentNames': {'rule': "a branded record whose Latin name carries no label of its linked brand, and which that brand's accepted listing in 19_AFFILIATIONS (source_property_name) names differently, is shown under the listed name; the record's own names stay in the row as the recorded name (ชื่อที่บันทึก) and in search",
                          'rows': len(current), 'retrievedOn': sorted({v[2] for v in current.values() if v[2]})},
+        'siteGroups': {'tab': SITE_TAB, 'rowsRead': len(site_rows), 'rows': len(sites), 'buildings': sum(v['n'] for v in sites.values()),
+                       'status': list(SITE_STATUS), 'checkedOn': sorted({v['on'] for v in sites.values() if v['on']}), 'sources': SITE_SOURCES,
+                       'file': sites_file,
+                       'rule': "a checked 49_SITE_BOUNDARY_CHECK row publishes the interior points of the drawn buildings inside the research site boundary (buildings_in_boundary); the map shows the buildings whose outline holds one of them as the stay's site; the boundary (Department of Lands parcel outlines and the stay's own site layout), deed numbers and notes stay in the sheet"},
         'brandIdentity': {'rule': 'a 01_VENUES brand label is read by its exact 17_BRANDS name; a label without one, or a spelling variant, is read through the brand identity of the research team logo library (its 17_BRANDS ids); labels of one identity count as one brand',
                           'library': logo_lib, 'rows': dict(brand_resolution),
                           'merged': sorted([b['name'], b['labels']] for b in brands if len(b['labels']) > 1)},
@@ -684,6 +759,7 @@ def main():
         'inBuilding': {str(k): v for k, v in sorted(inside_rows.items())},
         'collections': {str(k): v for k, v in sorted(colls.items())},
         'currentNames': {str(k): v for k, v in sorted(current.items())},
+        'siteGroups': {str(k): v for k, v in sorted(sites.items())},
         'cols': cols,
     }
     os.makedirs(os.path.join(a.out, 'data'), exist_ok=True)

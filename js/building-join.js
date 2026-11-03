@@ -210,6 +210,34 @@ export function nearestBuilding(pieces, [lon, lat], {keyOfPiece = null, maxM = 3
 }
 
 /**
+ * A stay's site (owner 2026-11-03 “… สร้างขอบเขตอาคาร ร่วมกับ site layout ของโรงแรม/รีสอท”): the drawn buildings whose
+ * outline holds one of the site's points (49_SITE_BOUNDARY_CHECK.buildings_in_boundary — one interior point per building
+ * inside the research site boundary), every piece of each. The points come from the same building data the map draws,
+ * so a point stands in its building; a point no drawn outline holds (tiles still loading, a building gone from the data)
+ * is left out, never snapped to a neighbour.
+ * pieces: massing footprints [{id, outer, holes?, bbox?}]; points: [[lon, lat]…]; keyOfPiece: Map(piece id → building key).
+ * → {keys: building keys in point order (unique), refs: piece ids of those buildings, held: points that found a building}.
+ */
+export function buildingsAtPoints(pieces, points, keyOfPiece) {
+  const keys = [], seen = new Set();
+  let held = 0;
+  if (!pieces?.length || !points?.length) return {keys, refs: [], held};
+  const list = pieces.map(p => footprint({...p, key: p.id}));
+  const cells = indexOf(list);
+  for (const [lon, lat] of points) {
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+    const here = (cells.get(`${Math.floor(lon / CELL)}:${Math.floor(lat / CELL)}`) || []).filter(b => containsPoint(b, [lon, lat]));
+    if (here.length) held++;
+    for (const b of here) {
+      const k = keyOfPiece?.get(b.id) ?? `piece:${b.id}`;
+      if (!seen.has(k)) { seen.add(k); keys.push(k); }
+    }
+  }
+  const refs = pieces.filter(p => seen.has(keyOfPiece?.get(p.id) ?? `piece:${p.id}`)).map(p => p.id);
+  return {keys, refs, held};
+}
+
+/**
  * The page's display-time join: rows and CityMETER venue reference points × the drawn focus-tier footprints, with
  * the pieces of one building grouped (groupPieces). A building is keyed `osm:<group id>` (or `cm:<group id>` when
  * the group's first piece is a CityMETER building; `kind` says which) and lists its pieces (`refs` = focus-tier
