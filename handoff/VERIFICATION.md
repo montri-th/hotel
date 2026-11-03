@@ -39,8 +39,10 @@ layout ของโรงแรม/รีสอท ทดลองกับส�
   zoom 16.6), Holiday Inn 393 × 852 (20/20, 17.0), Phuket Orchid 560 × 723 (21/21, 17.2).
 - Live r16 (`dace007`), walked 2026-11-03: The Old Phuket desktop light 19/19 with its pin at the parking end in the
   frame (zoom 18.2, pitch 75) and 393 × 852 dark 19/19 (pin 336, 233 in the free box 12–346 × 58–317); Holiday Inn
-  360 × 740 dark 20/20; Phuket Orchid 393 × 852 dark 21/21; no console errors. A frame that had cached the r15
-  `index.html` (GitHub Pages serves it for 10 minutes) ran r15 until reloaded.
+  360 × 740 dark 20/20; Phuket Orchid 360 × 740 dark 21/21 (pin in the free box); no console errors. A frame that had
+  cached the r15 `index.html` (GitHub Pages serves it for 10 minutes) ran r15 until reloaded with a fresh query.
+- `npm run verify:live` checks the live files against the handoff manifest: run `node scripts/build-handoff.mjs`
+  first, on the published commit (a manifest of `b679d02` read 7 files of r16 as mismatches).
 
 Observed in the data, not changed: one CityMETER Building V4 footprint inside the Phuket Orchid site (369 m², height
 estimate 14.8 m) stands where the Esri imagery shows the pool; the site shows it as CityMETER draws it.
