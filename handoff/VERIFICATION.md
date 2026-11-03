@@ -1,12 +1,51 @@
-# CityMETER Hotel 0.3.5 — verification
+# CityMETER Hotel 0.3.6 — verification
 
-Release 0.3.5 (commit `b12352c`, cache tag `?v=20261102-r14`) gives a phone more map; section 0 records how it was
-checked. Section 0a records 0.3.4 (current names, light water, every search word), 0b records 0.3.3 (one link) and
-sections 1–6 record 0.3.2, whose camera and building code is unchanged since. Results are from 2026-11-02
-(Asia/Bangkok). The commit that adds this file changes documentation only; the final live attestation of the published
-commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
+Release 0.3.6 (commits `b679d02` · r15 and `dace007` · r16, cache tag `?v=20261103-r16`) opens three Karon resorts on every building of their site;
+section 0 records how it was checked. Section 0a records 0.3.5 (more map on a phone), 0b records 0.3.4 (current names,
+light water, every search word), 0c records 0.3.3 (one link) and sections 1–6 record 0.3.2, whose camera and building
+code is unchanged since. Results are from 2026-11-03 (Asia/Bangkok). The commit that adds this file changes
+documentation only; the final live attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the
+handoff bundle (it cannot live in the commit it attests).
 
-## 0. Release 0.3.5 — more map on a phone
+## 0. Release 0.3.6 — resort sites
+
+Owner request (2026-11-03 08:08): “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site
+layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”.
+
+- Research sheet: `49_SITE_BOUNDARY_CHECK` rows 4 (Phuket Orchid Resort & Spa), 42 (Holiday Inn Resort Phuket Karon
+  Beach, recorded as Novotel) and 61 (The Old Phuket Karon Beach Resort) written in place, columns O–W
+  (`boundary_status` todo → checked; source, evidence page, boundary GeoJSON, building points, main building, checker,
+  date, notes), each row's id checked before writing and every cell read back through the sheet's CSV view; the
+  neighbouring rows unchanged. The build read the tab's header and checked rows (5,928 bytes, SHA-256
+  `245eafce…8ac4a49e`, `meta.siteGroups.file`).
+- Overlay on Esri World Imagery (z18) before writing: every published point stands on a building inside its site;
+  the buildings left out are a neighbouring resort's bungalows (east of Holiday Inn) and the buildings beyond the
+  parcels; Phuket Orchid matches Kata Group's map (convention hall and parking to the north).
+- `npm test` 128 pass (new: `buildingsAtPoints`, site-group data invariants, site copy) · LDS + LI parity 124 ok.
+- Preview (raw.githack `b679d02`), desktop 1440 × 723 light: `focusTarget()` holds 20 of 20 (Holiday Inn), 19 of 19
+  (The Old Phuket) and 21 of 21 (Phuket Orchid) site buildings, all highlighted, x-rayed and framed at pitch 75
+  (zoom 18.7 · 18.4 · 18.2); legend “อาคารของที่พัก”; chip “ทั้งรีสอร์ท N อาคาร”; source details “ไซต์ 20 อาคาร ·
+  รูปแปลงกรมที่ดิน + ผังที่พัก · หน้าอ้างอิง · 3 พ.ย. 2569”; provenance “… · ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก 3 พ.ย. 2569”.
+  Frames 393 × 852 and 360 × 740: the whole site in the strip above the sheet (Holiday Inn light, zoom 17.0 / 16.9;
+  Phuket Orchid dark, 16.6 / 16.5), the chip on one line. A stay without a site (Mercure Ibis Bangkok Siam) still
+  opens on the building its pin falls in (`cm:` key, one building, no site words).
+- Live r15 (`b679d02`): the same counts on montri-th.github.io (Holiday Inn light desktop 20/20, The Old Phuket dark
+  desktop 19/19, Phuket Orchid 393 × 852 light 21/21, The Old Phuket 360 × 740 light 19/19), no console errors;
+  `npm run verify:live` 351/352 (the one difference: this file, then uncommitted). Found in the walk: The Old
+  Phuket's pin stands at the parking end of its site, past the last building, so at 360 px the site frame left the
+  pin at the edge (and behind a wing on desktop dark). r16 frames a site with the stay's pin, as 0.3.2 does for the
+  nearest building (`focusShape`).
+- Preview r16 (`dace007`), dark frames: the pin inside the free box in every frame — The Old Phuket 360 × 740 (19/19,
+  zoom 16.6), Holiday Inn 393 × 852 (20/20, 17.0), Phuket Orchid 560 × 723 (21/21, 17.2).
+- Live r16 (`dace007`), walked 2026-11-03: The Old Phuket desktop light 19/19 with its pin at the parking end in the
+  frame (zoom 18.2, pitch 75) and 393 × 852 dark 19/19 (pin 336, 233 in the free box 12–346 × 58–317); Holiday Inn
+  360 × 740 dark 20/20; Phuket Orchid 393 × 852 dark 21/21; no console errors. A frame that had cached the r15
+  `index.html` (GitHub Pages serves it for 10 minutes) ran r15 until reloaded.
+
+Observed in the data, not changed: one CityMETER Building V4 footprint inside the Phuket Orchid site (369 m², height
+estimate 14.8 m) stands where the Esri imagery shows the pool; the site shows it as CityMETER draws it.
+
+## 0a. Release 0.3.5 — more map on a phone
 
 Owner request (2026-11-02 23:11, with a phone screenshot of the country view in Safari): “ในมือถือ เหลือพื้นที่ map
 น้อยมาก ช่วยปรับปรุงด้วย”. The screenshot also showed the legend ticks “11,026” and “153,200” written over each other.
@@ -36,7 +75,7 @@ transient 503 on three building-unit files).
 Not checked in a frame: the zoom buttons step aside only for a coarse pointer (a touch phone); Chrome's desktop frames
 keep them, so the free box there stops left of them while a phone's does not.
 
-## 0a. Release 0.3.4 — current names, light water, every search word
+## 0b. Release 0.3.4 — current names, light water, every search word
 
 Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
 body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
@@ -85,7 +124,7 @@ and other instances did not answer within the tool's time limit.
 Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
 `subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
 
-## 0b. Release 0.3.3 — ถาม Google AI answers at once
+## 0c. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
