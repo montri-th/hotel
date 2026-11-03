@@ -683,8 +683,9 @@ function focusShape(target = focusTarget()) {
     return pts.map(q => [q[0], q[1], q[2], q[2] ? g : low]);
   });
   if (!points.length) points = rings.flatMap(({ring, height}) => ring.flatMap(([lng, lat]) => [[lng, lat, 0], [lng, lat, height]]));
-  // The building nearest the pin is framed with the pin, so the stay's symbol stays in view beside it.
-  if (points.length && target?.near) points = [...points, terrain ? [target.anchor[0], target.anchor[1], 0, pinGround] : [target.anchor[0], target.anchor[1], 0]];
+  // The building nearest the pin, or a stay's site (0.3.6: The Old Phuket's pin stands at the parking end of its site),
+  // is framed with the pin, so the stay's symbol stays in view beside it.
+  if (points.length && (target?.near || target?.site)) points = [...points, terrain ? [target.anchor[0], target.anchor[1], 0, pinGround] : [target.anchor[0], target.anchor[1], 0]];
   if (!points.length && target) {
     // Not known yet: a 90 m box round the point (12 m tall), framed the same way.
     const [lon, lat] = target.anchor, dLat = 45 / 110574, dLng = 45 / (111320 * Math.cos((lat * Math.PI) / 180));

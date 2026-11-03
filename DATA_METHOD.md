@@ -281,7 +281,7 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   600 m from the stay's point stops the build. The live tab is read through `--sites` (its header and checked rows,
   SHA-256 in `meta.siteGroups.file`) while the export predates it.
 - **On the map** (`js/building-join.js#buildingsAtPoints`, `js/app.js#focusTarget`): opening the stay highlights, x-rays
-  and frames (two-point camera) every drawn building whose outline holds one of the points, every piece of each; a point
+  and frames (two-point camera, the stay's pin in the frame) every drawn building whose outline holds one of the points, every piece of each; a point
   no drawn outline holds is left out, never snapped to a neighbour. The massing square round the pin grows to hold the
   site (`siteReach`). The panel reads “ทั้งรีสอร์ท N อาคาร” (N = the sheet's count), the source details a “ไซต์” row (count ·
   source · หน้าอ้างอิง · date) and the provenance line “ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก <date>”.
