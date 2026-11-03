@@ -285,6 +285,11 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   no drawn outline holds is left out, never snapped to a neighbour. The massing square round the pin grows to hold the
   site (`siteReach`). The panel reads “ทั้งรีสอร์ท N อาคาร” (N = the sheet's count), the source details a “ไซต์” row (count ·
   source · หน้าอ้างอิง · date) and the provenance line “ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก <date>”.
+- **Next sites** (owner 2026-11-03 “กรรมสิทธิ์ไม่ต้อง”): ownership is not checked; a site may rest on the stay's own layout
+  and imagery alone (`boundary_source = site_layout`, provenance “ไซต์ ผังที่พัก”). `scripts/site-candidates.mjs` lists the
+  CityMETER Building V4 buildings the map draws round a stay (the map's own code, so every point it writes stands in a
+  drawn building), turns the chosen buildings into the tab's cells (`buildings_in_boundary`, a 6 m envelope or the
+  researcher's polygon as `boundary_geojson`) and checks a row's points (`check`).
 
 ## 8. Not published
 
