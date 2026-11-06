@@ -494,7 +494,7 @@ export function renderHotel(d, ctx = {}) {
           <dt>พิกัด</dt><dd>${point}</dd>
           ${price ? `<dt>ราคาที่บันทึก</dt><dd>${price}</dd><dt>วันที่ราคา</dt><dd>ไม่ระบุในแหล่ง</dd>` : ''}
           <dt>อาคาร</dt><dd>${esc(MASS_TH[r.mass] || MASS_TH.not_checked)}</dd>
-          ${r.site ? `<dt>ไซต์</dt><dd>${nw(`${num(r.site.n)} อาคาร`)} · ${esc(r.site.source || 'งานวิจัย')}${r.site.url ? ` · ${link(r.site.url, 'หน้าอ้างอิง')}` : ''}${r.site.on ? ` · ${nw(esc(thaiDate(r.site.on)))}` : ''}</dd>` : ''}
+          ${r.site ? `<dt>ไซต์</dt><dd>${nw(`${num(r.site.n)} อาคาร`)} · ${esc(r.site.source || 'งานวิจัย')}${r.site.url ? ` · ${link(r.site.url, 'หน้าอ้างอิง')}` : ''}${r.site.credit ? ` · ${link(r.site.credit.url, r.site.credit.text)}` : ''}${r.site.on ? ` · ${nw(esc(thaiDate(r.site.on)))}` : ''}</dd>` : ''}
           ${r.collections.length ? `<dt>คอลเลกชัน</dt><dd>${esc(r.collections.join(' · '))}</dd>` : ''}
           <dt>รหัส</dt><dd><span class="hint data-number">${esc(r.id)}</span></dd>
         </dl>

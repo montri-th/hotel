@@ -1,9 +1,9 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.6 (data rebuilt 2026-11-03 from the same export of 2026-11-01 and the checked rows of the live
-`49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; three resort
-sites, §7c); the page computes everything from the data
+a snapshot of release 0.3.7 (data rebuilt 2026-11-06 from the same export of 2026-11-01 and the checked rows of the live
+`49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; fourteen
+stay sites, §7c); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
 ## วิธีนับ — อ่านตัวเลขในหน้าอย่างไร
@@ -20,7 +20,7 @@ at run time, so these are fixtures, not constants.
 - **ชื่อที่บันทึก** = ชื่อที่พักตามแหล่ง (ทะเบียนที่พัก ททท. หรือ CityMETER Hotel V3) แสดงใต้ชื่อเมื่อที่พักเปลี่ยนแบรนด์หรือชื่อแล้ว ชื่อหัวข้อเป็นชื่อที่แบรนด์ใช้บนหน้าเว็บของแบรนด์ (ลิงก์ “หน้าแบรนด์” และวันที่ตรวจอยู่ใน “ที่มาและพิกัด”) ค้นด้วยชื่อใดก็เจอ ช่องค้นหาหาทุกคำที่พิมพ์ในชื่อ แบรนด์ ประเภท หรือพื้นที่ (เช่น “novotel karon”)
 - **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
 - **อาคารใกล้หมุด** = เมื่อหมุดของที่พักไม่อยู่ในขอบอาคารใด มุมมองอาคาร 3 มิติเปิดที่อาคารบนแผนที่ที่ใกล้หมุดที่สุดภายใน 300 ม. (ไม่มีก็ขยายเป็น 800 ม.) โดยมีหมุดอยู่ในภาพด้วย เป็นการเลือกมุมกล้องเท่านั้น ไม่ได้ยืนยันว่าที่พักอยู่ในอาคารนั้น และไม่นับใน “ที่พักในอาคารนี้” ถ้าในระยะ 800 ม. ไม่มีอาคารบนแผนที่ ภาพแสดงพื้นที่รอบหมุด
-- **ทั้งรีสอร์ท N อาคาร** = อาคารบนแผนที่ที่อยู่ในขอบเขตไซต์ของที่พัก ทีมวิจัยวาดขอบเขตจากรูปแปลงที่ดินของกรมที่ดิน (LandsMaps) ร่วมกับผังของที่พักและภาพถ่ายดาวเทียม (เริ่ม 3 แห่งในกะรน ภูเก็ต ตรวจ 3 พ.ย. 2569) กดที่พักแล้วแผนที่แสดงและจัดภาพทุกอาคารของไซต์พร้อมกัน ไซต์เป็นการจัดกลุ่มอาคารเพื่อดูบนแผนที่ ไม่ใช่ขอบเขตโฉนด เนื้อที่ หรือการยืนยันกรรมสิทธิ์ และไม่เผยแพร่รูปแปลงหรือเลขโฉนด
+- **ทั้งรีสอร์ท N อาคาร** = อาคารบนแผนที่ที่อยู่ในขอบเขตไซต์ของที่พัก ทีมวิจัยวาดขอบเขตจากรูปแปลงที่ดินของกรมที่ดิน (LandsMaps) หรือกรอบพื้นที่ของที่พักใน OpenStreetMap ร่วมกับผังของที่พักและภาพถ่ายดาวเทียม (3 แห่งในกะรน ภูเก็ต จากรูปแปลง ตรวจ 3 พ.ย. 2569 · 11 แห่งจากกรอบ OpenStreetMap ตรวจ 6 พ.ย. 2569 ข้อมูล © OpenStreetMap contributors ภายใต้ ODbL 1.0) กดที่พักแล้วแผนที่แสดงและจัดภาพทุกอาคารของไซต์พร้อมกัน ไซต์เป็นการจัดกลุ่มอาคารเพื่อดูบนแผนที่ ไม่ใช่ขอบเขตโฉนด เนื้อที่ หรือการยืนยันกรรมสิทธิ์ และไม่เผยแพร่รูปแปลง เลขโฉนด หรือกรอบพื้นที่
 - **ภูมิประเทศ** = พื้นดินรอบหมุดของที่พัก (รัศมี 500 ม. ต้นไม้ 300 ม.) จาก SRTM 30 ม. (สำรวจปี 2543) และแผนที่ OSM ไม่ใช่การยืนยันวิว ราคา หรือความเสี่ยง
 - **สถานีที่กำลังสร้าง** = โครงการ ยังไม่ใช่บริการ
 
@@ -257,7 +257,7 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   the join of stays to buildings (a pin inside the outline: “ที่พักในอาคารนี้”) is the same for both sources (keys
   `osm:` / `cm:`).
 
-## 7c. Stay sites (0.3.6)
+## 7c. Stay sites (0.3.6–0.3.7)
 
 Owner request 2026-11-03: “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของ
 โรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”, after “ลองใช้พิกัดโรงแรม/รีสอท ไปค้นจาก landsmaps.dol.go.th … เพื่อไปดูว่ามีโฉนดใดบ้างเป็น
@@ -304,10 +304,21 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   read for the stay they win over the area. A pin inside an area is not proof that the area is the stay's: the name and
   the layout must agree, and a neighbour's building put in is worse than one building left out. Provenance “ไซต์ กรอบ
   OpenStreetMap + ผังที่พัก <date>”. OpenStreetMap data is © OpenStreetMap contributors under ODbL 1.0: the points of such
-  a site are derived from it (`meta.siteGroups.credits`, the map attribution names OpenStreetMap); the area itself stays
-  in the sheet like any boundary. The first national read (Overpass API, 6 Nov 2026, the eight provinces read first;
+  a site are derived from it (`meta.siteGroups.credits`; the “ไซต์” row links “© OpenStreetMap contributors” to
+  https://www.openstreetmap.org/copyright and the map attribution names OpenStreetMap); the area itself stays in the
+  sheet like any boundary. The first national read (Overpass API, 6 Nov 2026, the eight provinces read first;
   internal drafts in the CityMETER Project docs) found an area of the stay's own for 148 of the 7,702 stays read (1.9%),
   130 of them holding two or more drawn buildings — most sites still need parcels and a layout.
+- **Result 0.3.7** (`49_SITE_BOUNDARY_CHECK`, checked 2026-11-06, `boundary_source = osm_polygon+site_layout`): eleven of
+  the tab's stays whose own area was found (one OSM way each, OSM data of 2026-11-06 read from the main Overpass API
+  server; element and date in the notes), each compared with its layout page on Esri World Imagery; a building the
+  layout does not show as the stay's, or that may be a neighbour's, was left out and named in the notes. Pullman Phuket
+  Karon Beach Resort 26 buildings · Mida Grande Resort Phuket 63 · ANA ANAN Resort & Villas Pattaya 6 · The Imperial
+  Phukaew Hill Resort 26 · Sea Two Pool Villa 33 · Silavadee Pool Spa Resort 77 · Banyan Tree Krabi 33 · Navana Nature
+  Escape 11 · The Gems Mining Pool Villas Pattaya 32 · Sea Sand Sun Resort and Villas 33 · Amari Vogue Krabi 14 — 354
+  buildings (with the three Karon parcel sites, 14 sites and 414 buildings). The evidence pages are the stays' own or
+  their booking, travel or guest pages that show the layout (`boundary_evidence_url`). Frames that missed part of the
+  stay on its layout (for example the wings of one Phuket resort outside its OSM area) are held, not written.
 
 ## 8. Not published
 
@@ -332,8 +343,8 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
   OpenStreetMap or CityMETER Building V4 massing per area (§7b). The research team checks the site boundaries of the 300
   most important resorts and pool villas in `49_SITE_BOUNDARY_CHECK` (owner 2026-11-01); a stay spread over several
   buildings is joined to one building until its boundary is in. The tab holds the 300 stays (resort 282 · hotel 14 ·
-  bungalow 2 · other 2; 203 with a point); since 2026-11-03 three Karon resorts are `checked` (§7c), the other 297 rows
-  are `todo`.
+  bungalow 2 · other 2; 203 with a point); on 2026-11-06 fourteen are `checked` (§7c: three Karon resorts from parcels on
+  2026-11-03, eleven stays from their OpenStreetMap area on 2026-11-06), the other 286 rows are `todo`.
 - 24 records whose name predates a rebrand or spells the brand differently read under their brand's listed name (§2a);
   the register names stay as the recorded names. Renaming the record itself is the research team's call.
 

@@ -41,7 +41,7 @@ test('every panel view ends with one provenance line — dataset · source · da
       for (const k of ['dataset', 'source', 'date', 'boundary']) assert.equal((html.match(new RegExp(`data-prov="${k}"`, 'g')) || []).length, 1, `${name}: ${k}`);
       assert.ok(t.includes('ชุดข้อมูล CityMETER Hotel'), `${name}: dataset`);
       assert.ok(/แหล่ง\s*จาก Hotel V3 · ทะเบียน ททท\. · เว็บทางการ/.test(t), `${name}: source`);
-      assert.ok(t.includes('ตรวจ 3 พ.ย. 2569'), `${name}: date`);
+      assert.ok(t.includes('ตรวจ 6 พ.ย. 2569'), `${name}: date — the latest check of the research sheet (sites 6 Nov, 0.3.7)`);
       assert.ok(/ขอบเขต \S/.test(t), `${name}: boundary`);
       assert.ok(html.includes('<span class="prov-part prov-method"><a href="DATA_METHOD.md"'), `${name}: the method link`);
       assert.equal((html.match(/class="hint panel-foot provenance"/g) || []).length, 1, `${name}: exactly one provenance line`);
@@ -244,6 +244,19 @@ test('a resort with a checked site reads “ทั้งรีสอร์ท N 
     const r = data.rows.find(x => x.id === id);
     assert.ok(text(render(r)).includes(`ทั้งรีสอร์ท ${r.site.n} อาคาร`), id);
   }
+  assert.ok(!html.includes('openstreetmap.org/copyright'), 'a parcel site carries no OpenStreetMap credit');
   const plain = text(render(data.rows.find(r => r.id === HOTEL)));
   assert.ok(!/ทั้ง(รีสอร์ท|โรงแรม|บังกะโล|โครงการ) \d/.test(plain) && !plain.includes('ไซต์'), 'a stay without a site carries no site words');
+});
+
+test('a site drawn from an OpenStreetMap area (0.3.7) names its source, links the layout page and credits OpenStreetMap (ODbL)', () => {
+  const {data, index} = load();
+  const ctx = ctxFor(data, index);
+  const r = data.rows.find(x => x.id === 'HT-93bb06cb-d09d-4af6-ac33-435d2020346f');
+  const html = renderHotel(buildHotelDetail(r, {scopeRows: data.rows, allRows: data.rows, index, groups: data.groups}), ctx), t = text(html);
+  assert.ok(t.includes(`ทั้งรีสอร์ท ${r.site.n} อาคาร`), 'the chip counts the site’s buildings');
+  assert.ok(t.includes(`ไซต์ ${r.site.n} อาคาร · กรอบ OpenStreetMap + ผังที่พัก`), 'the source details name the OSM frame and the layout');
+  assert.match(html, /href="https:\/\/www\.pullmanphuketkaron\.com\/"[^>]*>หน้าอ้างอิง</, 'the stay’s own page that shows the layout');
+  assert.match(html, /href="https:\/\/www\.openstreetmap\.org\/copyright"[^>]*>© OpenStreetMap contributors</, 'the ODbL credit');
+  assert.match(t, /จาก [^]*ไซต์ กรอบ OpenStreetMap \+ ผังที่พัก 6 พ\.ย\. 2569/, 'the provenance names the site source and date');
 });

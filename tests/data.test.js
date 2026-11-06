@@ -200,6 +200,24 @@ test('site groups (owner 2026-11-03 “พี่เลือกโฉนดใ�
   const pilots = {'HOTEL-TAT-20160504143431473963': 20, 'HOTEL-TAT-20160428122116456581': 19, 'HOTEL-TAT-20160501120539473664': 21};
   for (const [id, n] of Object.entries(pilots)) assert.equal(byId.get(id).site?.n, n, id);
   assert.match(byId.get('HOTEL-TAT-20160428122116456581').site.url, /^https:\/\/theoldphuket\.com\//);
+  // 0.3.7 (owner 2026-11-06 20:39 “approve”): eleven stays whose OpenStreetMap area was checked with their layout.
+  const osm = {
+    'HT-93bb06cb-d09d-4af6-ac33-435d2020346f': 26, 'HOTEL-TAT-20200930195143476289': 63, 'HOTEL-TAT-20201215151208694940': 6,
+    'HOTEL-TAT-2014010111995': 26, 'HOTEL-TAT-20160107162547404922': 33, 'HT-27773b81-7842-4085-974a-e55d716eda62': 77,
+    'HT-0c859087-ab21-4df7-abce-3b107f35b940': 33, 'HT-9570fb13-26b2-4cd6-8998-b3e32c67fc0c': 11,
+    'HT-c007b5c2-46f8-4d08-89c6-31051a119c38': 32, 'HT-968e5362-a31c-4b2e-8c4f-547b51ae6d13': 33,
+    'HT-7d03e9d8-01e7-4a61-8f27-88c4614d9c60': 14,
+  };
+  for (const [id, n] of Object.entries(osm)) {
+    const r = byId.get(id);
+    assert.equal(r.site?.n, n, id);
+    assert.equal(r.site.source, 'กรอบ OpenStreetMap + ผังที่พัก', id);
+    assert.deepEqual(r.site.credit, {text: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright'}, `${id}: the ODbL credit`);
+  }
+  assert.deepEqual(meta.credits['osm_polygon+site_layout'],
+    {text: '© OpenStreetMap contributors', licence: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright', note: 'the site follows an OpenStreetMap area of the stay'});
+  for (const id of Object.keys(pilots)) assert.equal(byId.get(id).site.credit, null, `${id}: a parcel site carries no OSM credit`);
+  assert.equal(data.rows.filter(r => r.site?.credit).length, groups.filter(([, v]) => v.src in meta.credits).length);
   // Nothing of the boundary, the deeds or the notes is published.
   const site = JSON.stringify([raw.siteGroups, meta]);
   assert.ok(!/geojson|Polygon|coordinates|โฉนด|ระวาง|เลขที่ดิน|ไร่/.test(site), 'no parcel shape, deed or sheet note');

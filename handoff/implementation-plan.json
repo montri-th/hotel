@@ -3,8 +3,8 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.6",
-  "updatedOn": "2026-11-03",
+  "productVersion": "0.3.7",
+  "updatedOn": "2026-11-06",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
     "commands": {
@@ -359,6 +359,28 @@
         "DATA_METHOD.md"
       ],
       "status": "done"
+    },
+    {
+      "id": "T14",
+      "title": "0.3.7 (owner 2026-11-06 “approve” — osm_polygon+site_layout, the third source of 49_SITE_BOUNDARY_CHECK — and “please continue”): eleven stays whose OpenStreetMap area of their own was checked with their layout and imagery are written to the tab (checked, 354 buildings); the build names the source “กรอบ OpenStreetMap + ผังที่พัก” and carries its credit (meta.siteGroups.credits); the “ไซต์” row links © OpenStreetMap contributors (ODbL 1.0)",
+      "dependsOn": [
+        "T13"
+      ],
+      "acceptanceCriteria": [
+        "A15",
+        "A16"
+      ],
+      "files": [
+        "scripts/build-data.py",
+        "scripts/site-candidates.mjs",
+        "js/model.js",
+        "js/panel.js",
+        "tests/data.test.js",
+        "tests/views.test.js",
+        "DATA_METHOD.md",
+        "AGENTS.md"
+      ],
+      "status": "done"
     }
   ],
   "acceptanceCriteria": [
@@ -451,6 +473,12 @@
       "scenario": "a stay with a checked research site (Holiday Inn Resort Phuket Karon Beach, The Old Phuket Karon Beach Resort, Phuket Orchid Resort & Spa)",
       "expected": "every drawn building holding one of the site points is highlighted, x-rayed and framed together (Holiday Inn 20 · The Old Phuket 19 · Phuket Orchid 21, CityMETER Building V4); the panel reads “ทั้งรีสอร์ท N อาคาร”, the source details a “ไซต์” row (count · source · หน้าอ้างอิง · date) and the provenance line “ไซต์ รูปแปลงกรมที่ดิน + ผังที่พัก 3 พ.ย. 2569”; data.siteGroups holds only points, count, date, source code and link — no boundary, deed or note",
       "verificationType": "unit (tests/building-join.test.js, tests/data.test.js, tests/views.test.js) + render (preview and live)"
+    },
+    {
+      "id": "A16",
+      "scenario": "a stay whose site follows an OpenStreetMap area of its own (0.3.7: e.g. Pullman Phuket Karon Beach Resort, Silavadee Pool Spa Resort, Banyan Tree Krabi)",
+      "expected": "as A15 — every drawn building holding one of its site points highlighted, x-rayed and framed together (Pullman 26 · Silavadee 77 · Banyan Tree Krabi 33); the “ไซต์” row reads “N อาคาร · กรอบ OpenStreetMap + ผังที่พัก · หน้าอ้างอิง · © OpenStreetMap contributors · 6 พ.ย. 2569” with the credit linking https://www.openstreetmap.org/copyright; the provenance line “ไซต์ กรอบ OpenStreetMap + ผังที่พัก 6 พ.ย. 2569”; no OSM frame, element id or note in data/",
+      "verificationType": "unit (tests/data.test.js, tests/views.test.js) + render (live)"
     }
   ],
   "developerWorkflow": [

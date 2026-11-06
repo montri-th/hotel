@@ -90,6 +90,10 @@ SITE_SOURCES = {  # boundary_source codes of 49_SITE_BOUNDARY_CHECK → the word
     'site_layout': 'ผังที่พัก',
     'dol_parcels': 'รูปแปลงกรมที่ดิน',
 }
+SITE_CREDITS = {  # boundary sources whose points are derived from an open database → the credit the site row links to
+    'osm_polygon+site_layout': {'text': '© OpenStreetMap contributors', 'licence': 'ODbL 1.0',
+                                'url': 'https://www.openstreetmap.org/copyright', 'note': 'the site follows an OpenStreetMap area of the stay'},
+}
 
 # Accommodation groups: venue_type of 01_VENUES (the sheet's 07_TAXONOMY mapping of the source type) → product group.
 GROUPS = [
@@ -737,7 +741,7 @@ def main():
                        'status': list(SITE_STATUS), 'checkedOn': sorted({v['on'] for v in sites.values() if v['on']}), 'sources': SITE_SOURCES,
                        'file': sites_file,
                        'rule': "a checked 49_SITE_BOUNDARY_CHECK row publishes the interior points of the drawn buildings inside the research site boundary (buildings_in_boundary); the map shows the buildings whose outline holds one of them as the stay's site; the boundary (Department of Lands parcel outlines, or an OpenStreetMap area of the stay, with the stay's own site layout), deed numbers and notes stay in the sheet",
-                       'credits': {'osm_polygon+site_layout': '© OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright): the site follows an OpenStreetMap area'}},
+                       'credits': SITE_CREDITS},
         'brandIdentity': {'rule': 'a 01_VENUES brand label is read by its exact 17_BRANDS name; a label without one, or a spelling variant, is read through the brand identity of the research team logo library (its 17_BRANDS ids); labels of one identity count as one brand',
                           'library': logo_lib, 'rows': dict(brand_resolution),
                           'merged': sorted([b['name'], b['labels']] for b in brands if len(b['labels']) > 1)},
