@@ -8,9 +8,13 @@
 //   node scripts/site-candidates.mjs candidates <venue_id> [--reach 400]
 //       → sites/<venue_id>/candidates.json · candidates.csv · candidates.png (numbered buildings, north up, pin red)
 //   node scripts/site-candidates.mjs row <venue_id> (--site site.geojson [--add 3,7] [--drop 12] | --pick 1,2,5)
-//       --source dol_parcels+site_layout|site_layout --evidence <https page of the layout> [--main "…"] [--notes "…"] [--by "…"]
+//       --source dol_parcels+site_layout|osm_polygon+site_layout|site_layout --evidence <https page of the layout>
+//       [--main "…"] [--notes "…"] [--by "…"]
 //       (dol_parcels+site_layout: the site follows the Department of Lands parcels read on LandsMaps / D-Value with the
-//       layout; site_layout: no parcel could be read, the layout and imagery alone)
+//       layout; osm_polygon+site_layout (owner 2026-11-06 “approve”): the site follows an OpenStreetMap area of the stay —
+//       skill osm-area-site-join, class own, its site.geojson as --site — checked with the layout and imagery, the OSM
+//       element and its date in --notes; site_layout: no parcel could be read and no OSM area holds the stay, the layout
+//       and imagery alone)
 //       → sites/<venue_id>/row.json · picked.png and the row in sites/site_rows.csv (one row per venue_id)
 //   node scripts/site-candidates.mjs check <venue_id> --points "lon,lat;lon,lat"
 //       → which drawn building holds each point (a sheet row's buildings_in_boundary); exits 1 if one is outside
@@ -22,7 +26,7 @@ import {zonesOf, zoneAt, cmTileUrl} from '../js/building-units.js';
 import {footprint, containsPoint, interiorOf} from '../js/building-join.js';
 
 const MAX_SITE_M = 600; // scripts/build-data.py SITE_MAX_M: a site building farther from the stay's point stops the build
-const SOURCES = ['dol_parcels+site_layout', 'site_layout'];
+const SOURCES = ['dol_parcels+site_layout', 'osm_polygon+site_layout', 'site_layout'];
 const COLUMNS = ['venue_id', 'boundary_status', 'boundary_source', 'boundary_evidence_url', 'boundary_geojson',
   'buildings_in_boundary', 'main_building_note', 'checked_by', 'checked_on', 'notes'];
 const [cmd, venue] = process.argv.slice(2);
@@ -133,7 +137,7 @@ async function makeRow() {
   const evidence = opt('evidence');
   if (!/^https:\/\/[^\s]+$/.test(evidence) || /google\.com\/(maps|drive)|docs\.google|landometer\.com\/api/.test(evidence)) fail('--evidence must be a public https page that shows the layout (not a Google Maps/Drive link, not an API)');
   const source = opt('source');
-  if (!SOURCES.includes(source)) fail('--source is required: dol_parcels+site_layout (parcels read on LandsMaps / D-Value, with the layout) or site_layout (no parcel could be read)');
+  if (!SOURCES.includes(source)) fail('--source is required: dol_parcels+site_layout (parcels read on LandsMaps / D-Value, with the layout), osm_polygon+site_layout (an OpenStreetMap area of the stay, with the layout) or site_layout (no parcel could be read, no OSM area)');
   const cells = {venue_id: venue, boundary_status: 'checked', boundary_source: source, boundary_evidence_url: evidence,
     boundary_geojson: JSON.stringify(boundary), buildings_in_boundary: list.map(c => `${c.point[0].toFixed(6)},${c.point[1].toFixed(6)}`).join(';'),
     main_building_note: opt('main'), checked_by: opt('by', 'ChatGPT (owner batch)'), checked_on: today(), notes: opt('notes')};

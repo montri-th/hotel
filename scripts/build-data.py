@@ -62,8 +62,9 @@ SITE (owner 2026-11-03 “พี่เลือกโฉนดให้เลย
 several buildings whose 49_SITE_BOUNDARY_CHECK row is `checked` publishes its buildings — `buildings_in_boundary`, the
 interior points of the drawn buildings (CityMETER Building V4 or OpenStreetMap) inside the research site boundary, as
 "lon,lat;lon,lat" — so the map can show them as one site (data.siteGroups[row] = {pts, n, on, src, url}). The boundary
-itself (`boundary_geojson`, drawn from Department of Lands parcel outlines and the stay's own site layout), the deed
-numbers and the researcher's notes stay in the sheet: no parcel shape, deed number or owner is published. A point more
+itself (`boundary_geojson`, drawn from Department of Lands parcel outlines and the stay's own site layout, or since
+2026-11-06 an OpenStreetMap area of the stay checked with its layout — owner “approve” to osm_polygon+site_layout), the
+deed numbers and the researcher's notes stay in the sheet: no parcel shape, deed number or owner is published. A point more
 than SITE_MAX_M from the stay's own point stops the build. The tab is read from the export, or from --sites (a CSV of the
 live tab — its header and checked rows suffice; its SHA-256 is recorded). The check dates of the sites date the data set.
 
@@ -85,6 +86,7 @@ SITE_STATUS = ('checked',)
 SITE_MAX_M = 600  # a site building this far from the stay's own point is a sheet error, not a site
 SITE_SOURCES = {  # boundary_source codes of 49_SITE_BOUNDARY_CHECK → the words the provenance line uses
     'dol_parcels+site_layout': 'รูปแปลงกรมที่ดิน + ผังที่พัก',
+    'osm_polygon+site_layout': 'กรอบ OpenStreetMap + ผังที่พัก',  # owner 2026-11-06 “approve”: the tab's third source
     'site_layout': 'ผังที่พัก',
     'dol_parcels': 'รูปแปลงกรมที่ดิน',
 }
@@ -734,7 +736,8 @@ def main():
         'siteGroups': {'tab': SITE_TAB, 'rowsRead': len(site_rows), 'rows': len(sites), 'buildings': sum(v['n'] for v in sites.values()),
                        'status': list(SITE_STATUS), 'checkedOn': sorted({v['on'] for v in sites.values() if v['on']}), 'sources': SITE_SOURCES,
                        'file': sites_file,
-                       'rule': "a checked 49_SITE_BOUNDARY_CHECK row publishes the interior points of the drawn buildings inside the research site boundary (buildings_in_boundary); the map shows the buildings whose outline holds one of them as the stay's site; the boundary (Department of Lands parcel outlines and the stay's own site layout), deed numbers and notes stay in the sheet"},
+                       'rule': "a checked 49_SITE_BOUNDARY_CHECK row publishes the interior points of the drawn buildings inside the research site boundary (buildings_in_boundary); the map shows the buildings whose outline holds one of them as the stay's site; the boundary (Department of Lands parcel outlines, or an OpenStreetMap area of the stay, with the stay's own site layout), deed numbers and notes stay in the sheet",
+                       'credits': {'osm_polygon+site_layout': '© OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright): the site follows an OpenStreetMap area'}},
         'brandIdentity': {'rule': 'a 01_VENUES brand label is read by its exact 17_BRANDS name; a label without one, or a spelling variant, is read through the brand identity of the research team logo library (its 17_BRANDS ids); labels of one identity count as one brand',
                           'library': logo_lib, 'rows': dict(brand_resolution),
                           'merged': sorted([b['name'], b['labels']] for b in brands if len(b['labels']) > 1)},

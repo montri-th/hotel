@@ -293,6 +293,22 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   drawn building), turns the chosen buildings into the tab's cells (`buildings_in_boundary`, a 6 m envelope or the
   researcher's polygon as `boundary_geojson`) and checks a row's points (`check`).
 
+- **Third source — an OpenStreetMap area of the stay** (owner 2026-11-06 20:39 “approve”, to the question “เพิ่ม
+  `osm_polygon+site_layout` เป็นแหล่งที่ 3 ของ `49_SITE_BOUNDARY_CHECK` หรือไม่”): the site follows a `tourism`,
+  `leisure=resort` or named `landuse` way or relation of OpenStreetMap that holds the stay's pin, carries the stay's own
+  name and holds no other stay's pin (skill `osm-area-site-join`, class `own`, within the size band of the dataset); the
+  buildings are the drawn buildings whose interior point stands in the area (the rule of `site-candidates.mjs row --site`).
+  The area is checked against the stay's own layout and imagery as for the other two sources — the layout page is
+  `boundary_evidence_url`, the OSM element and the date of the OSM data read go in the notes; an area with no layout to
+  check it is skipped as `no_layout`; a building cut by the area's edge is decided with the layout; where parcels are
+  read for the stay they win over the area. A pin inside an area is not proof that the area is the stay's: the name and
+  the layout must agree, and a neighbour's building put in is worse than one building left out. Provenance “ไซต์ กรอบ
+  OpenStreetMap + ผังที่พัก <date>”. OpenStreetMap data is © OpenStreetMap contributors under ODbL 1.0: the points of such
+  a site are derived from it (`meta.siteGroups.credits`, the map attribution names OpenStreetMap); the area itself stays
+  in the sheet like any boundary. The first national read (Overpass API, 6 Nov 2026, the eight provinces read first;
+  internal drafts in the CityMETER Project docs) found an area of the stay's own for 148 of the 7,702 stays read (1.9%),
+  130 of them holding two or more drawn buildings — most sites still need parcels and a layout.
+
 ## 8. Not published
 
 Addresses, sub-districts, phone numbers, raw coordinates, operator names, source record ids, researcher notes, quality
