@@ -288,7 +288,7 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
 - **Next sites** (owner 2026-11-03 “กรรมสิทธิ์ไม่ต้อง” and “ทำไมไม่ใช้โฉนด จากกรมที่ดินและธนารักษ์”): ownership is not
   proven, but the parcels still bound the site — deeds read on D-Value and LandsMaps, matched with the stay's layout
   (`dol_parcels+site_layout`); a site rests on the layout and imagery alone (`site_layout`, provenance “ไซต์ ผังที่พัก”)
-  only where no parcel can be read. `scripts/site-candidates.mjs` lists the
+  only where no parcel can be read and no OpenStreetMap area of the stay is found (next item). `scripts/site-candidates.mjs` lists the
   CityMETER Building V4 buildings the map draws round a stay (the map's own code, so every point it writes stands in a
   drawn building), turns the chosen buildings into the tab's cells (`buildings_in_boundary`, a 6 m envelope or the
   researcher's polygon as `boundary_geojson`) and checks a row's points (`check`).
