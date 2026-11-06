@@ -1,13 +1,57 @@
-# CityMETER Hotel 0.3.6 — verification
+# CityMETER Hotel 0.3.7 — verification
 
-Release 0.3.6 (commits `b679d02` · r15 and `dace007` · r16, cache tag `?v=20261103-r16`) opens three Karon resorts on every building of their site;
-section 0 records how it was checked. Section 0a records 0.3.5 (more map on a phone), 0b records 0.3.4 (current names,
-light water, every search word), 0c records 0.3.3 (one link) and sections 1–6 record 0.3.2, whose camera and building
-code is unchanged since. Results are from 2026-11-03 (Asia/Bangkok). The commit that adds this file changes
-documentation only; the final live attestation of the published commit is recorded in `RELEASE_RECEIPT.json` of the
-handoff bundle (it cannot live in the commit it attests).
+Release 0.3.7 (commit `cfa3b9f`, cache tag `?v=20261106-r17`; published by `594b3f1`, an empty commit that re-ran the
+Pages deploy) opens eleven more stays on every building of their site, from an OpenStreetMap area of the stay checked
+with its layout; section 0 records how it was checked. Section 0a records 0.3.6 (three Karon resorts from parcels), 0b
+0.3.5 (more map on a phone), 0c 0.3.4 (current names, light water, every search word), 0d 0.3.3 (one link) and sections
+1–6 record 0.3.2, whose camera and building code is unchanged since. Results are from 2026-11-06 (Asia/Bangkok). The
+commit that adds this file changes documentation only; the final live attestation of the published commit is recorded
+in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
 
-## 0. Release 0.3.6 — resort sites
+## 0. Release 0.3.7 — sites from OpenStreetMap areas
+
+Owner 2026-11-06 20:39 “approve” (to adding `osm_polygon+site_layout` as the third source of `49_SITE_BOUNDARY_CHECK`)
+and 21:01 “please continue”.
+
+- Research sheet: eleven rows of `49_SITE_BOUNDARY_CHECK` written in place, columns O–W only (ranks 9, 10, 29, 87, 127,
+  145, 150, 208, 210, 285, 287 at sheet rows rank + 1), each row's `venue_id` read in the Name Box and formula bar before
+  writing; every row read back through the sheet's query view, the neighbouring rows unchanged; the tab then read
+  checked `dol_parcels+site_layout` 3 · checked `osm_polygon+site_layout` 11 · todo 286. Each site is the OSM area of
+  the stay's own (skill osm-area-site-join, class `own`, one OSM way each, OSM data of 2026-11-06 from the main
+  Overpass server; element and date in the notes) compared with the stay's layout page on Esri World Imagery before
+  writing; buildings the layout does not show as the stay's were left out (Sea Sand Sun: four buildings dropped) and
+  every row's points pass `scripts/site-candidates.mjs check`. Held, not written: Diamond Cliff (the frame misses the
+  Grand Wing and the Diamond Villas on the resort's own map), Royal Ping Garden (no layout found), Duangjitt (waits on
+  a deed decision).
+- Build: `--sites` read the live tab's header and 14 checked rows (28,325 bytes, SHA-256 `4b795675…16173df85c1597ede3ecfa06e`,
+  `meta.siteGroups.file`); the export (SHA-256 `ec460c81…`) is unchanged, so the figures of 0.3.1 stand; the diff
+  against 0.3.6 data is `siteGroups` (3 → 14 sites, 60 → 414 buildings), 11 evidence links and the site metadata
+  (`meta.siteGroups.credits`: © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright).
+- `npm test` 129 pass (new: the eleven OSM sites with their counts, source words and credit; a parcel site carries no
+  credit; an OSM site's view names the source, links the layout page and the credit; the provenance date follows the
+  sheet's latest check, 6 พ.ย. 2569).
+- Pages: run #34 built the site in 24 s but its deploy step stopped at “Timeout reached, aborting!” after 10 minutes, and
+  its re-run stayed queued for 20 minutes; the empty commit `594b3f1` (run #35) deployed. r17 was live at
+  2026-11-06 15:41 UTC; `npm run verify:live` 352 ok, 0 failed against the manifest of `594b3f1`.
+- Live walk (montri-th.github.io, Chrome, desktop 1710 × 876 dark): every site opens with all its buildings found and
+  framed at pitch 75 (Amari Vogue pitch 64 on its slope), chip, “ไซต์” row and provenance as built — Pullman 26/26
+  (zoom 17.8) · Mida Grande 63/63 (18.1) · ANA ANAN 6/6 (19.1) · The Imperial Phukaew Hill 26/26 (17.6, on terrain) ·
+  Sea Two 33/33 (18.5, “ทั้งโรงแรม”) · Silavadee 77/77 (18.7) · Banyan Tree Krabi 33/33 (17.9) · Navana 11/11 (19.4) ·
+  The Gems 32/32 (18.5) · Sea Sand Sun 33/33 (18.1) · Amari Vogue 14/14 (19.1); the eleven read “… · กรอบ OpenStreetMap +
+  ผังที่พัก · หน้าอ้างอิง · © OpenStreetMap contributors · 6 พ.ย. 2569”, the credit linking the OSM copyright page,
+  and the provenance “ไซต์ กรอบ OpenStreetMap + ผังที่พัก 6 พ.ย. 2569”. The three parcel sites as in 0.3.6 (Holiday
+  Inn 20/20, Phuket Orchid 21/21, The Old Phuket 19/19), no credit, “… 3 พ.ย. 2569”. Every view's date part reads
+  “ตรวจ 6 พ.ย. 2569”. Same-origin frames: Silavadee 390 × 740 dark (zoom 16.8) and light (16.8), the whole site in the
+  strip above the sheet with its pin, the chip on one line, the “ไซต์” row in three lines with the date kept whole;
+  Pullman 1400 × 720 light 26/26 (17.5). No console errors on load.
+
+Observed, not changed in 0.3.7: switching the theme while a site is open refits it one step tighter (Silavadee 390 px
+light 17.5 after the switch, 16.8 on a fresh load), so the west edge of the site meets the edge of the strip. The Pullman
+record keeps its register's Thai name (ฮิลตัน ภูเก็ต อาเคเดีย …) with the Pullman name in English under it; its Latin
+name carries the brand, so the current-name rule (§2a) does not rename it — a sheet fix. The source details of a site
+read “อาคาร · ยังไม่มีข้อมูลอาคาร” (the research building-mass field) above “ไซต์ N อาคาร”.
+
+## 0a. Release 0.3.6 — resort sites
 
 Owner request (2026-11-03 08:08): “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site
 layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”.
@@ -47,7 +91,7 @@ layout ของโรงแรม/รีสอท ทดลองกับส�
 Observed in the data, not changed: one CityMETER Building V4 footprint inside the Phuket Orchid site (369 m², height
 estimate 14.8 m) stands where the Esri imagery shows the pool; the site shows it as CityMETER draws it.
 
-## 0a. Release 0.3.5 — more map on a phone
+## 0b. Release 0.3.5 — more map on a phone
 
 Owner request (2026-11-02 23:11, with a phone screenshot of the country view in Safari): “ในมือถือ เหลือพื้นที่ map
 น้อยมาก ช่วยปรับปรุงด้วย”. The screenshot also showed the legend ticks “11,026” and “153,200” written over each other.
@@ -77,7 +121,7 @@ transient 503 on three building-unit files).
 Not checked in a frame: the zoom buttons step aside only for a coarse pointer (a touch phone); Chrome's desktop frames
 keep them, so the free box there stops left of them while a phone's does not.
 
-## 0b. Release 0.3.4 — current names, light water, every search word
+## 0c. Release 0.3.4 — current names, light water, every search word
 
 Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
 body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
@@ -126,7 +170,7 @@ and other instances did not answer within the tool's time limit.
 Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
 `subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
 
-## 0c. Release 0.3.3 — ถาม Google AI answers at once
+## 0d. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
