@@ -1,7 +1,7 @@
 {
   "artifact": "CityMETER Hotel — 3D-first, district-first map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
-  "productVersion": "0.3.7",
-  "updatedOn": "2026-11-06",
+  "productVersion": "0.3.8",
+  "updatedOn": "2026-11-08",
   "ldsVersion": "0.9.7",
   "release": "v0.9.7-owner.1",
   "revision": "standalone-0.9.7-r1",

@@ -63,7 +63,8 @@ several buildings whose 49_SITE_BOUNDARY_CHECK row is `checked` publishes its bu
 interior points of the drawn buildings (CityMETER Building V4 or OpenStreetMap) inside the research site boundary, as
 "lon,lat;lon,lat" — so the map can show them as one site (data.siteGroups[row] = {pts, n, on, src, url}). The boundary
 itself (`boundary_geojson`, drawn from Department of Lands parcel outlines and the stay's own site layout, or since
-2026-11-06 an OpenStreetMap area of the stay checked with its layout — owner “approve” to osm_polygon+site_layout), the
+2026-11-06 an OpenStreetMap area of the stay checked with its layout — owner “approve” to osm_polygon+site_layout — or,
+since 2026-11-08, the same area checked automatically — owner “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”, osm_polygon_auto), the
 deed numbers and the researcher's notes stay in the sheet: no parcel shape, deed number or owner is published. A point more
 than SITE_MAX_M from the stay's own point stops the build. The tab is read from the export, or from --sites (a CSV of the
 live tab — its header and checked rows suffice; its SHA-256 is recorded). The check dates of the sites date the data set.
@@ -87,12 +88,17 @@ SITE_MAX_M = 600  # a site building this far from the stay's own point is a shee
 SITE_SOURCES = {  # boundary_source codes of 49_SITE_BOUNDARY_CHECK → the words the provenance line uses
     'dol_parcels+site_layout': 'รูปแปลงกรมที่ดิน + ผังที่พัก',
     'osm_polygon+site_layout': 'กรอบ OpenStreetMap + ผังที่พัก',  # owner 2026-11-06 “approve”: the tab's third source
+    # owner 2026-11-08 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”: the same OSM area of the stay checked by rule, no layout yet
+    'osm_polygon_auto': 'กรอบ OpenStreetMap (ตรวจอัตโนมัติ)',
     'site_layout': 'ผังที่พัก',
     'dol_parcels': 'รูปแปลงกรมที่ดิน',
 }
 SITE_CREDITS = {  # boundary sources whose points are derived from an open database → the credit the site row links to
     'osm_polygon+site_layout': {'text': '© OpenStreetMap contributors', 'licence': 'ODbL 1.0',
                                 'url': 'https://www.openstreetmap.org/copyright', 'note': 'the site follows an OpenStreetMap area of the stay'},
+    'osm_polygon_auto': {'text': '© OpenStreetMap contributors', 'licence': 'ODbL 1.0',
+                         'url': 'https://www.openstreetmap.org/copyright',
+                         'note': 'the site follows an OpenStreetMap area of the stay, checked automatically'},
 }
 
 # Accommodation groups: venue_type of 01_VENUES (the sheet's 07_TAXONOMY mapping of the source type) → product group.

@@ -3,8 +3,8 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.7",
-  "updatedOn": "2026-11-06",
+  "productVersion": "0.3.8",
+  "updatedOn": "2026-11-08",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
     "commands": {
@@ -381,6 +381,26 @@
         "AGENTS.md"
       ],
       "status": "done"
+    },
+    {
+      "id": "T15",
+      "title": "0.3.8 (owner 2026-11-08 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ” and 07:45 “เพิ่มเลย”): the stays with an OpenStreetMap area of their own (osm_match.py class own over the Geofabrik extract of Thailand, OSM data to 2026-11-06 21:21 UTC) are checked by rule — osm_polygon_auto, the fourth source of 49_SITE_BOUNDARY_CHECK: other uses cut (another named lodging, worship, police, school, hospital and similar OSM uses, fuel in a small building, religious/school/hospital building tags, named housing or education land), buildings mostly outside the frame cut and mostly inside added, the stay's own building never cut, at least two buildings — and written to the tab (11 rows in place, 256 appended; read back from the tab export with no difference); the build names the source “กรอบ OpenStreetMap (ตรวจอัตโนมัติ)”, credits OpenStreetMap and links the OSM element; 267 stays, 3,722 buildings; Fair House joins the layout-checked OSM sites; Diamond Cliff and Duangjitt held",
+      "dependsOn": [
+        "T14"
+      ],
+      "acceptanceCriteria": [
+        "A15",
+        "A17"
+      ],
+      "files": [
+        "scripts/build-data.py",
+        "scripts/site-candidates.mjs",
+        "tests/data.test.js",
+        "tests/views.test.js",
+        "DATA_METHOD.md",
+        "AGENTS.md"
+      ],
+      "status": "done"
     }
   ],
   "acceptanceCriteria": [
@@ -478,6 +498,12 @@
       "id": "A16",
       "scenario": "a stay whose site follows an OpenStreetMap area of its own (0.3.7: e.g. Pullman Phuket Karon Beach Resort, Silavadee Pool Spa Resort, Banyan Tree Krabi)",
       "expected": "as A15 — every drawn building holding one of its site points highlighted, x-rayed and framed together (Pullman 26 · Silavadee 77 · Banyan Tree Krabi 33); the “ไซต์” row reads “N อาคาร · กรอบ OpenStreetMap + ผังที่พัก · หน้าอ้างอิง · © OpenStreetMap contributors · 6 พ.ย. 2569” with the credit linking https://www.openstreetmap.org/copyright; the provenance line “ไซต์ กรอบ OpenStreetMap + ผังที่พัก 6 พ.ย. 2569”; no OSM frame, element id or note in data/",
+      "verificationType": "unit (tests/data.test.js, tests/views.test.js) + render (live)"
+    },
+    {
+      "id": "A17",
+      "scenario": "a stay whose site follows the OpenStreetMap area of its own checked automatically (0.3.8: e.g. Phuket Graceland Resort and Spa, Rayavadee, Patong Bay Hill Resort)",
+      "expected": "as A15 — every drawn building holding one of its site points highlighted, x-rayed and framed together (Phuket Graceland 23 · Rayavadee 55 · Patong Bay Hill 148); the “ไซต์” row reads “N อาคาร · กรอบ OpenStreetMap (ตรวจอัตโนมัติ) · หน้าอ้างอิง · © OpenStreetMap contributors · 8 พ.ย. 2569” with หน้าอ้างอิง linking the OSM element (https://www.openstreetmap.org/way|relation/<id>) and the credit https://www.openstreetmap.org/copyright; the provenance line “ไซต์ กรอบ OpenStreetMap (ตรวจอัตโนมัติ) 8 พ.ย. 2569”; no OSM frame or note in data/",
       "verificationType": "unit (tests/data.test.js, tests/views.test.js) + render (live)"
     }
   ],

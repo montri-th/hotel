@@ -216,6 +216,24 @@ test('site groups (owner 2026-11-03 “พี่เลือกโฉนดใ�
   }
   assert.deepEqual(meta.credits['osm_polygon+site_layout'],
     {text: '© OpenStreetMap contributors', licence: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright', note: 'the site follows an OpenStreetMap area of the stay'});
+  // 0.3.8 (owner 2026-11-08 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”): the OpenStreetMap area of the stay's own, checked by
+  // rule (osm_polygon_auto: other uses cut automatically, no layout yet) — 267 stays across the country.
+  const auto = groups.filter(([, v]) => v.src === 'osm_polygon_auto');
+  assert.equal(auto.length, 267);
+  assert.equal(auto.reduce((s, [, v]) => s + v.n, 0), 3722);
+  const autoIds = {'HOTEL-TAT-20160425103801456355': 23, 'HOTEL-TAT-2014010119023': 55, 'HT-d27f8d51-1c73-4deb-9506-8fe74693d2c0': 148,
+    'HT-d03cc526-4646-4408-adcf-7dc0db8cb16e': 3};
+  for (const [id, n] of Object.entries(autoIds)) {
+    const r = byId.get(id);
+    assert.equal(r.site?.n, n, id);
+    assert.equal(r.site.source, 'กรอบ OpenStreetMap (ตรวจอัตโนมัติ)', id);
+    assert.match(r.site.url, /^https:\/\/www\.openstreetmap\.org\/(way|relation)\/\d+$/, `${id}: the OSM element is the reference page`);
+    assert.deepEqual(r.site.credit, {text: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright'}, `${id}: the ODbL credit`);
+  }
+  assert.deepEqual(meta.credits.osm_polygon_auto, {text: '© OpenStreetMap contributors', licence: 'ODbL 1.0',
+    url: 'https://www.openstreetmap.org/copyright', note: 'the site follows an OpenStreetMap area of the stay, checked automatically'});
+  // Held for a layout or parcels: Diamond Cliff (its resort map shows two wings outside the frame) and Duangjitt (deed pending).
+  for (const id of ['HOTEL-TAT-20160428111346456557', 'HOTEL-TAT-20160417150112456096']) assert.ok(!byId.get(id).site, `${id}: held`);
   for (const id of Object.keys(pilots)) assert.equal(byId.get(id).site.credit, null, `${id}: a parcel site carries no OSM credit`);
   assert.equal(data.rows.filter(r => r.site?.credit).length, groups.filter(([, v]) => v.src in meta.credits).length);
   // Nothing of the boundary, the deeds or the notes is published.

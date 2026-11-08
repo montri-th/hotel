@@ -8,8 +8,8 @@ Winning strategy ของชุดข้อมูลนี้ เขียน�
 |---|---|
 | Parent product | CityMETER (City Intelligence Base Layer ของ Landometer) · แกน Land (ทะเบียนกลาง `research.TH.hotel` / Land / TH) · production dataset code `hotel` (`https://landometer.com/v3/citymeter?d=hotel`) |
 | Feature / dataset | Hotel — ที่พักและห้องพักที่แหล่งบันทึก ทั่วประเทศไทย ระดับเขต/อำเภอ พร้อมบริบทรถไฟฟ้า ศูนย์การค้า เครือโรงแรม และที่พักใกล้เคียงขนาดใกล้กัน |
-| รุ่นเอกสาร | 0.3.7 · 6 พฤศจิกายน 2569 |
-| สถานะ | Public demo รุ่น 0.3.7 บน GitHub Pages (`https://montri-th.github.io/hotel/`); ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักที่เปิดอยู่ |
+| รุ่นเอกสาร | 0.3.8 · 8 พฤศจิกายน 2569 |
+| สถานะ | Public demo รุ่น 0.3.8 บน GitHub Pages (`https://montri-th.github.io/hotel/`); ชุดข้อมูลเป็น research master ไม่ใช่สำมะโนที่พักที่เปิดอยู่ |
 | ผู้รับผิดชอบ | Landometer · CityMETER (owner: Montri) |
 | ผู้ใช้หลัก | ทีมพัฒนาโครงการและนักลงทุนที่ดิน/โรงแรม · ทีมขยายเครือและ revenue ของผู้ประกอบการโรงแรม · หน่วยงานท่องเที่ยว จังหวัด และ อปท. ที่ต้องอ่านความพร้อมของที่พักรายพื้นที่ · ผู้ประเมินมูลค่าและสถาบันการเงินที่ต้องคัดกรองทำเล |
 | ชุดข้อมูลที่ใช้ร่วม | CityMETER · Transit (สถานีราง release `transit-data-2026-10-31-r1`, `meta.context.rail`) · CityMETER Shopping centers (ทะเบียนศูนย์การค้า ณ 26 ต.ค. 2569, `meta.context.retail`) · งานวิจัยอาคารของชีตเดียวกัน (`16_BRANCH_SPATIAL_CANDIDATES`) · มวลอาคารเป็นบริบท: CityMETER Building V4 ใน อปท./เขตที่มีอาคารมากกว่า OSM ≥ 15% นอกนั้น OpenStreetMap ผ่าน OpenFreeMap (`data/building-units/`) |

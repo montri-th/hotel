@@ -1,5 +1,5 @@
 {
- "release": "hotel-data-2026-11-06",
+ "release": "hotel-data-2026-11-08",
  "export": {
   "sha256": "ec460c8121aaa2753c0e06b8e25257dcebec0713eee45a918562b81320a65d2e",
   "title": "CityMETER Hotel — Venue, Branch & Building Research Master 2026-10-24"
@@ -17,8 +17,8 @@
   "rooms.known": 30650,
   "rooms.sum": 1033157,
   "rows": 30729,
-  "site.buildings": 414,
-  "site.groups": 14,
+  "site.buildings": 4150,
+  "site.groups": 282,
   "source.provinceDisagree": 1
  },
  "checks": {
@@ -42,8 +42,8 @@
  "files": [
   {
    "path": "data/hotels.json",
-   "bytes": 5944590,
-   "sha256": "2f83c4b932d8d961241046c600d3052c4837008c69a9ab5d01dc8dde8cc66cf7"
+   "bytes": 6058408,
+   "sha256": "da894ff40f782790172d8a174c20a8e662789deee54497f8bb3b1f673549555f"
   }
  ]
 }
