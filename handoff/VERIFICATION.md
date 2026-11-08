@@ -1,15 +1,52 @@
-# CityMETER Hotel 0.3.9 — verification
+# CityMETER Hotel 0.3.10 — verification
 
-Release 0.3.9 (commit `60832ab`, cache tag `?v=20261108-r20`) carries the data of 0.3.8 (commit `86a71c4`, r18): 267 more
-stays open on every building of their site from the OpenStreetMap area of their own checked automatically, and the site
-camera on terrain is fixed after the live walk of 0.3.8 (`e44794f` r19, then `60832ab` r20); section 0 records how they
-were checked. Section 0a records 0.3.7 (eleven stays from OSM areas checked with their layout), 0b 0.3.6 (three Karon
-resorts from parcels), 0c 0.3.5 (more map on a phone), 0d 0.3.4 (current names, light water, every search word), 0e
-0.3.3 (one link) and sections 1–6 record 0.3.2. Results are from 2026-11-08 (Asia/Bangkok). The commit that adds this
-file changes documentation only; the final live attestation of the published commit is recorded in
-`RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
+Release 0.3.10 (commit `934f9ce`, cache tag `?v=20261108-r21`) adds 181 stays whose OpenStreetMap area an automatic name
+rule accepted and compares every automatic site with evidence its frame did not come from; section 0 records how it was
+checked. Section 0a records 0.3.8–0.3.9 (267 automatic sites and the terrain camera), 0b 0.3.7 (eleven stays from OSM
+areas checked with their layout), 0c 0.3.6 (three Karon resorts from parcels), 0d 0.3.5 (more map on a phone), 0e 0.3.4
+(current names, light water, every search word), 0f 0.3.3 (one link) and sections 1–6 record 0.3.2. Results are from
+2026-11-08 (Asia/Bangkok). The commit that adds this file changes documentation only; the final live attestation of the
+published commit is recorded in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
 
-## 0. Releases 0.3.8–0.3.9 — sites across the country from OpenStreetMap areas checked automatically
+## 0. Release 0.3.10 — review rules and the automatic comparison
+
+Owner 2026-11-08 09:45 “เทียบอัตโนมัติ และ พี่ทำกฎอัตโนมัติเลย / อันไหนพี่มั่นใจน้อยค่อยทำรายการมาให้ผมดู มารีวิวหลังจากที่ขึ้นเวบเสร็จแล้ว”.
+
+- **Rules (DATA_METHOD §7c “Review rules”):** the 757 stays of class `review` from the same extract and match. The first
+  version accepted 323; reading the pairs found areas of two places (อาลาวี่ เฮ้าส์ / Navy House 33, Swan Beach Resort /
+  สวอนเลค, Royal Grand Pattaya / Royal Green Park, Yao Yai Resort / Santhiya Koh Yao Yai Resort, an area named “Motel”);
+  the second version (place names from the extract, short words spelt alike, lodging areas only, numbers, one area to one
+  place, osm_match's `exact` evidence only) accepted 243 and rejects every one of those pairs (`tests/data.test.js`).
+  A name test set of 56 pairs: no false pair accepted, 9 true pairs missed (left for a person).
+- **Comparison (§7c “Automatic comparison”):** the 267 sites of 0.3.8 — high 257, medium 10, none held; the new sites —
+  high 83, medium 56, low 42, held 3 (floor area per recorded room: Anantara Chiang Mai, Venice Krabi Villa, Apple A Day).
+- **Sheet (`49_SITE_BOUNDARY_CHECK`):** the row ids of the 6 rows filled in place were read through the sheet's query
+  page before writing (each `todo`, empty checker) and the first empty row was 558; 6 rows filled (O–W) and 175 appended
+  (A558:W732). The clipboard file went from the work folder into a page of this demo and was checked there by SHA-256
+  before copying; no file was written to the owner's computer for it. **Error and repair:** the first block was pasted
+  before the Name Box jump had settled and landed on the header (A1:I1); the nine header names were typed back and read in
+  the formula bar, and every later paste waited for the jump and checked the Name Box first. **Read back** without an
+  export: the written ranges were copied from the sheet and compared in this demo's page cell by cell — rows 1–557 against
+  the export of 08:59 and the written values (12,811 cells: header restored, 6 rows as written, every other cell
+  unchanged), rows 558–732 against the written values (4,025 cells), no difference; the sheet's own count reads 463
+  `checked`, 268 `todo`. The build input is that table rebuilt in the work folder (SHA-256 `69c7aa68…`, 1,229,889 bytes),
+  compared with the sheet the same way (16,836 cells, no difference). `site-candidates.mjs check` passes for all 181 new
+  rows.
+- **Build:** `scripts/build-data.py --sites <the rebuilt table>` (same research export of 2026-11-01) → 463 site groups,
+  6,971 buildings (448 automatic, 6,543 buildings; 6,558 distinct points, records of one place share a site); only
+  `siteGroups`, `urls` and the site counts changed; `npm test` 132/132.
+- **Live 0.3.10 (r21, `934f9ce`):** `verify:live` 352/352. Walk in the owner's Chrome, desktop, dark theme: Diana Garden
+  Resort (name across scripts) — chip “ทั้งรีสอร์ท 2 อาคาร”; Conrad Koh Samui (two records of one place) — “ทั้งโรงแรม 152
+  อาคาร” over the hillside; Royal Twins Palace, its second record — “ทั้งโรงแรม 5 อาคาร”; Ratilanna Riverside Spa Resort
+  (unnamed lodging area) — “ทั้งรีสอร์ท 6 อาคาร”, “ไซต์” row “กรอบ OpenStreetMap (ตรวจอัตโนมัติ)”; Grande Centre Point Space
+  Pattaya (low: the pin 67 m from the site) — 6 buildings with the pin outside them; Anantara Chiang Mai (held) — no site,
+  the building at its pin. No console error after tracking began.
+
+Not verified in this round: a real phone, Safari and the light theme; the 175 other new sites one by one (counted,
+compared cell by cell and checked by `check`, not walked); whether each automatic site matches the stay's own layout —
+the owner reviews the less certain ones from a list outside this repository.
+
+## 0a. Releases 0.3.8–0.3.9 — sites across the country from OpenStreetMap areas checked automatically
 
 Owner 2026-11-08 07:45 “เพิ่มเลย” (append the stays the tab did not list) and 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”
 (an automatic check now, the layout of the important stays later).
@@ -53,7 +90,7 @@ Not verified in this round: a real phone and Safari; light theme; the 263 other 
 checked by `check`, not walked); whether each automatic site matches the stay's own layout — that is the next check, most
 important stays first.
 
-## 0a. Release 0.3.7 — sites from OpenStreetMap areas
+## 0b. Release 0.3.7 — sites from OpenStreetMap areas
 
 Owner 2026-11-06 20:39 “approve” (to adding `osm_polygon+site_layout` as the third source of `49_SITE_BOUNDARY_CHECK`)
 and 21:01 “please continue”.
@@ -96,7 +133,7 @@ record keeps its register's Thai name (ฮิลตัน ภูเก็ต อ
 name carries the brand, so the current-name rule (§2a) does not rename it — a sheet fix. The source details of a site
 read “อาคาร · ยังไม่มีข้อมูลอาคาร” (the research building-mass field) above “ไซต์ N อาคาร”.
 
-## 0b. Release 0.3.6 — resort sites
+## 0c. Release 0.3.6 — resort sites
 
 Owner request (2026-11-03 08:08): “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site
 layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”.
@@ -136,7 +173,7 @@ layout ของโรงแรม/รีสอท ทดลองกับส�
 Observed in the data, not changed: one CityMETER Building V4 footprint inside the Phuket Orchid site (369 m², height
 estimate 14.8 m) stands where the Esri imagery shows the pool; the site shows it as CityMETER draws it.
 
-## 0c. Release 0.3.5 — more map on a phone
+## 0d. Release 0.3.5 — more map on a phone
 
 Owner request (2026-11-02 23:11, with a phone screenshot of the country view in Safari): “ในมือถือ เหลือพื้นที่ map
 น้อยมาก ช่วยปรับปรุงด้วย”. The screenshot also showed the legend ticks “11,026” and “153,200” written over each other.
@@ -166,7 +203,7 @@ transient 503 on three building-unit files).
 Not checked in a frame: the zoom buttons step aside only for a coarse pointer (a touch phone); Chrome's desktop frames
 keep them, so the free box there stops left of them while a phone's does not.
 
-## 0d. Release 0.3.4 — current names, light water, every search word
+## 0e. Release 0.3.4 — current names, light water, every search word
 
 Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
 body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
@@ -215,7 +252,7 @@ and other instances did not answer within the tool's time limit.
 Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
 `subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
 
-## 0e. Release 0.3.3 — ถาม Google AI answers at once
+## 0f. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
