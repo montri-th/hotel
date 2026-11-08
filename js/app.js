@@ -597,6 +597,9 @@ const HOTEL_REACH_M = 300, HOTEL_REACH_FAR_M = 800;
 /** Refits of one frame: the building may arrive in steps (the nearest drawn, then the one holding the pin, a wider
  *  reach) and the ground may move once when its DEM tile arrives; never after the user has moved the map. */
 const MAX_REFITS = 3;
+/** Refits of one frame when the ground under it moves — a budget of their own (0.3.9: Patong Bay Hill Resort spent the
+ *  three above on the legend and the arriving buildings before its DEM came in, then stayed framed on flat ground). */
+const MAX_GROUND_REFITS = 3;
 const hotelReach = id => (state.hotelReach?.id === id ? state.hotelReach.m : HOTEL_REACH_M);
 
 /** The drawn building nearest a pin that falls in none (js/building-join.js#nearestBuilding), per join and pieces. */
@@ -786,8 +789,9 @@ function frameFocus({instant = false} = {}) {
   // The ground the frame was computed on (0 off terrain or before its DEM tile arrives): onGroundChange refits when it moves.
   // A site reaches past its pin: the ground is watched at its outermost points too (js/camera.js#groundProbes).
   const probes = groundProbes(target.anchor, shape.points);
-  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor),
-    probes, grounds: probes.map(p => groundAt(map, p)), box};
+  const same = state.framed?.id === target.id;
+  state.framed = {id: target.id, key: shape.key, refits: same ? state.framed.refits : 0, groundRefits: same ? state.framed.groundRefits || 0 : 0,
+    ground: groundAt(map, target.anchor), probes, grounds: probes.map(p => groundAt(map, p)), box};
   if (!state.view3d) {
     const [q0] = shape.points;
     const b = shape.points.reduce((acc, q) => acc.extend([q[0], q[1]]), new maplibregl.LngLatBounds([q0[0], q0[1]], [q0[0], q0[1]]));
@@ -806,17 +810,17 @@ function frameFocus({instant = false} = {}) {
 
 /**
  * The ground changed under the building being looked at (terrain on or off, its DEM tiles arrived): the x-ray moves
- * with it, and the building camera frames it again on the ground as drawn — unless the user moved the map (the
- * refits of refitOnNewBuilding count here too).
+ * with it, and the building camera frames it again on the ground as drawn — unless the user moved the map (a budget
+ * of its own, MAX_GROUND_REFITS: the refits for a new box or building come before the DEM on a first load).
  */
 function onGroundChange() {
   if (!state.loaded) return;
   syncFocusBuilding();
   const target = twoPoint() ? focusTarget() : null;
-  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= MAX_REFITS) return;
+  if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || (state.framed.groundRefits || 0) >= MAX_GROUND_REFITS) return;
   const {probes = [target.anchor], grounds = [state.framed.ground || 0]} = state.framed;
   if (probes.every((p, i) => Math.abs(groundAt(state.map, p) - (grounds[i] || 0)) < 3)) return; // the frame still holds
-  state.framed.refits++;
+  state.framed.groundRefits = (state.framed.groundRefits || 0) + 1;
   frameFocus();
 }
 
