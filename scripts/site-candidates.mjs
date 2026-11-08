@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Research helper for 49_SITE_BOUNDARY_CHECK (stay sites, 0.3.6; owner 2026-11-03 “กรรมสิทธิ์ไม่ต้อง ขอ prompt ไปสั่ง chatgpt
 // เชื่อมอาคารแบบนี้ให้”). Run from the root of a clone of this repo (Node 20+, no packages). It reads the buildings with
-// the same code the demo map uses (js/massing.js, js/mvt.js, js/building-units.js, js/building-join.js), so a point it
+// the same code the demo map uses (js/massing.js, js/shell/mvt.js, js/shell/building-units.js, js/shell/building-join.js), so a point it
 // writes stands inside a building the map draws. It writes nothing in data/ — the research sheet stays the record;
 // outputs go to sites/ (git-ignored).
 //
@@ -24,9 +24,9 @@
 import {readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync} from 'node:fs';
 import {deflateSync} from 'node:zlib';
 import {tilesForRegions, planCmRequests, shapeCmTile, roundingRadiusM, encloseOffsetM} from '../js/massing.js';
-import {parseVectorTile} from '../js/mvt.js';
-import {zonesOf, zoneAt, cmTileUrl} from '../js/building-units.js';
-import {footprint, containsPoint, interiorOf} from '../js/building-join.js';
+import {parseVectorTile} from '../js/shell/mvt.js';
+import {zonesOf, zoneAt, cmTileUrl} from '../js/shell/building-units.js';
+import {footprint, containsPoint, interiorOf} from '../js/shell/building-join.js';
 
 const MAX_SITE_M = 600; // scripts/build-data.py SITE_MAX_M: a site building farther from the stay's point stops the build
 const SOURCES = ['dol_parcels+site_layout', 'osm_polygon+site_layout', 'osm_polygon_auto', 'site_layout'];

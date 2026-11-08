@@ -199,7 +199,7 @@ walking route, a travel time or a catchment.
   recommended surface (theme-invariant backing), at a readable size in the hover card (≈ 40 px tall) and the hotel
   panel (≈ 44 px). Rights stay with each owner; showing a mark to identify a brand is not
   an endorsement or a licence.
-- **Terrain mode** (`js/terrain.js`): at site scale (zoom ≥ 12.5, 3D view), when the visible ground spans at least 30 m
+- **Terrain mode** (`js/shell/terrain.js`): at site scale (zoom ≥ 12.5, 3D view), when the visible ground spans at least 30 m
   (p95 − p5 of a 14 × 14 sample of the DEM at zoom 11; off below 20 m or zoom 12.2), the map shows 3D ground exaggerated
   × 1.5 (said in the legend) and a hillshade in basemap tones; the district fill switches off from zoom 12.5 (a hard
   switch). Since 0.3.0 (owner 2026-11-01: “อยากให้เห็นอาคารบนภูมิประเทศ”) the building or stay being looked at keeps
@@ -237,7 +237,7 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   in the box, 180 by polygon count; 28 units were counted on an Overpass mirror holding OSM of 2026-06-01, the rest on
   OSM of 2026-11-01 (`meta.osm.osmBaseDays`). 3 units hold fewer than 10 buildings in both sources (`gap`). Reported,
   not patched: a few CityMETER counts look low for a town (เทศบาลตำบลเชียงคาน 98, เทศบาลเมืองนครพนม 72).
-- **On the map** (`js/building-units.js`, `js/massing.js`): inside a CityMETER unit the focus tier draws the unit's
+- **On the map** (`js/shell/building-units.js`, `js/massing.js`): inside a CityMETER unit the focus tier draws the unit's
   CityMETER Building V4 buildings — production tiles `building/detailMvt/14/{x}/{y}` read per อปท. (Bangkok: per แขวง),
   every building drawn once from the tile that holds its interior point — with the same rounded, slightly enlarged
   shape as OSM buildings; height = `height_m`, the dataset's model estimate (3 m when missing). OSM buildings whose
@@ -280,7 +280,7 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   numbers, parcel data, the notes and the checker stay in the sheet (`meta.excludedFields`). A site building more than
   600 m from the stay's point stops the build. The live tab is read through `--sites` (its header and checked rows,
   SHA-256 in `meta.siteGroups.file`) while the export predates it.
-- **On the map** (`js/building-join.js#buildingsAtPoints`, `js/app.js#focusTarget`): opening the stay highlights, x-rays
+- **On the map** (`js/shell/building-join.js#buildingsAtPoints`, `js/app.js#focusTarget`): opening the stay highlights, x-rays
   and frames (two-point camera, the stay's pin in the frame) every drawn building whose outline holds one of the points, every piece of each; a point
   no drawn outline holds is left out, never snapped to a neighbour. The massing square round the pin grows to hold the
   site (`siteReach`). The panel reads “ทั้งรีสอร์ท N อาคาร” (N = the sheet's count), the source details a “ไซต์” row (count ·
