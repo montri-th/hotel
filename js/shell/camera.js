@@ -34,6 +34,8 @@
  * centre, so the horizon stays outside the frame (75° + 24°/2 < 90°); since Hotel 0.3.2 it is moved up
  * to the free box's centre (a shift lens, `lensPadding`), so the camera looks straight at the building
  * at the eye pitch on a phone too.
+ *
+ * Part of the shared CityMETER demo shell: edit it in every repository at once (js/shell/manifest.json).
  */
 export const DEFAULT_FOV = 36.87;
 
@@ -94,7 +96,7 @@ export function groundAt(map, [lng, lat]) {
   return Number.isFinite(e) ? e : 0;
 }
 
-/** Deepest drop under one building's outline, and deepest drop of a building below the stay's pin, read as ground. */
+/** Deepest drop under one building's outline, and deepest drop of a building below the item's pin, read as ground. */
 export const PIECE_DROP_M = 60, SITE_DROP_M = 400;
 
 /**

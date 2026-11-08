@@ -4,7 +4,7 @@
 // nadir, bearing clockwise from north), so the algorithm is checked without a browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {wallAzimuth, twoPointBearing, occlusionScore, fitBuilding, screenBounds, CAMERA, pieceGround, groundProbes, PIECE_DROP_M, SITE_DROP_M} from '../js/camera.js';
+import {wallAzimuth, twoPointBearing, occlusionScore, fitBuilding, screenBounds, CAMERA, pieceGround, groundProbes, PIECE_DROP_M, SITE_DROP_M} from '../js/shell/camera.js';
 
 const RAD = Math.PI / 180;
 const LON = 100.544, LAT = 13.744;
