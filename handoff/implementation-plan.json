@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.4.1",
+  "productVersion": "0.5.0",
   "updatedOn": "2026-11-08",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
@@ -54,7 +54,7 @@
       "js/shell/geometry.js": "",
       "js/navigation.js": "",
       "js/shell/vendors.js": "",
-      "js/launch.js": "",
+      "js/shell/launch.js": "",
       "js/labels.js": "names near the middle of the view (importance = rooms + recorded price percentiles), short names, hover card of icon chips",
       "js/logos.js": "chain-brand logo registry (data/brand-logos.json): identity marks on their backing, cache-tagged by SHA-256",
       "js/shell/terrain.js": "terrain mode at hilly sites and round a building or stay (site relief), changes only while the camera is still; the terrain facts of a stay",
