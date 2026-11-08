@@ -1,8 +1,8 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.9 (data of 0.3.8, rebuilt 2026-11-08 from the same export of 2026-11-01 and the checked rows of the live
-`49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; 282 stay
+a snapshot of release 0.3.10 (rebuilt 2026-11-08 from the same export of 2026-11-01 and the checked rows of the live
+`49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; 463 stay
 sites, §7c); the page computes everything from the data
 at run time, so these are fixtures, not constants.
 
@@ -20,7 +20,7 @@ at run time, so these are fixtures, not constants.
 - **ชื่อที่บันทึก** = ชื่อที่พักตามแหล่ง (ทะเบียนที่พัก ททท. หรือ CityMETER Hotel V3) แสดงใต้ชื่อเมื่อที่พักเปลี่ยนแบรนด์หรือชื่อแล้ว ชื่อหัวข้อเป็นชื่อที่แบรนด์ใช้บนหน้าเว็บของแบรนด์ (ลิงก์ “หน้าแบรนด์” และวันที่ตรวจอยู่ใน “ที่มาและพิกัด”) ค้นด้วยชื่อใดก็เจอ ช่องค้นหาหาทุกคำที่พิมพ์ในชื่อ แบรนด์ ประเภท หรือพื้นที่ (เช่น “novotel karon”)
 - **อาคาร** = อาคารบนแผนที่ (CityMETER Building V4 หรือ OpenStreetMap ตามพื้นที่) ความสูง “สูงราว” เป็นค่าประมาณของชุดข้อมูล ไม่ใช่ผลรังวัด “ที่พักในอาคารนี้” = หมุดของที่พักอยู่ในขอบอาคาร
 - **อาคารใกล้หมุด** = เมื่อหมุดของที่พักไม่อยู่ในขอบอาคารใด มุมมองอาคาร 3 มิติเปิดที่อาคารบนแผนที่ที่ใกล้หมุดที่สุดภายใน 300 ม. (ไม่มีก็ขยายเป็น 800 ม.) โดยมีหมุดอยู่ในภาพด้วย เป็นการเลือกมุมกล้องเท่านั้น ไม่ได้ยืนยันว่าที่พักอยู่ในอาคารนั้น และไม่นับใน “ที่พักในอาคารนี้” ถ้าในระยะ 800 ม. ไม่มีอาคารบนแผนที่ ภาพแสดงพื้นที่รอบหมุด
-- **ทั้งรีสอร์ท N อาคาร** = อาคารบนแผนที่ที่อยู่ในขอบเขตไซต์ของที่พัก ทีมวิจัยวาดขอบเขตจากรูปแปลงที่ดินของกรมที่ดิน (LandsMaps) หรือกรอบพื้นที่ของที่พักใน OpenStreetMap ร่วมกับผังของที่พักและภาพถ่ายดาวเทียม (3 แห่งในกะรน ภูเก็ต จากรูปแปลง ตรวจ 3 พ.ย. 2569 · 12 แห่งจากกรอบ OpenStreetMap ที่เทียบผังแล้ว ตรวจ 6 พ.ย. 2569) หรือกรอบ OpenStreetMap ของที่พักเองที่ตรวจอัตโนมัติ ยังไม่ได้เทียบผัง (267 แห่ง ตรวจ 8 พ.ย. 2569 หน้าเว็บอ่าน “กรอบ OpenStreetMap (ตรวจอัตโนมัติ)”) ข้อมูล OpenStreetMap © OpenStreetMap contributors ภายใต้ ODbL 1.0 กดที่พักแล้วแผนที่แสดงและจัดภาพทุกอาคารของไซต์พร้อมกัน ไซต์เป็นการจัดกลุ่มอาคารเพื่อดูบนแผนที่ ไม่ใช่ขอบเขตโฉนด เนื้อที่ หรือการยืนยันกรรมสิทธิ์ และไม่เผยแพร่รูปแปลง เลขโฉนด หรือกรอบพื้นที่
+- **ทั้งรีสอร์ท N อาคาร** = อาคารบนแผนที่ที่อยู่ในขอบเขตไซต์ของที่พัก ทีมวิจัยวาดขอบเขตจากรูปแปลงที่ดินของกรมที่ดิน (LandsMaps) หรือกรอบพื้นที่ของที่พักใน OpenStreetMap ร่วมกับผังของที่พักและภาพถ่ายดาวเทียม (3 แห่งในกะรน ภูเก็ต จากรูปแปลง ตรวจ 3 พ.ย. 2569 · 12 แห่งจากกรอบ OpenStreetMap ที่เทียบผังแล้ว ตรวจ 6 พ.ย. 2569) หรือกรอบ OpenStreetMap ของที่พักที่ตรวจอัตโนมัติ ยังไม่ได้เทียบผัง (448 แห่ง ตรวจ 8 พ.ย. 2569: กรอบชื่อของที่พักเอง 267 แห่ง และกรอบที่ผ่านกฎชื่ออัตโนมัติ 181 แห่ง ทุกแห่งเทียบอัตโนมัติกับเว็บไซต์ แบรนด์ อาคาร และหมุดแล้ว หน้าเว็บอ่าน “กรอบ OpenStreetMap (ตรวจอัตโนมัติ)”) ข้อมูล OpenStreetMap © OpenStreetMap contributors ภายใต้ ODbL 1.0 กดที่พักแล้วแผนที่แสดงและจัดภาพทุกอาคารของไซต์พร้อมกัน ไซต์เป็นการจัดกลุ่มอาคารเพื่อดูบนแผนที่ ไม่ใช่ขอบเขตโฉนด เนื้อที่ หรือการยืนยันกรรมสิทธิ์ และไม่เผยแพร่รูปแปลง เลขโฉนด หรือกรอบพื้นที่
 - **ภูมิประเทศ** = พื้นดินรอบหมุดของที่พัก (รัศมี 500 ม. ต้นไม้ 300 ม.) จาก SRTM 30 ม. (สำรวจปี 2543) และแผนที่ OSM ไม่ใช่การยืนยันวิว ราคา หรือความเสี่ยง
 - **สถานีที่กำลังสร้าง** = โครงการ ยังไม่ใช่บริการ
 
@@ -257,7 +257,7 @@ answered whether CityMETER keeps OpenStreetMap's multi-part (LOD2+) buildings.
   the join of stays to buildings (a pin inside the outline: “ที่พักในอาคารนี้”) is the same for both sources (keys
   `osm:` / `cm:`).
 
-## 7c. Stay sites (0.3.6–0.3.8)
+## 7c. Stay sites (0.3.6–0.3.10)
 
 Owner request 2026-11-03: “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site layout ของ
 โรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”, after “ลองใช้พิกัดโรงแรม/รีสอท ไปค้นจาก landsmaps.dol.go.th … เพื่อไปดูว่ามีโฉนดใดบ้างเป็น
@@ -348,6 +348,44 @@ Owner request 2026-11-03: “ไม่ต้องทำเครื่องม
   256 appended (rank blank, `multi_building_signal = osm_own_frame`); the tab was exported and every written cell read
   back unchanged, and every checked row's points stand in drawn buildings (`site-candidates.mjs check`). With the parcel
   and layout-checked sites: 282 sites, 4,150 buildings.
+- **Review rules (0.3.10)** (owner 2026-11-08 09:45 “เทียบอัตโนมัติ และ พี่ทำกฎอัตโนมัติเลย / อันไหนพี่มั่นใจน้อยค่อยทำรายการมาให้ผมดู
+  มารีวิวหลังจากที่ขึ้นเวบเสร็จแล้ว”): the areas the match left for a person (class `review`, 757 stays) are decided by
+  rule, in order. An area outside the size band, or carrying a part word the stay lacks (phase, condo, wing, tower …):
+  no. Not a lodging area (tourism hotel, motel, guest house, hostel, apartment, chalet, resort or camp site; leisure
+  resort or beach resort): no — a residential area only when its name carries a lodging word and the names score high.
+  Another stay's pin inside: no, unless every such pin is a record of the same place (the same name, or names that carry
+  each other's distinctive words), and then each record takes the area. The pin a few metres outside: yes when no stay's
+  pin is inside and the names match. No name: yes (low) for a lodging area that holds only this pin. Otherwise the names
+  must match. Names match on their distinctive words in either script: a Thai word is romanised (RTGS) and compared with
+  Latin words by sound class (ไดอาน่า = Diana, เดอะราชา = The Racha); the generic words of hotel names and place names
+  (provinces, districts, subdistricts, towns, beaches and islands — Patong, หัวหิน, เกาะหมาก) do not count; a short word
+  must be spelt alike, a part of a Thai compound counts only when it covers most of the word, and each name must find
+  most of the other's words. Different numbers (Amonruk Hotel 2 / Amonruk Hotel) mean another branch; an area that stays
+  of different places take goes to the one whose pin is inside, or to none. Claude read the pairs the first version
+  accepted (323) and tightened the rules where a pair named two places (อาลาวี่ เฮ้าส์ / Navy House 33, Swan Beach Resort /
+  สวอนเลค, Royal Grand Pattaya / Royal Green Park, Yao Yai Resort / Santhiya Koh Yao Yai Resort, an area named “Motel”);
+  stays a layout round had already doubted stay held (Avani Ao Nang Cliff: the area's other name; Cross Pattaya
+  Oceanphere: an estate; Veranda Chiang Mai: another stay's pin inside). The buildings are cut by the rules of the fourth
+  source and the rows written as `osm_polygon_auto`, the rule and its evidence in the notes.
+- **Automatic comparison (0.3.10)** of every `osm_polygon_auto` site with evidence its frame did not come from: the
+  area's website (`website`, `contact:website`, `url`; booking, listing and social sites ignored) and `brand`/`operator`
+  tags against the stay's own link and brand (the same: up; different: down); buildings mostly across the frame's edge
+  (a third of the site: down); floor area per recorded room (footprint × floors of 3.3 m; under 12 m² or over 1,500 m²:
+  down); the pin more than 60 m from every site building (down). The tier starts from the name evidence (the stay's own
+  name: high; a review rule: its tier), goes one step up on agreement and one down per disagreement; below low, or three
+  disagreements, holds the site. Buildings just outside the frame are recorded, not scored: frames checked with their
+  layout have as many such neighbours as one that missed two wings. The 267 sites of 0.3.8: high 257, medium 10, none
+  held. The tier and its reasons are in the notes; the page shows the source as before.
+- **Result 0.3.10** (checked 2026-11-08, `osm_polygon_auto`): the rules accepted 243 of the 757 review stays (high 111,
+  medium 90, low 42); 185 areas held two or more drawn buildings (21 one, 17 none, 20 where the map draws OpenStreetMap
+  buildings or the area is larger than a site); the cut removed 1 building as another business and 7 mostly outside and
+  added 5; Ibis Hua Hin was left with one building; the comparison held 3 (Anantara Chiang Mai, Venice Krabi Villa
+  Resort, Apple A Day Resort: floor area per recorded room) and graded the rest high 83, medium 56, low 42 — 181 stays,
+  2,821 buildings (e.g. Diana Garden Resort 2, Ratilanna Riverside Spa Resort 6, Royal Twins Palace 5 for each of its two
+  records). Six rows of the tab were filled in place and 175 appended; the tab's rows 1–732 were copied from the sheet
+  and compared cell by cell with what was written and with the earlier export (16,836 cells, no difference). All sites:
+  463, 6,971 buildings (6,558 distinct points: two records of one place carry the same site). The less certain sites
+  go to the owner as a list after the release.
 
 ## 8. Not published
 
@@ -372,10 +410,11 @@ CityMETER Hotel V3 rows link to CityMETER production (`?d=hotel`), never to its 
   OpenStreetMap or CityMETER Building V4 massing per area (§7b). The research team checks the site boundaries of the 300
   most important resorts and pool villas in `49_SITE_BOUNDARY_CHECK` (owner 2026-11-01); a stay spread over several
   buildings is joined to one building until its boundary is in. The tab held the 300 stays (resort 282 · hotel 14 ·
-  bungalow 2 · other 2; 203 with a point); on 2026-11-08 it holds 556 rows (256 appended with an OpenStreetMap area of
-  their own): 282 `checked` (§7c: three Karon resorts from parcels on 2026-11-03, twelve stays from their OpenStreetMap
-  area checked with the layout on 2026-11-06, 267 from their area checked automatically on 2026-11-08), 274 `todo`. The
-  layout of the most important automatic sites is the next check (owner 2026-11-08).
+  bungalow 2 · other 2; 203 with a point); on 2026-11-08 it holds 731 rows (431 appended with an OpenStreetMap area):
+  463 `checked` (§7c: three Karon resorts from parcels on 2026-11-03, twelve stays from their OpenStreetMap area checked
+  with the layout on 2026-11-06, 448 from their area checked automatically on 2026-11-08 — 267 own areas and 181 by the
+  review rules), 268 `todo`. The owner reviews the less certain automatic sites after 0.3.10; a layout check turns a
+  row into `osm_polygon+site_layout`.
 - 24 records whose name predates a rebrand or spells the brand differently read under their brand's listed name (§2a);
   the register names stay as the recorded names. Renaming the record itself is the research team's call.
 

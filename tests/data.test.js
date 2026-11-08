@@ -217,10 +217,11 @@ test('site groups (owner 2026-11-03 “พี่เลือกโฉนดใ�
   assert.deepEqual(meta.credits['osm_polygon+site_layout'],
     {text: '© OpenStreetMap contributors', licence: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright', note: 'the site follows an OpenStreetMap area of the stay'});
   // 0.3.8 (owner 2026-11-08 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”): the OpenStreetMap area of the stay's own, checked by
-  // rule (osm_polygon_auto: other uses cut automatically, no layout yet) — 267 stays across the country.
+  // rule (osm_polygon_auto: other uses cut automatically, no layout yet) — 267 stays across the country (3,722 buildings);
+  // 0.3.10 (owner 09:45 “เทียบอัตโนมัติ และ พี่ทำกฎอัตโนมัติเลย”): 181 more from the areas the name rules accept (2,821 buildings).
   const auto = groups.filter(([, v]) => v.src === 'osm_polygon_auto');
-  assert.equal(auto.length, 267);
-  assert.equal(auto.reduce((s, [, v]) => s + v.n, 0), 3722);
+  assert.equal(auto.length, 448);
+  assert.equal(auto.reduce((s, [, v]) => s + v.n, 0), 6543);
   const autoIds = {'HOTEL-TAT-20160425103801456355': 23, 'HOTEL-TAT-2014010119023': 55, 'HT-d27f8d51-1c73-4deb-9506-8fe74693d2c0': 148,
     'HT-d03cc526-4646-4408-adcf-7dc0db8cb16e': 3};
   for (const [id, n] of Object.entries(autoIds)) {
@@ -234,6 +235,27 @@ test('site groups (owner 2026-11-03 “พี่เลือกโฉนดใ�
     url: 'https://www.openstreetmap.org/copyright', note: 'the site follows an OpenStreetMap area of the stay, checked automatically'});
   // Held for a layout or parcels: Diamond Cliff (its resort map shows two wings outside the frame) and Duangjitt (deed pending).
   for (const id of ['HOTEL-TAT-20160428111346456557', 'HOTEL-TAT-20160417150112456096']) assert.ok(!byId.get(id).site, `${id}: held`);
+  // 0.3.10: the review rules — a name across scripts (Diana Garden Resort ↔ ไดอาน่า การ์เด้น รีสอร์ท), an unnamed lodging area
+  // holding only the stay's pin (Ratilanna), two records of one place sharing the area (Royal Twins Palace).
+  const review = {'HT-961b1f20-6860-4493-b355-ea8f5579c2bc': [2, 'way/268875333'], 'HT-661f96a1-cf7c-421a-8919-0e9e21e6e5f7': [6, 'way/1270780038']};
+  for (const [id, [n, el]] of Object.entries(review)) {
+    const r = byId.get(id);
+    assert.equal(r.site?.n, n, id);
+    assert.equal(r.site.source, 'กรอบ OpenStreetMap (ตรวจอัตโนมัติ)', id);
+    assert.equal(r.site.url, `https://www.openstreetmap.org/${el}`, id);
+  }
+  const twins = ['HT-2b4851e0-9ca2-4a60-aecc-836d2dadc1a9', 'HT-8dcb7879-5d84-442d-8b0a-24b4309995c8'].map(id => byId.get(id).site);
+  assert.equal(twins[0]?.n, 5);
+  assert.deepEqual(twins[1].points, twins[0].points, 'two records of one place carry the same site');
+  // Not published: held by the automatic comparison (Anantara Chiang Mai, Venice Krabi, Apple A Day — floor area per
+  // room), a doubt of the earlier layout round (Avani Ao Nang Cliff: the area's other name; Cross Pattaya Oceanphere: an
+  // estate area; Veranda Chiang Mai: another stay's pin inside) and pairs the first rules made of two places (อาลาวี่
+  // เฮ้าส์ / Navy House 33, Swan Beach / สวอนเลค, มีตะวัน / Motel, Hua Hin Mantra / Hua Hin Country Hill, Yao Yai Resort /
+  // Santhiya Koh Yao Yai).
+  for (const id of ['HT-d7820f06-2fd3-4736-8def-ec6e830ca1f7', 'HT-778ee652-2c44-496b-aa6e-f8d58785d57f', 'HT-eb18bd86-3445-45d9-b52e-8516236d7fdb',
+    'HOTEL-TAT-2014010119042', 'HT-49957ad6-aa3e-4fe4-9e91-d8c4fc3c374a', 'HT-0ebdb1a3-f7ef-4d7e-b61b-294feba85755',
+    'HT-0b855502-11f0-4aff-9d01-809aa3babf2d', 'HT-7c32f6fc-02ce-4fe0-9212-03c224b82a87', 'HT-2f9d7d91-1456-4498-82ad-d498307e3fad',
+    'HT-c87f2695-6c7d-4115-ac63-afa9589284de', 'HT-42d97a05-d8da-49e8-b62c-01c38fa03c6d']) assert.ok(!byId.get(id).site, `${id}: no site`);
   for (const id of Object.keys(pilots)) assert.equal(byId.get(id).site.credit, null, `${id}: a parcel site carries no OSM credit`);
   assert.equal(data.rows.filter(r => r.site?.credit).length, groups.filter(([, v]) => v.src in meta.credits).length);
   // Nothing of the boundary, the deeds or the notes is published.

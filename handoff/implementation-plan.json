@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.9",
+  "productVersion": "0.3.10",
   "updatedOn": "2026-11-08",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
@@ -415,6 +415,24 @@
         "js/camera.js",
         "js/app.js",
         "tests/camera.test.js"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T17",
+      "title": "0.3.10 (owner 2026-11-08 09:45 “เทียบอัตโนมัติ และ พี่ทำกฎอัตโนมัติเลย / อันไหนพี่มั่นใจน้อยค่อยทำรายการมาให้ผมดู มารีวิวหลังจากที่ขึ้นเวบเสร็จแล้ว”): the OpenStreetMap areas osm_match.py left for a person (class review: names in two scripts, partial or misspelt names, the pin just outside, records of one place, unnamed lodging areas) are accepted by automatic name rules, read pair by pair and tightened (place names and generic words are not names, short words must be spelt alike, lodging areas only, a residential area only with a lodging word, a number the other name lacks is a second branch, one area to one place); every automatic site is compared automatically with evidence the frame did not come from (website and brand tags, buildings across the edge, floor area per recorded room, the pin's distance) and held when it falls below low; 181 stays written to 49_SITE_BOUNDARY_CHECK (6 in place, 175 appended; read back cell by cell with no difference) — 448 osm_polygon_auto sites, 6,543 buildings; 463 sites, 6,971 buildings in all; the less certain sites listed for the owner after the release",
+      "dependsOn": [
+        "T16"
+      ],
+      "acceptanceCriteria": [
+        "A15",
+        "A17"
+      ],
+      "files": [
+        "data/hotels.json",
+        "tests/data.test.js",
+        "DATA_METHOD.md",
+        "AGENTS.md"
       ],
       "status": "done"
     }

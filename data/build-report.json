@@ -17,8 +17,8 @@
   "rooms.known": 30650,
   "rooms.sum": 1033157,
   "rows": 30729,
-  "site.buildings": 4150,
-  "site.groups": 282,
+  "site.buildings": 6971,
+  "site.groups": 463,
   "source.provinceDisagree": 1
  },
  "checks": {
@@ -42,8 +42,8 @@
  "files": [
   {
    "path": "data/hotels.json",
-   "bytes": 6058408,
-   "sha256": "da894ff40f782790172d8a174c20a8e662789deee54497f8bb3b1f673549555f"
+   "bytes": 6140206,
+   "sha256": "0d63ba36ad5c42ac3dc8f20daa64097425956c33af14030624e7edf50ffec107"
   }
  ]
 }
