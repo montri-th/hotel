@@ -60,7 +60,7 @@ import {joinBuildings, nearestBuilding, buildingsAtPoints} from './building-join
 import {buildMapStyle, basemapPalette, TILEJSON_URL, MASSING_BEFORE, VENUE_XRAY_BEFORE} from './map-style.js';
 import {installMassing, outerRings} from './massing.js';
 import {createBuildingUnitStore, cmTileUrl, CM_ATTRIBUTION} from './building-units.js';
-import {presetFor, applyPreset, fitPitched, fitBuilding, twoPointBearing, screenBounds, groundAt, BUILDING_MAX_ZOOM} from './camera.js';
+import {presetFor, applyPreset, fitPitched, fitBuilding, twoPointBearing, screenBounds, groundAt, pieceGround, groundProbes, BUILDING_MAX_ZOOM} from './camera.js';
 import {installVenueXray} from './venue-xray.js';
 import {guardRetainedTiles, guardElevationFreeze} from './maplibre-guard.js';
 import {buildBreadcrumb, renderBreadcrumb, breadcrumbText} from './breadcrumb.js';
@@ -731,11 +731,9 @@ function syncFocusBuilding() {
 function pieceGrounds(f, fallback = 0) {
   const map = state.map;
   if (!map?.terrain) return {g: 0, low: 0};
-  const g = groundAt(map, centroidOf(f)) || fallback;
   const ring = outerRings(f)[0] || [];
-  let low = g;
-  for (let i = 0; i < ring.length - 1; i++) { const e = groundAt(map, ring[i]); if (e && e < low) low = e; }
-  return {g, low};
+  // A DEM artefact far below the piece's ground is not a wall to draw or frame (js/camera.js#pieceGround).
+  return pieceGround(groundAt(map, centroidOf(f)), ring.slice(0, -1).map(p => groundAt(map, p)), fallback);
 }
 
 /** Vertex mean of a feature's first outer ring ([lon, lat]): where MapLibre samples the ground of a fill-extrusion. */
@@ -786,7 +784,10 @@ function frameFocus({instant = false} = {}) {
   const box = visibleBox();
   state.userCamera = false;
   // The ground the frame was computed on (0 off terrain or before its DEM tile arrives): onGroundChange refits when it moves.
-  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor), box};
+  // A site reaches past its pin: the ground is watched at its outermost points too (js/camera.js#groundProbes).
+  const probes = groundProbes(target.anchor, shape.points);
+  state.framed = {id: target.id, key: shape.key, refits: state.framed?.id === target.id ? state.framed.refits : 0, ground: groundAt(map, target.anchor),
+    probes, grounds: probes.map(p => groundAt(map, p)), box};
   if (!state.view3d) {
     const [q0] = shape.points;
     const b = shape.points.reduce((acc, q) => acc.extend([q[0], q[1]]), new maplibregl.LngLatBounds([q0[0], q0[1]], [q0[0], q0[1]]));
@@ -813,7 +814,8 @@ function onGroundChange() {
   syncFocusBuilding();
   const target = twoPoint() ? focusTarget() : null;
   if (!target || !state.framed || state.framed.id !== target.id || state.userCamera || state.framed.refits >= MAX_REFITS) return;
-  if (Math.abs(groundAt(state.map, target.anchor) - (state.framed.ground || 0)) < 3) return; // the frame still holds
+  const {probes = [target.anchor], grounds = [state.framed.ground || 0]} = state.framed;
+  if (probes.every((p, i) => Math.abs(groundAt(state.map, p) - (grounds[i] || 0)) < 3)) return; // the frame still holds
   state.framed.refits++;
   frameFocus();
 }

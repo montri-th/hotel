@@ -4,7 +4,7 @@
 // nadir, bearing clockwise from north), so the algorithm is checked without a browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {wallAzimuth, twoPointBearing, occlusionScore, fitBuilding, screenBounds, CAMERA} from '../js/camera.js';
+import {wallAzimuth, twoPointBearing, occlusionScore, fitBuilding, screenBounds, CAMERA, pieceGround, groundProbes, PIECE_DROP_M, SITE_DROP_M} from '../js/camera.js';
 
 const RAD = Math.PI / 180;
 const LON = 100.544, LAT = 13.744;
@@ -278,4 +278,23 @@ test('two-point bearing avoids a drawn building standing between the camera and 
   assert.equal(occlusionScore(venue, [block], b), 0);
   // A low building far in front stays under the sight line and does not count.
   assert.equal(occlusionScore(venue, [{ring: rect(30, 30, 0, [-160, -160]), height: 6}], 45), 0);
+});
+
+test('a building stands on its centroid ground with walls down a real slope, never down a DEM artefact (0.3.9)', () => {
+  // A hillside building: its outline reaches 18 m lower on the downhill side — a real slope, drawn.
+  assert.deepEqual(pieceGround(40, [40, 31, 22, 0, 38], 35), {g: 40, low: 22});
+  // Rayavadee (Krabi coast): one vertex read −2,110 m — skipped, the walls stop at the lowest believable sample.
+  assert.deepEqual(pieceGround(15, [16, -2109.66, 14], 10), {g: 15, low: 14});
+  assert.equal(pieceGround(15, [15 - PIECE_DROP_M - 1], 10).low, 15, 'deeper than PIECE_DROP_M under the centroid is an artefact');
+  assert.equal(pieceGround(15, [15 - PIECE_DROP_M], 10).low, 15 - PIECE_DROP_M, 'PIECE_DROP_M itself is still a slope');
+  // A centroid sample far below the pin's ground (or not loaded: 0) stands on the pin's ground.
+  assert.deepEqual(pieceGround(-1500, [], 12), {g: 12, low: 12});
+  assert.equal(pieceGround(0, [], 12).g, 12);
+  assert.equal(pieceGround(30 - SITE_DROP_M, [], 30).g, 30 - SITE_DROP_M, 'a building down the hill from the pin keeps its ground');
+});
+
+test('the ground under a framed site is watched at its pin and its outermost points west, east, south and north (0.3.9)', () => {
+  const pts = [[98.300, 7.876, 0], [98.297, 7.877, 12], [98.299, 7.879, 0], [98.301, 7.8775, 9], [98.2985, 7.8747, 0]];
+  assert.deepEqual(groundProbes([98.2987, 7.8775], pts), [[98.2987, 7.8775], [98.297, 7.877], [98.301, 7.8775], [98.2985, 7.8747], [98.299, 7.879]]);
+  assert.deepEqual(groundProbes([100.5, 13.7], []), [[100.5, 13.7]], 'nothing known yet: the pin alone');
 });

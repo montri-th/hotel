@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "implementation-plan",
   "productId": "citymeter-hotel",
-  "productVersion": "0.3.8",
+  "productVersion": "0.3.9",
   "updatedOn": "2026-11-08",
   "architecture": {
     "runtime": "static site (GitHub Pages), ES modules with an import map, no build step; Node ≥ 20 for tests, Python 3 for data builds",
@@ -399,6 +399,22 @@
         "tests/views.test.js",
         "DATA_METHOD.md",
         "AGENTS.md"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "T16",
+      "title": "0.3.9 (after the live walk of 0.3.8): the building camera of a site on terrain ignores DEM artefacts — walls down at most 60 m below a building's centroid ground, a building more than 400 m below the pin on the pin's ground (js/camera.js#pieceGround) — and refits when the ground moves at the site's outermost points, not only at its pin (js/camera.js#groundProbes): Rayavadee framed whole on a phone and a desktop, Patong Bay Hill Resort whole after its DEM arrives",
+      "dependsOn": [
+        "T15"
+      ],
+      "acceptanceCriteria": [
+        "A17"
+      ],
+      "files": [
+        "js/camera.js",
+        "js/app.js",
+        "tests/camera.test.js"
       ],
       "status": "done"
     }

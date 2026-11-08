@@ -1,7 +1,7 @@
 # CityMETER · Hotel — data and method
 
 How `data/hotels.json` is built, what one row and one figure mean, and what the demo never claims. Every number below is
-a snapshot of release 0.3.8 (data rebuilt 2026-11-08 from the same export of 2026-11-01 and the checked rows of the live
+a snapshot of release 0.3.9 (data of 0.3.8, rebuilt 2026-11-08 from the same export of 2026-11-01 and the checked rows of the live
 `49_SITE_BOUNDARY_CHECK` tab: the figures of 0.3.1 unchanged, 24 stays under their brand's listed name, §2a; 282 stay
 sites, §7c); the page computes everything from the data
 at run time, so these are fixtures, not constants.
