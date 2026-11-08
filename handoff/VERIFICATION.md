@@ -1,14 +1,59 @@
-# CityMETER Hotel 0.3.7 — verification
+# CityMETER Hotel 0.3.9 — verification
 
-Release 0.3.7 (commit `cfa3b9f`, cache tag `?v=20261106-r17`; published by `594b3f1`, an empty commit that re-ran the
-Pages deploy) opens eleven more stays on every building of their site, from an OpenStreetMap area of the stay checked
-with its layout; section 0 records how it was checked. Section 0a records 0.3.6 (three Karon resorts from parcels), 0b
-0.3.5 (more map on a phone), 0c 0.3.4 (current names, light water, every search word), 0d 0.3.3 (one link) and sections
-1–6 record 0.3.2, whose camera and building code is unchanged since. Results are from 2026-11-06 (Asia/Bangkok). The
-commit that adds this file changes documentation only; the final live attestation of the published commit is recorded
-in `RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
+Release 0.3.9 (commit `60832ab`, cache tag `?v=20261108-r20`) carries the data of 0.3.8 (commit `86a71c4`, r18): 267 more
+stays open on every building of their site from the OpenStreetMap area of their own checked automatically, and the site
+camera on terrain is fixed after the live walk of 0.3.8 (`e44794f` r19, then `60832ab` r20); section 0 records how they
+were checked. Section 0a records 0.3.7 (eleven stays from OSM areas checked with their layout), 0b 0.3.6 (three Karon
+resorts from parcels), 0c 0.3.5 (more map on a phone), 0d 0.3.4 (current names, light water, every search word), 0e
+0.3.3 (one link) and sections 1–6 record 0.3.2. Results are from 2026-11-08 (Asia/Bangkok). The commit that adds this
+file changes documentation only; the final live attestation of the published commit is recorded in
+`RELEASE_RECEIPT.json` of the handoff bundle (it cannot live in the commit it attests).
 
-## 0. Release 0.3.7 — sites from OpenStreetMap areas
+## 0. Releases 0.3.8–0.3.9 — sites across the country from OpenStreetMap areas checked automatically
+
+Owner 2026-11-08 07:45 “เพิ่มเลย” (append the stays the tab did not list) and 08:17 “อัตโนมัติก่อน แล้วค่อยเทียบผังแห่งสำคัญ”
+(an automatic check now, the layout of the important stays later).
+
+- **Source of the frames:** the Geofabrik extract of Thailand (`thailand-261106.osm.pbf`, 329,937,419 bytes, OSM data to
+  2026-11-06 21:21 UTC; downloaded to the owner's computer with his permission, the Overpass servers did not answer on 7–8
+  Nov) read in one pass for all 29,149 stays with a point; 345 stays have an area of their own (class `own`), 280 of them
+  holding two or more drawn buildings.
+- **Automatic check (`osm_polygon_auto`, DATA_METHOD §7c):** other uses from the same extract — 1 building cut as another
+  business (a guest house inside a hotel's area), 9 cut as mostly outside the area, 11 added as mostly inside; 11 stays
+  already checked with their layout kept as they were; Diamond Cliff and Duangjitt held → 267 stays, 3,722 buildings in 50
+  provinces.
+- **Sheet (`49_SITE_BOUNDARY_CHECK`):** 11 rows filled in place (O–W; ids checked in the Name Box, every row `todo` and
+  empty before) and 256 appended (A302:W557) by clipboard blocks; the tab was exported after writing (CSV SHA-256
+  `c8e56e1a…`, 706,023 bytes) and every written cell read back unchanged (267 rows, 0 differences); the 15 rows checked
+  before keep their sites; `site-candidates.mjs check` passes for all 282 checked rows. The tab now holds 556 rows: 282
+  `checked` (parcels 3 · OSM + layout 12 · OSM automatic 267), 274 `todo`.
+- **Build:** `scripts/build-data.py --sites <the export>` (same research export of 2026-11-01, SHA-256 `ec460c81…`; a
+  rebuild of 0.3.7's inputs reproduced its `data/hotels.json` except the build date) → 282 site groups, 4,150 buildings;
+  `npm test` 130/130 (0.3.8), 132/132 (0.3.9).
+- **Live 0.3.8 (r18, `86a71c4`):** `verify:live` 352/352 (a first run hit one 503 from Pages on `README.md`; the second run
+  was clean). Walk in the owner's Chrome: Phuket Graceland 23 buildings — chip “ทั้งรีสอร์ท 23 อาคาร”, “ไซต์” row “23 อาคาร ·
+  กรอบ OpenStreetMap (ตรวจอัตโนมัติ) · หน้าอ้างอิง · © OpenStreetMap contributors · 8 พ.ย. 2569”, หน้าอ้างอิง →
+  openstreetmap.org/relation/14014690, provenance “ไซต์ กรอบ OpenStreetMap (ตรวจอัตโนมัติ) 8 พ.ย. 2569”, “ตรวจ 8 พ.ย. 2569”;
+  Patong Bay Hill 148 and Rayavadee 55 highlighted in full. **Found:** Rayavadee's camera stood far out (zoom 14 on a 390 ×
+  740 phone, the site small at the top edge; desktop zoom 15.3) because one outline vertex read a ground of −2,110 m; Patong
+  Bay Hill on a first load kept its upper half above the map (fit points to y −63 in a box from y 58) — its three refits were
+  spent on the legend and the arriving buildings before its DEM came in.
+- **Fix 0.3.9 (r19 `e44794f`, r20 `60832ab`):** `js/camera.js#pieceGround` (walls at most 60 m below a building's centroid
+  ground; a building more than 400 m below the pin stands on the pin's ground), `groundProbes` (the ground is watched at
+  the site's outermost points as well as the pin) and, in r20, a refit budget of its own for ground changes
+  (`MAX_GROUND_REFITS`; r19 still ran out of refits at Patong Bay Hill). Unit tests for both in `tests/camera.test.js`.
+- **Live 0.3.9 (r20, `60832ab`):** `verify:live` 352/352. Walk, measured as the fit itself measures (every fit point of the
+  site's buildings, roofs included, projected with `projectAltitude` against the free box): Patong Bay Hill 148 desktop
+  1400 × 760 — 0 of 7,517 points outside (zoom 16.98, after one ground refit); Rayavadee 55 phone 390 × 740 — 0 of 2,423
+  (zoom 15.7, grounds 8–72 m); Silavadee 77 phone (0.3.7 site) — 0 of 2,577; Phuket Graceland 23 desktop — 0 of 1,017;
+  Fair House 14 desktop — 0 of 701, row “กรอบ OpenStreetMap + ผังที่พัก … 6 พ.ย. 2569”; Sathorn Vista 2 desktop — 0 of 65,
+  chip “ทั้งโรงแรม 2 อาคาร”. No console error after tracking began. Dark theme only (colours unchanged in 0.3.8–0.3.9).
+
+Not verified in this round: a real phone and Safari; light theme; the 263 other automatic sites one by one (counted and
+checked by `check`, not walked); whether each automatic site matches the stay's own layout — that is the next check, most
+important stays first.
+
+## 0a. Release 0.3.7 — sites from OpenStreetMap areas
 
 Owner 2026-11-06 20:39 “approve” (to adding `osm_polygon+site_layout` as the third source of `49_SITE_BOUNDARY_CHECK`)
 and 21:01 “please continue”.
@@ -51,7 +96,7 @@ record keeps its register's Thai name (ฮิลตัน ภูเก็ต อ
 name carries the brand, so the current-name rule (§2a) does not rename it — a sheet fix. The source details of a site
 read “อาคาร · ยังไม่มีข้อมูลอาคาร” (the research building-mass field) above “ไซต์ N อาคาร”.
 
-## 0a. Release 0.3.6 — resort sites
+## 0b. Release 0.3.6 — resort sites
 
 Owner request (2026-11-03 08:08): “ไม่ต้องทำเครื่องมือเลือกอาคาร แต่พี่เลือกโฉนดให้เลย มาสร้างขอบเขตอาคาร ร่วมกับ site
 layout ของโรงแรม/รีสอท ทดลองกับสามแห่งนี้ก่อน”.
@@ -91,7 +136,7 @@ layout ของโรงแรม/รีสอท ทดลองกับส�
 Observed in the data, not changed: one CityMETER Building V4 footprint inside the Phuket Orchid site (369 m², height
 estimate 14.8 m) stands where the Esri imagery shows the pool; the site shows it as CityMETER draws it.
 
-## 0b. Release 0.3.5 — more map on a phone
+## 0c. Release 0.3.5 — more map on a phone
 
 Owner request (2026-11-02 23:11, with a phone screenshot of the country view in Safari): “ในมือถือ เหลือพื้นที่ map
 น้อยมาก ช่วยปรับปรุงด้วย”. The screenshot also showed the legend ticks “11,026” and “153,200” written over each other.
@@ -121,7 +166,7 @@ transient 503 on three building-unit files).
 Not checked in a frame: the zoom buttons step aside only for a coarse pointer (a touch phone); Chrome's desktop frames
 keep them, so the free box there stops left of them while a phone's does not.
 
-## 0c. Release 0.3.4 — current names, light water, every search word
+## 0d. Release 0.3.4 — current names, light water, every search word
 
 Owner questions (2026-11-02 21:38–21:39): “ทำไม novotel กะรน ใช้ logo Holiday Inn?” · “ใน light theme ทำให้ทะเล/water
 body ดูเหมือนน้ำมากกว่านี้ได้มั้ย แต่ยัง clean and quiet อยู่นะ” · “โรงแรม รีสอท ที่เป็นกลุ่มหลายอาคาร เช่น บังงกาโลว์ หรือ
@@ -170,7 +215,7 @@ and other instances did not answer within the tool's time limit.
 Not checked: Safari, Firefox, a physical phone; the hover card of a renamed stay (its text comes from the same
 `subName` as the panel, held by tests); whether each brand's listing is still current after 2026-10-25.
 
-## 0d. Release 0.3.3 — ถาม Google AI answers at once
+## 0e. Release 0.3.3 — ถาม Google AI answers at once
 
 Owner question (2026-11-02 07:31): “ตอนนี้กด "ถาม Google AI" แล้วมันไม่เปิด result ที่ถามทันทีแต่มี dialogue มาแทรก …
 ทำให้มันตอบทันเลยได้มั้ย”. Measured in Chrome (signed in to Google), 2026-11-02:
