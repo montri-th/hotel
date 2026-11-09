@@ -59,4 +59,4 @@ npm run verify:live                                            # ไฟล์บ
 
 ## สิทธิ์และที่มา
 
-แผนที่ © OpenStreetMap contributors ผ่าน OpenFreeMap / OpenMapTiles · ขอบเขตปกครองและอาคาร CityMETER (Building V4 ในพื้นที่ที่ใช้) · ไอคอน Material Symbols (Apache-2.0) · ข้อมูลที่พักตามแหล่งที่ระบุในแต่ละรายการ — ชุดข้อมูลนี้เป็นงานวิจัย ไม่ใช่สำมะโนที่พักที่เปิดดำเนินงาน
+แผนที่ © OpenStreetMap contributors ผ่าน OpenFreeMap / OpenMapTiles · ขอบเขตปกครองและอาคาร CityMETER (Building V4 ในพื้นที่ที่ใช้) · ชื่ออังกฤษของเขต/อำเภอ OpenGISData-Thailand (CC BY 4.0, อ้าง DOPA) · ไอคอน Material Symbols (Apache-2.0) · ข้อมูลที่พักตามแหล่งที่ระบุในแต่ละรายการ — ชุดข้อมูลนี้เป็นงานวิจัย ไม่ใช่สำมะโนที่พักที่เปิดดำเนินงาน

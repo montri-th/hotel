@@ -481,7 +481,7 @@ export default {
     }],
     [re(`อันดับ ${N} (.+?): ${N} ${U} ${N} ${U} กดเพื่อดูพื้นที่นี้`), (m, t) => `No. ${m[1]} ${place(t, m[2])}: ${unitOf(t, m[3], m[4])}, ${unitOf(t, m[5], m[6])}, select to view this area`],
     [re(`อันดับ ${N} (.+?): ${N} ${U} ${N} ${U} ${N} แบรนด์ กดเพื่อดูเฉพาะเครือนี้`), (m, t) => `No. ${m[1]} ${t.part(m[2]) ?? m[2]}: ${unitOf(t, m[3], m[4])}, ${unitOf(t, m[5], m[6])}, ${m[7]} ${t.plural(m[7], 'brand', 'brands')}, select to show only this chain`],
-    [re(`(สถานี.+) ${N} ${U}`), (m, t) => `${t.name(m[1])}, ${unitOf(t, m[2], m[3])}`],
+    [re(`(สถานี[^·—]+) ${N} ${U}`), (m, t) => `${t.name(m[1])}, ${unitOf(t, m[2], m[3])}`],
     [re('ขอบอาคาร (.+)'), (m, t) => { const x = t.part(m[1]); return x == null ? null : `${x} outline`; }],
     [re(`(.+) ${N} ${U} กดเพื่อดูจังหวัด`), (m, t) => { const p = t.known(m[1]); return p ? `${p}, ${unitOf(t, m[2], m[3])}, select to view the province` : null; }],
     [re('(เขต|อำเภอ|เขต\\/อำเภอ|จังหวัด|เครือ)ที่มี(ห้องพัก|ที่พัก)มากที่สุด(?:ใน(.+))?'), (m, t) => {
