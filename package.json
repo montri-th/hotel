@@ -1,6 +1,6 @@
 {
   "name": "citymeter-hotel",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "type": "module",
   "description": "CityMETER · Hotel — district-first 3D map of recorded hotel rooms and accommodation records across Thailand, with rail and retail context from the same registry, hotel groups and a comparison set per hotel",
