@@ -14,7 +14,11 @@
  *
  * Pure: builds labels and https URLs from public names only (no user data, no internal ids). The Google names on the
  * buttons say where the answers come from (owner 2026-11-01: no caveat lines).
+ * An English page (citymeter-shell 0.5.1) asks in English, with the English names the data gives (js/lang.js); the
+ * button labels are translated by js/shell/i18n.js like the rest of the page.
  */
+import {LANG, englishName} from './shell/i18n.js';
+
 const enc = encodeURIComponent;
 export const googleAskURL = q => `https://www.google.com/search?q=${enc(q)}`;
 export const mapsSearchURL = q => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
@@ -28,7 +32,8 @@ const join = (...parts) => clean(parts.filter(Boolean).join(' '));
  *       province?, point?: {lat, lon, role}, rows?}
  * → [{id, label, href, note}] in display order (only the actions that apply).
  */
-export function contextActions(ctx = {}) {
+export function contextActions(ctx = {}, lang = LANG) {
+  if (lang === 'en') return contextActionsEnglish(ctx);
   const out = [], place = ctx.area ? join(ctx.area.place, ctx.area.province) : '';
   const add = (id, label, href, note = '') => { if (href) out.push({id, label, href, note}); };
   if (ctx.kind === 'hotel' && ctx.row) {
@@ -55,6 +60,36 @@ export function contextActions(ctx = {}) {
   if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) {
     add('streetview', p.role === 'station' ? 'Street View ใกล้สถานี' : 'Street View', streetViewURL(p.lat, p.lon));
   }
+  return out;
+}
+
+/** The same actions for an English page: English questions, English names where the data has them. */
+function contextActionsEnglish(ctx = {}) {
+  const out = [], N = s => englishName(clean(s));
+  const add = (id, label, href) => { if (href) out.push({id, label, href, note: ''}); };
+  const where = ctx.area ? [N(ctx.area.place), N(ctx.area.province)].filter(Boolean).join(', ') : '';
+  if (ctx.kind === 'hotel' && ctx.row) {
+    const r = ctx.row, name = N(r.name || r.nameEn);
+    add('ai', 'ถาม Google AI', googleAskURL(`${name}${where ? ` (${where})` : ''}: is it still open, what are room rates now, what do recent reviews say, and how do I get there from the airport or a station?`));
+    add('maps', 'Google Maps', mapsSearchURL(join(name, N(ctx.area?.place), N(ctx.area?.province))));
+  } else if (ctx.kind === 'building') {
+    const names = [...new Set((ctx.rows || []).map(r => N(r.name || r.nameEn)).filter(Boolean))].slice(0, 2);
+    add('ai', 'ถาม Google AI', googleAskURL(`Are ${names.join(' and ')}${where ? ` (${where})` : ''} in the same building, and what else is in it?`));
+  } else if (ctx.kind === 'area' && ctx.area) {
+    add('ai', 'ถาม Google AI', googleAskURL(`Hotels and places to stay in ${where}: which neighbourhoods are good to stay in, what are prices now, and which rail lines or sights are near?`));
+    add('maps', 'Google Maps', mapsSearchURL(`hotel ${where}`));
+  } else if (ctx.kind === 'station' && ctx.station) {
+    const s = ctx.station, station = N(s.name);
+    add('ai', 'ถาม Google AI', googleAskURL(`Hotels near ${station} station: where are they, how many minutes' walk, and what are prices and reviews now?`));
+    add('maps', 'Google Maps', mapsSearchURL(`hotel near ${station} station`));
+  } else if (ctx.kind === 'chain' && ctx.chain) {
+    add('ai', 'ถาม Google AI', googleAskURL(`How many hotels does ${clean(ctx.chain.name)} have in Thailand, which brands, and where has it announced new hotels?`));
+  } else if (ctx.kind === 'overview') {
+    const place = N(ctx.province) || 'Thailand';
+    add('ai', 'ถาม Google AI', googleAskURL(`Latest overview of hotel rooms in ${place}: how is occupancy, and where have new hotels opened or been announced?`));
+  }
+  const p = ctx.point;
+  if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) add('streetview', p.role === 'station' ? 'Street View ใกล้สถานี' : 'Street View', streetViewURL(p.lat, p.lon));
   return out;
 }
 
