@@ -3,7 +3,7 @@
   "schemaVersion": "1.5.0",
   "documentType": "product-statement",
   "productId": "citymeter-hotel",
-  "productVersion": "0.6.1",
+  "productVersion": "0.6.2",
   "updatedOn": "2026-11-08",
   "dataset_id": "research.TH.hotel",
   "productionDatasetCode": "hotel",
