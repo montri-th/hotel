@@ -17,6 +17,8 @@
  */
 import {cueMarkup} from './cues.js';
 import {subName, RECORDED_NAME} from './model.js';
+import {LANG} from './shell/i18n.js';
+import {thaiSubName} from './lang.js';
 import {logoMarkup} from './logos.js';
 import {terrainFacts, terrainChips} from './shell/terrain.js';
 
@@ -37,6 +39,7 @@ export function rankLabelCandidates(cands) {
 const TYPE_WORDS = /^(โรงแรม|รีสอร์ท|รีสอร์ต|เกสต์เฮาส์|เกสท์เฮาส์|เกสเฮาส์|โฮสเทล|อพาร์ทเม้นท์|อพาร์ตเมนต์|เซอร์วิสอพาร์ทเมนท์|บังกะโล|โฮมสเตย์)\s*/;
 /** Generic endings the cue already says (type) or that only lengthen a label. */
 const TYPE_ENDINGS = /[\s,\-–—]*(รีสอร์ท\s*(แอนด์|และ|&)\s*สปา|(แอนด์|และ|&)\s*สปา|resort\s*(and|&)\s*spa|(and|&)\s*spa|โฮเทล|hotel)$/i;
+const THAI = /[\u0E01-\u0E3A\u0E40-\u0E4E]/;
 const escapeRe = v => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /**
  * Pure: the short name of a label (owner 2026-11-01: short, icons before words). The cue already says the type and
@@ -47,7 +50,8 @@ const escapeRe = v => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function shortName(row, {hasLogo = false, places = []} = {}) {
   const th = row.name || '', en = row.nameEn || '';
   // A chain hotel with a logo reads its English name (the Thai field sometimes holds it); wrapping brackets go.
-  let name = (hasLogo ? en || th : th || en).replace(/^[\s(（[]+|[\s)）\]]+$/g, '');
+  // An English page reads the English name too (a name without one stays Thai, js/lang.js).
+  let name = (hasLogo || LANG === 'en' ? en || th : th || en).replace(/^[\s(（[]+|[\s)）\]]+$/g, '');
   const original = name;
   if (hasLogo) {
     const brands = [row.brand?.name, ...(row.brand?.labels || [])].map(b => String(b || '').trim()).filter(Boolean).sort((a, b) => b.length - a.length);
@@ -152,9 +156,11 @@ export function installHotelLabels(map, container, {onSelect, bounds, avoid = ()
     const rooms = known(row) ? `${num(row.rooms)} ห้อง` : 'ไม่ทราบจำนวนห้อง';
     el.setAttribute('aria-label', [row.name || row.nameEn, rooms, row.brand?.name].filter(Boolean).join(' · '));
     const parts = labelParts(row, {places: placesOf(row)});
+    // A label is a name: an English page leaves it as the data gives it (marked Thai when it is).
+    const named = s => (LANG === 'en' ? ` translate="no"${THAI.test(s) ? ' lang="th"' : ''}` : '');
     const text = parts.brand
-      ? `<span class="hl-text"><strong class="hl-brand">${esc(parts.brand)}</strong>${parts.site ? `<span class="hl-site">${esc(parts.site)}</span>` : ''}</span>`
-      : `<span class="hl-text"><span class="hl-name">${esc(parts.site)}</span></span>`;
+      ? `<span class="hl-text"><strong class="hl-brand">${esc(parts.brand)}</strong>${parts.site ? `<span class="hl-site"${named(parts.site)}>${esc(parts.site)}</span>` : ''}</span>`
+      : `<span class="hl-text"><span class="hl-name"${named(parts.site)}>${esc(parts.site)}</span></span>`;
     el.classList.toggle('is-branded', Boolean(parts.brand));
     el.innerHTML = `<span class="hl-cue" aria-hidden="true">${cueMarkup(row.series)}</span>${text}${parts.rooms ? `<span class="hl-rooms data-number"><i class="pictogram pic-rooms" aria-hidden="true"></i>${esc(num(parts.rooms))}</span>` : ''}`;
     el.onclick = () => onSelect?.(row);
@@ -250,7 +256,8 @@ export function installHotelLabels(map, container, {onSelect, bounds, avoid = ()
       row.price ? chip('price', `${priceText(row.price)} ที่บันทึก`, 'ราคาต่อคืนที่บันทึก') : '',
       row.brand && !logo ? chip('chain', row.brand.name) : '',
     ].filter(Boolean).join('');
-    card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${subName(row) ? `<span class="hc-sub">${row.recorded ? `${RECORDED_NAME} · ` : ''}${esc(subName(row))}</span>` : ''}</div></div>
+    const thai = thaiSubName(row), sub = thai || (LANG === 'en' && !row.recorded ? '' : subName(row));
+    card.innerHTML = `${logo ? `<div class="hc-logo-row">${logo}</div>` : ''}<div class="hc-head"><div><strong>${esc(row.name || row.nameEn)}</strong>${sub ? `<span class="hc-sub"${thai ? ' lang="th" translate="no"' : ''}>${row.recorded ? `${RECORDED_NAME} · ` : ''}${esc(sub)}</span>` : ''}</div></div>
       <div class="hc-chips">${chips}</div><div class="hc-chips hc-terrain" aria-live="off"></div>`;
     card.hidden = false;
     placeCard();

@@ -16,6 +16,8 @@
  * Distances are straight lines (the distance pictogram; “ระยะตรง” in titles). A stay's pin inside a drawn building is
  * “ที่พักในอาคารนี้” / “อีก N แห่งในอาคารนี้”, never “ตั้งอยู่ใน”. Sources, methods and ids sit in one closed <details>.
  */
+import {LANG} from './shell/i18n.js';
+import {thaiSubName} from './lang.js';
 import {productionLink, provinceByCode, hasPoint, stationLink, retailLink, SIZE_BANDS, subName, RECORDED_NAME} from './model.js';
 import {areaWord} from './areas.js';
 import {cueMarkup} from './cues.js';
@@ -48,7 +50,9 @@ export function link(url, label, cls = 'source-link') {
  * brand lists now; else its English name.
  */
 export function subLine(r, cls, tag = 'p') {
-  const sub = subName(r);
+  const thai = thaiSubName(r);
+  if (thai) return `<${tag} class="${cls}" lang="th" translate="no">${esc(thai)}</${tag}>`;
+  const sub = LANG === 'en' && !r?.recorded ? '' : subName(r);
   if (!sub) return '';
   return r.recorded
     ? `<${tag} class="${cls} recorded-name"><span class="recorded-label">${RECORDED_NAME}</span> ${esc(sub)}</${tag}>`
@@ -350,7 +354,7 @@ export function renderArea(p, classOf, ctx = {}) {
   const head = `<section class="detail-head">
       <button type="button" class="btn quiet back" data-action="back">กลับ</button>
       <p class="eyebrow">${esc(w.area)} · <button type="button" class="link-button" data-action="select-province" data-id="${esc(a.province)}">${esc(prov)}</button></p>
-      <h2>${esc(place)}</h2>${a.nameEn ? `<p class="subtle">${esc(a.nameEn)}</p>` : ''}
+      <h2>${esc(place)}</h2>${LANG === 'en' ? `<p class="subtle" lang="th" translate="no">${esc(place)}</p>` : a.nameEn ? `<p class="subtle">${esc(a.nameEn)}</p>` : ''}
       ${rank}
       <div class="metrics compact">${metricTile(p.rooms, 'ห้อง', 'rooms')}${metricTile(p.count, 'แห่ง', 'hotel')}${metricTile(share, `ของ${prov}`, 'province', shareDetail)}${metricTile(railShare, 'ใกล้รถไฟฟ้า', 'rail', p.rail?.base ? railDetail(p.rail, unit) : '')}</div>
       ${selectionNote(p, place, ctx)}
@@ -382,7 +386,7 @@ export function renderStation(p, ctx = {}) {
       <button type="button" class="btn quiet back" data-action="back">กลับ</button>
       <div class="identity">${pic('rail', 'identity-pic')}<div>
         <p class="eyebrow">สถานีรถไฟฟ้า${s.lines?.length ? ` · ${esc(s.lines.join(' · '))}` : ''}${building ? ` · ${pic('construction')}กำลังสร้าง` : ''}</p>
-        <h2>สถานี${esc(s.name)}</h2>${s.nameEn ? `<p class="subtle">${esc(s.nameEn)}</p>` : ''}</div></div>
+        <h2>สถานี${esc(s.name)}</h2>${LANG === 'en' ? `<p class="subtle" lang="th" translate="no">สถานี${esc(s.name)}</p>` : s.nameEn ? `<p class="subtle">${esc(s.nameEn)}</p>` : ''}</div></div>
       <div class="metrics compact">${metricTile(p.rooms, 'ห้อง', 'rooms')}${metricTile(p.count, 'แห่ง', 'hotel')}${metricTile(p.radius, 'ม. รอบสถานี', 'distance', `ระยะตรงจากจุดอ้างอิงของสถานี ${meters(p.radius)}`)}</div>
       ${actionBar({kind: 'station', station: s, point: {lat: s.lat, lon: s.lon, role: 'station'}})}
       <div class="detail-actions">${link(stationLink(s), 'ดูใน CityMETER Transit', 'btn quiet source-link')}</div>
