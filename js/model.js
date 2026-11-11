@@ -123,8 +123,14 @@ export const hasPoint = r => Number.isFinite(r?.latitude) && Number.isFinite(r?.
 
 const lower = v => String(v || '').toLocaleLowerCase('th-TH');
 const pos = v => (Number.isFinite(v) && v > 0 ? v : null);
-/** Source names sometimes hold HTML entities (“Siam Society Hotel &amp; Resort”); the screen reads the character. */
-const plain = v => String(v || '').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+/**
+ * Source names sometimes hold HTML entities (“Siam Society Hotel &amp; Resort”); the screen reads the character. A name
+ * can also begin with a Thai vowel or tone mark typed before the keyboard was switched (140 English names in the
+ * build of 2026-11-08, e.g. “็Hotel Clover Patong Phuket”): a mark with no letter under it cannot be read, so it is
+ * left off the screen (owner's phone screenshot 2026-11-11). The data file keeps the source's spelling; correct it in
+ * the research sheet.
+ */
+const plain = v => String(v || '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/^[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u200B-\u200D\uFEFF]+/, '');
 
 /** Label of the record's own name when the brand's listing names the stay differently (data.currentNames). */
 export const RECORDED_NAME = 'ชื่อที่บันทึก';
