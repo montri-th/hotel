@@ -39,6 +39,8 @@ const TITLES = {
   'toggle-3d': 'สลับ 3 มิติ / 2 มิติ',
   'toggle-neighborhoods': 'แสดงหรือซ่อนสีและขอบเขตเขต/อำเภอ',
   'mobile-panel': 'เปิดแผงข้อมูลและตัวกรอง',
+  'close-mobile-panel': 'กลับไปแผนที่',
+  'sheet-back': 'กลับไปหน้าก่อน',
   'open-help': 'เปิดวิธีใช้',
   'open-help-sheet': 'เปิดวิธีใช้',
   'toggle-insights': 'เปิดหรือย่อกราฟเปรียบเทียบพื้นที่',
