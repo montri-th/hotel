@@ -174,6 +174,7 @@ export default {
     'ไม่ระบุ': 'Not stated',
     // Filters
     'ค้นหาที่พัก แบรนด์ เครือ หรือพื้นที่': 'Search places to stay, brands, chains or areas',
+    'ลองชื่อที่พัก แบรนด์ เครือ สถานี เขต/อำเภอ หรือจังหวัด': 'Try the name of a place to stay, a brand, a chain, a station, a district or a province',
     'ค้นหาชื่อที่พัก แบรนด์ เครือ เขต/อำเภอ หรือจังหวัด': 'Search names of places to stay, brands, chains, districts or provinces',
     'ตัวกรอง': 'Filters',
     'ตัวกรองที่ใช้อยู่': 'Active filters',
@@ -396,6 +397,8 @@ export default {
     'ประเทศไทย': 'Thailand',
   },
   contexts: [
+    // The line under a name in the search list (js/find.js#searchNote): one entry, so the singular.
+    ['.find-where', {'สถานีรถไฟฟ้า': 'Rail station', 'เครือโรงแรม': 'Hotel chain', 'แบรนด์': 'Brand', 'ประเภทที่พัก': 'Property type', 'จังหวัด': 'Province'}],
     // A unit after a bold number (js/panel.js valueText, nw(…)): "1 room", "12,345 rooms".
     ['.nowrap', {'ห้อง': (el, t) => t.plural(el.querySelector('strong')?.textContent, 'room', 'rooms'),
       'แห่ง': (el, t) => t.plural(el.querySelector('strong')?.textContent, 'property', 'properties')}],
